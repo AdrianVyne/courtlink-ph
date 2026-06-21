@@ -1,4 +1,4 @@
-﻿import { type Prisma, type PrismaClient, VenueStatus } from "@courtlink/database";
+import { type Prisma, type PrismaClient, VenueStatus } from "@courtlink/database";
 import {
   type CreateVenueInput,
   type PublicVenueFilters,
@@ -55,6 +55,14 @@ export class PrismaVenueRepository implements VenueRepository {
       where: buildPublicWhere(filters),
       orderBy: { name: "asc" },
       take: filters.limit ?? 50,
+    });
+    return venues.map(toVenueSummary);
+  }
+
+  async listPendingVenues(): Promise<VenueSummary[]> {
+    const venues = await this.prisma.venue.findMany({
+      where: { status: VenueStatus.PENDING_APPROVAL },
+      orderBy: { createdAt: "asc" },
     });
     return venues.map(toVenueSummary);
   }

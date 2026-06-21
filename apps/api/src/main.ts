@@ -3,10 +3,13 @@ import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { DocumentBuilder, SwaggerModule } from "@nestjs/swagger";
 import { AppModule } from "./app.module.js";
+import { DomainExceptionFilter } from "./common/domain-exception.filter.js";
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
   app.setGlobalPrefix("api/v1");
+  app.useGlobalFilters(new DomainExceptionFilter());
+  app.enableShutdownHooks();
 
   const document = SwaggerModule.createDocument(
     app,

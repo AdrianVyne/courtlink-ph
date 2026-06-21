@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -94,6 +94,12 @@ export class VenueController {
     const user = getSessionUser(request);
     const venue = await this.requireOwnedVenue(user.id, id);
     return this.venueService.submitForReview(venue.id);
+  }
+
+  @Get("admin/pending")
+  async listPending(@Req() request: AuthenticatedRequest) {
+    requireSuperAdmin(request);
+    return this.venueService.listPendingVenues();
   }
 
   @Post("admin/:id/approve")

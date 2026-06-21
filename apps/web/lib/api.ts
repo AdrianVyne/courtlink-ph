@@ -1,4 +1,4 @@
-﻿export interface ApiErrorBody {
+export interface ApiErrorBody {
   code?: string;
   message?: string | string[];
 }
@@ -77,6 +77,27 @@ export interface BookingRecord {
   currency: string;
   proofDeadline: string;
   reviewDueAt: string | null;
+}
+
+export interface BookingListItem {
+  id: string;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+  quotedAmount: number;
+  currency: string;
+  proofDeadline: string | null;
+  reviewDueAt: string | null;
+  court: { id: string; name: string };
+  venue: { id: string; name: string; slug: string };
+  submission: {
+    id: string;
+    status: string;
+    channel: string;
+    transactionRef: string;
+    proofObjectKey: string;
+  } | null;
+  refund: { id: string; status: string; amount: number } | null;
 }
 
 type Query = Record<string, string | number | boolean | undefined>;

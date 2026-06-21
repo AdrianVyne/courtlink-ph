@@ -8,6 +8,8 @@ import { VenueService } from "../venues/venue.service.js";
 import { BookingService } from "./booking.service.js";
 import { CourtController } from "./court.controller.js";
 import { CourtService } from "./court.service.js";
+import { BookingQueryService } from "./booking-query.service.js";
+import { PrismaBookingQueryRepository } from "./prisma-booking-query.repository.js";
 import { PrismaBookingRepository } from "./prisma-booking.repository.js";
 import { PrismaCourtRepository } from "./prisma-court.repository.js";
 import { PrismaRefundRepository } from "./prisma-refund.repository.js";
@@ -26,6 +28,16 @@ import { RefundService } from "./refund.service.js";
       provide: PrismaBookingRepository,
       useFactory: (prisma: PrismaClient) => new PrismaBookingRepository(prisma),
       inject: [PRISMA_CLIENT],
+    },
+    {
+      provide: PrismaBookingQueryRepository,
+      useFactory: (prisma: PrismaClient) => new PrismaBookingQueryRepository(prisma),
+      inject: [PRISMA_CLIENT],
+    },
+    {
+      provide: BookingQueryService,
+      useFactory: (repo: PrismaBookingQueryRepository) => new BookingQueryService(repo),
+      inject: [PrismaBookingQueryRepository],
     },
     {
       provide: PrismaRefundRepository,
@@ -53,11 +65,19 @@ import { RefundService } from "./refund.service.js";
       useFactory: (
         courts: CourtService,
         bookings: BookingService,
+        bookingQuery: BookingQueryService,
         refunds: RefundService,
         tenancy: TenancyService,
         venues: VenueService,
-      ) => new CourtController(courts, bookings, refunds, tenancy, venues),
-      inject: [CourtService, BookingService, RefundService, TenancyService, VenueService],
+      ) => new CourtController(courts, bookings, bookingQuery, refunds, tenancy, venues),
+      inject: [
+        CourtService,
+        BookingService,
+        BookingQueryService,
+        RefundService,
+        TenancyService,
+        VenueService,
+      ],
     },
   ],
   exports: [CourtService, BookingService, PrismaBookingRepository],

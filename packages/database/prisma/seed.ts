@@ -1,4 +1,4 @@
-﻿import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaPg } from "@prisma/adapter-pg";
 import { argon2id, hash } from "argon2";
 import { PrismaClient } from "../generated/client/client.js";
 
@@ -21,7 +21,15 @@ async function upsertUser(input: {
 }) {
   const user = await prisma.user.upsert({
     where: { email: input.email },
-    update: { displayName: input.displayName },
+    update: {
+      displayName: input.displayName,
+      credentials: {
+        upsert: {
+          create: { passwordHash: input.passwordHash },
+          update: { passwordHash: input.passwordHash },
+        },
+      },
+    },
     create: {
       email: input.email,
       displayName: input.displayName,

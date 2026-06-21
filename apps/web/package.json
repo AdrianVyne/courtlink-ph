@@ -10,7 +10,7 @@
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "next typegen \u0026\u0026 tsc --noEmit"
   },
   "dependencies": {
     "@courtlink/domain": "workspace:*",

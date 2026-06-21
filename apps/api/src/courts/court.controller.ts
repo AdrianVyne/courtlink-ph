@@ -20,6 +20,8 @@ import { VenueService } from "../venues/venue.service.js";
 import { BookingService } from "./booking.service.js";
 // biome-ignore lint/style/useImportType: CourtService is injected at runtime.
 import { CourtService } from "./court.service.js";
+// biome-ignore lint/style/useImportType: BookingQueryService is injected at runtime.
+import { BookingQueryService } from "./booking-query.service.js";
 // biome-ignore lint/style/useImportType: RefundService is injected at runtime.
 import { RefundService } from "./refund.service.js";
 
@@ -79,6 +81,7 @@ export class CourtController {
   constructor(
     private readonly courts: CourtService,
     private readonly bookings: BookingService,
+    private readonly bookingQuery: BookingQueryService,
     private readonly refunds: RefundService,
     private readonly tenancy: TenancyService,
     private readonly venues: VenueService,
@@ -113,6 +116,19 @@ export class CourtController {
       startsAt: new Date(input.startsAt),
       endsAt: new Date(input.endsAt),
     });
+  }
+
+  @Get("bookings/mine")
+  async myBookings(@Req() request: AuthenticatedRequest) {
+    const user = getSessionUser(request);
+    return this.bookingQuery.listForPlayer(user.id);
+  }
+
+  @Get("bookings/queue")
+  async venueQueue(@Req() request: AuthenticatedRequest) {
+    const user = getSessionUser(request);
+    const venueIds = await this.managedVenueIds(user.id);
+    return this.bookingQuery.listVenueQueue(venueIds, ["PROOF_SUBMITTED", "REFUND_REQUESTED"]);
   }
 
   @Post("bookings/proof")
@@ -214,6 +230,14 @@ export class CourtController {
   @Get("venues/:venueId/list")
   async listForVenue(@Param("venueId") venueId: string) {
     return this.courts.listCourtsForVenue(venueId);
+  }
+
+  private async managedVenueIds(userId: string): Promise<string[]> {
+    const memberships = await this.tenancy.listMyMemberships(userId);
+    const lists = await Promise.all(
+      memberships.map((m) => this.venues.listVenuesForBusiness(m.businessId)),
+    );
+    return lists.flat().map((venue) => venue.id);
   }
 
   private async assertVenueStaff(userId: string, bookingId: string): Promise<void> {

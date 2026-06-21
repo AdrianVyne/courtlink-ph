@@ -1,4 +1,4 @@
-﻿import type { Venue, VenueStatus } from "@courtlink/database";
+import type { Venue, VenueStatus } from "@courtlink/database";
 
 export type VenueSummary = {
   id: string;
@@ -44,6 +44,7 @@ export interface VenueRepository {
   approveVenue(id: string, approvedAt: Date): Promise<VenueSummary>;
   rejectVenue(id: string): Promise<VenueSummary>;
   submitForReview(id: string): Promise<VenueSummary>;
+  listPendingVenues(): Promise<VenueSummary[]>;
 }
 
 export class VenueNotFoundError extends Error {
@@ -118,6 +119,10 @@ export class VenueService {
 
   listVenuesForBusiness(businessId: string): Promise<VenueSummary[]> {
     return this.repository.listVenuesForBusiness(businessId);
+  }
+
+  listPendingVenues(): Promise<VenueSummary[]> {
+    return this.repository.listPendingVenues();
   }
 
   findVenueById(id: string): Promise<VenueSummary | null> {

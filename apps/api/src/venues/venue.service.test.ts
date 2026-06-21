@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   type CreateVenueInput,
   type PublicVenueFilters,
@@ -52,6 +52,10 @@ class InMemoryVenueRepository implements VenueRepository {
 
   async listVenuesForBusiness(businessId: string): Promise<VenueSummary[]> {
     return this.venues.filter((v) => v.businessId === businessId);
+  }
+
+  async listPendingVenues(): Promise<VenueSummary[]> {
+    return this.venues.filter((v) => v.status === "PENDING_APPROVAL");
   }
 
   async approveVenue(id: string, approvedAt: Date): Promise<VenueSummary> {
