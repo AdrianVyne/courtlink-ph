@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -20,6 +20,8 @@ import { VenueService } from "../venues/venue.service.js";
 import { BookingService } from "./booking.service.js";
 // biome-ignore lint/style/useImportType: CourtService is injected at runtime.
 import { CourtService } from "./court.service.js";
+// biome-ignore lint/style/useImportType: RefundService is injected at runtime.
+import { RefundService } from "./refund.service.js";
 
 const createCourtSchema = z.object({
   venueId: z.string().uuid(),
@@ -49,11 +51,35 @@ const reviewSchema = z.object({
   reason: z.string().max(500).optional().nullable(),
 });
 
+const refundRequestSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+});
+
+const refundDecisionSchema = z.object({
+  refundId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+});
+
+const refundCompleteSchema = z.object({
+  refundId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+  channel: z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]),
+  transactionRef: z.string().min(2).max(120),
+});
+
+const venueCancelSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+});
+
 @Controller({ path: "courts", version: "1" })
 export class CourtController {
   constructor(
     private readonly courts: CourtService,
     private readonly bookings: BookingService,
+    private readonly refunds: RefundService,
     private readonly tenancy: TenancyService,
     private readonly venues: VenueService,
   ) {}
@@ -124,6 +150,49 @@ export class CourtController {
       reviewedById: user.id,
       reason: input.reason,
     });
+  }
+
+  @Post("bookings/refund/request")
+  @HttpCode(201)
+  async requestRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundRequestSchema.parse(body);
+    return this.refunds.requestRefund({
+      bookingId: input.bookingId,
+      playerId: user.id,
+      reason: input.reason,
+    });
+  }
+
+  @Post("bookings/refund/decide")
+  @HttpCode(200)
+  async decideRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundDecisionSchema.parse(body);
+    await this.assertVenueStaff(user.id, input.bookingId);
+    return this.refunds.decideRefund({ refundId: input.refundId, decision: input.decision });
+  }
+
+  @Post("bookings/refund/complete")
+  @HttpCode(200)
+  async completeRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundCompleteSchema.parse(body);
+    await this.assertVenueStaff(user.id, input.bookingId);
+    return this.refunds.completeRefund({
+      refundId: input.refundId,
+      channel: input.channel,
+      transactionRef: input.transactionRef,
+    });
+  }
+
+  @Post("bookings/cancel-by-venue")
+  @HttpCode(200)
+  async cancelByVenue(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = venueCancelSchema.parse(body);
+    await this.assertVenueStaff(user.id, input.bookingId);
+    return this.refunds.cancelByVenue({ bookingId: input.bookingId, reason: input.reason });
   }
 
   @Post("venues/:venueId")
