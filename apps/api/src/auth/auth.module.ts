@@ -1,7 +1,7 @@
-﻿import { PrismaPg } from "@prisma/adapter-pg";
-import { PrismaClient } from "@courtlink/database";
-import { Inject, Module, type OnApplicationShutdown } from "@nestjs/common";
+﻿import { Module } from "@nestjs/common";
 import { APP_GUARD, Reflector } from "@nestjs/core";
+// biome-ignore lint/style/useImportType: PrismaClient is used as a Nest provider token.
+import { PrismaClient } from "@courtlink/database";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { PasswordHasher } from "./password-hasher.js";
@@ -13,14 +13,6 @@ import { PRISMA_CLIENT, SECURE_COOKIES } from "./tokens.js";
   controllers: [AuthController],
   providers: [
     Reflector,
-    {
-      provide: PRISMA_CLIENT,
-      useFactory: () => {
-        const connectionString = process.env.DATABASE_URL;
-        if (!connectionString) throw new Error("DATABASE_URL is required");
-        return new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
-      },
-    },
     {
       provide: SECURE_COOKIES,
       useFactory: () => process.env.NODE_ENV === "production",
@@ -42,12 +34,6 @@ import { PRISMA_CLIENT, SECURE_COOKIES } from "./tokens.js";
       useClass: SessionGuard,
     },
   ],
-  exports: [AuthService, PRISMA_CLIENT],
+  exports: [AuthService],
 })
-export class AuthModule implements OnApplicationShutdown {
-  constructor(@Inject(PRISMA_CLIENT) private readonly prisma: PrismaClient) {}
-
-  async onApplicationShutdown(): Promise<void> {
-    await this.prisma.$disconnect();
-  }
-}
+export class AuthModule {}

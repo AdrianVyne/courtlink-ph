@@ -1,6 +1,5 @@
 ﻿import { Module } from "@nestjs/common";
-// biome-ignore lint/style/useImportType: PrismaClient is used as a Nest provider token.
-import { PrismaClient } from "@courtlink/database";
+import type { PrismaClient } from "@courtlink/database";
 import { TenancyController } from "./tenancy.controller.js";
 import { TenancyService } from "./tenancy.service.js";
 import { PrismaTenancyRepository } from "./prisma-tenancy.repository.js";

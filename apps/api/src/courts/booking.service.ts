@@ -101,8 +101,7 @@ export class BookingService {
 
   async quote(courtId: string, input: QuoteInput): Promise<Quote & { court: CourtSummary }> {
     const court = await this.courts.findCourtById(courtId);
-    if (!court || !court.active)
-      throw new BookingError("COURT_NOT_AVAILABLE", "Court not bookable");
+    if (!court?.active) throw new BookingError("COURT_NOT_AVAILABLE", "Court not bookable");
     const rules = await this.courts.listPricingRules(courtId);
     try {
       const quote = quoteCourtBooking(court, rules, input);

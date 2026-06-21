@@ -1,0 +1,18 @@
+﻿{
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "target": "ES2023",
+    "lib": ["ES2023"],
+    "outDir": "dist",
+    "rootDir": "generated/client",
+    "declaration": true,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "strict": false,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": ["node"]
+  },
+  "include": ["generated/client/**/*.ts"]
+}

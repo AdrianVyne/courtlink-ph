@@ -60,7 +60,7 @@ export class VenueController {
   @Get("by-slug/:slug")
   async getBySlug(@Param("slug") slug: string) {
     const venue = await this.venueService.findVenueBySlug(slug);
-    if (!venue || venue.status !== "APPROVED") {
+    if (venue?.status !== "APPROVED") {
       throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
     }
     return venue;

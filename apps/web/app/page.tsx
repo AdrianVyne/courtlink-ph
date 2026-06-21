@@ -1,5 +1,9 @@
-import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Users } from "lucide-react";
+﻿import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Users } from "lucide-react";
 import Link from "next/link";
+import { SiteHeader } from "../components/site-header";
+import { getSession } from "../lib/session";
+
+export const dynamic = "force-dynamic";
 
 const features = [
   {
@@ -19,28 +23,12 @@ const features = [
   },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getSession();
+
   return (
     <main>
-      <header className="site-header">
-        <Link className="brand" href="/" aria-label="CourtLink PH home">
-          <span className="brand-mark">CL</span>
-          <span>CourtLink PH</span>
-        </Link>
-        <nav aria-label="Primary navigation">
-          <Link href="/courts">Courts</Link>
-          <Link href="/coaches">Coaches</Link>
-          <Link href="/coach-requests">Find players</Link>
-        </nav>
-        <div className="header-actions">
-          <Link className="text-button" href="/login">
-            Log in
-          </Link>
-          <Link className="button button-small" href="/register">
-            Join CourtLink
-          </Link>
-        </div>
-      </header>
+      <SiteHeader session={session} />
 
       <section className="hero">
         <div className="eyebrow">

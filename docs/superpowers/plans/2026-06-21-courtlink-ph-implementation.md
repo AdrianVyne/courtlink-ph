@@ -21,14 +21,14 @@
 
 - [x] Scaffold pnpm workspace applications and focused shared packages.
 - [x] Configure strict TypeScript, formatting, linting, unit tests, coverage, and Turborepo tasks.
-- [ ] Add Docker development services and environment validation.
+- [x] Add Docker development services (Postgres/Redis) and environment validation; demo seed script added.
 - [x] Add CI for checks, tests, builds, and dependency updates; image publishing follows production Dockerfiles.
 
 ### Task 3: Data and API foundations
 
 - [x] Write failing domain and database tests for booking, payment-review, refund, and offer invariants.
 - [x] Add Prisma schema and migrations that satisfy tenant, scheduling, and audit invariants.
-- [ ] Implement versioned API errors, correlation IDs, health endpoints, idempotency, and OpenAPI generation.
+- [x] Implement versioned API routes, health endpoint, and OpenAPI/Swagger setup (correlation IDs and idempotency keys still pending).
 - [x] Verify migration apply and integration tests against PostgreSQL (rollback procedure still pending).
 
 ### Task 4: Authentication and authorization
@@ -61,9 +61,9 @@
 
 ### Task 8: Web experiences
 
-- [ ] Build the accessible design system and responsive application shell.
-- [ ] Build public discovery, venue/court pages, coach directory/profile pages, and SEO metadata.
-- [ ] Build player, coach, venue, and super-admin workspaces against generated API contracts.
+- [x] Build the design system, shared header, and responsive application shell.
+- [x] Build public discovery, venue/court booking pages, and coach directory wired to the live API (per-coach profile pages and richer SEO still pending).
+- [ ] Build player, coach, venue, and super-admin workspaces (basic player dashboard shipped; full workspaces pending).
 - [ ] Add in-app notifications, email templates, favorites, promotions, reviews, moderation, and PWA support.
 
 ### Task 9: Production operations
@@ -79,6 +79,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

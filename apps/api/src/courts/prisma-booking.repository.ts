@@ -1,9 +1,6 @@
-﻿import {
-  BookingStatus,
-  PaymentChannel,
-  PaymentProofStatus,
-  type PrismaClient,
-} from "@courtlink/database";
+﻿import { BookingStatus } from "@courtlink/database";
+import type { PaymentChannel, PaymentProofStatus } from "@courtlink/database";
+import type { PrismaClient } from "@courtlink/database";
 import type {
   BookingRecord,
   BookingRepository,

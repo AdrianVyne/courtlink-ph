@@ -1,6 +1,5 @@
 ﻿import { Module } from "@nestjs/common";
-// biome-ignore lint/style/useImportType: PrismaClient is used as a Nest provider token.
-import { PrismaClient } from "@courtlink/database";
+import type { PrismaClient } from "@courtlink/database";
 import { PRISMA_CLIENT } from "../auth/tokens.js";
 import { CoachBookingService } from "./coach-booking.service.js";
 import { CoachController } from "./coach.controller.js";
