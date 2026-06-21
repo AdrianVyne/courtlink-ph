@@ -1,0 +1,147 @@
+name: courtlink-ph-prod
+
+x-app-build: &app-build
+  context: .
+  dockerfile: Dockerfile
+
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-courtlink}
+      POSTGRES_USER: ${POSTGRES_USER:-courtlink}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-courtlink} -d ${POSTGRES_DB:-courtlink}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 1g
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4.3-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 256m
+    volumes:
+      - redis-data:/data
+
+  migrate:
+    build:
+      <<: *app-build
+      target: api
+    command: ["pnpm", "--filter", "@courtlink/database", "db:migrate"]
+    working_dir: /app
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    build:
+      <<: *app-build
+      target: api
+    environment:
+      NODE_ENV: production
+      PORT: "3001"
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3001/api/v1/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    mem_limit: 768m
+
+  worker:
+    build:
+      <<: *app-build
+      target: worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    mem_limit: 512m
+
+  web:
+    build:
+      <<: *app-build
+      target: web
+    environment:
+      NODE_ENV: production
+      PORT: "3000"
+      API_INTERNAL_URL: http://api:3001
+      API_PROXY_TARGET: http://api:3001
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 10
+      start_period: 40s
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 512m
+
+  caddy:
+    image: caddy:2.10-alpine
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 128m
+
+volumes:
+  postgres-data:
+  redis-data:
+  caddy-data:
+  caddy-config:

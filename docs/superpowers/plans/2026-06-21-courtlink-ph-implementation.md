@@ -68,10 +68,10 @@
 
 ### Task 9: Production operations
 
-- [ ] Add production Compose, Caddy, non-root images, resource limits, health checks, and restart policies.
+- [x] Add production Compose, Caddy, non-root images, resource limits, health checks, and restart policies (API image build + boot + healthcheck verified).
 - [ ] Add OCI Object Storage integration, encrypted PostgreSQL backups, restore tooling, and retention configuration.
 - [ ] Add structured redacted logs, metrics/capacity checks, queue visibility, alerts, and runbooks.
-- [ ] Verify clean-machine deployment, restart recovery, backup restoration, and migration procedure.
+- [ ] Verify clean-machine deployment, restart recovery, backup restoration, and migration procedure (deployment runbook added at docs/deployment.md; backup/restore still pending).
 
 ### Task 10: Release verification
 
@@ -79,6 +79,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

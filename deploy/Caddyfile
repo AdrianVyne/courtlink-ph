@@ -1,0 +1,16 @@
+# CourtLink PH edge proxy.
+# SITE_ADDRESS is ":80" for local/dev and a public hostname (e.g. your
+# DuckDNS domain) in production, where Caddy provisions TLS automatically.
+{$SITE_ADDRESS} {
+	encode zstd gzip
+
+	# Same-origin API so the browser keeps HttpOnly session cookies.
+	@api path /api/*
+	handle @api {
+		reverse_proxy api:3001
+	}
+
+	handle {
+		reverse_proxy web:3000
+	}
+}
