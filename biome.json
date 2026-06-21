@@ -1,7 +1,14 @@
-{
+﻿{
   "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
   "files": {
-    "includes": ["**", "!!**/node_modules", "!!**/dist", "!!**/.next", "!!**/coverage"]
+    "includes": [
+      "**",
+      "!!**/node_modules",
+      "!!**/dist",
+      "!!**/.next",
+      "!!**/coverage",
+      "!!**/generated"
+    ]
   },
   "formatter": {
     "enabled": true,
@@ -9,6 +16,9 @@
     "lineWidth": 100
   },
   "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
     "formatter": {
       "quoteStyle": "double",
       "semicolons": "always",
