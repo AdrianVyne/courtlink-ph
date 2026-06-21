@@ -1,7 +1,9 @@
-import { createHash, randomBytes } from "node:crypto";
+﻿import { createHash, randomBytes } from "node:crypto";
 import type { PasswordHasher } from "./password-hasher.js";
 
 const sessionLifetimeMilliseconds = 30 * 24 * 60 * 60 * 1000;
+
+export type PlatformRole = "PLAYER" | "COACH" | "SUPER_ADMIN";
 
 export interface AuthUser {
   id: string;
@@ -9,6 +11,13 @@ export interface AuthUser {
   displayName: string;
   passwordHash: string;
   status: "ACTIVE" | "SUSPENDED" | "DELETED";
+}
+
+export interface SessionUser {
+  id: string;
+  email: string;
+  displayName: string;
+  roles: PlatformRole[];
 }
 
 export interface CreateAuthUserInput {
@@ -27,6 +36,8 @@ export interface UserAuthRepository {
   findByEmail(email: string): Promise<AuthUser | null>;
   createPlayer(input: CreateAuthUserInput): Promise<AuthUser>;
   createSession(session: SessionRecord): Promise<void>;
+  findSessionUser(tokenHash: string, now: Date): Promise<SessionUser | null>;
+  deleteSession(tokenHash: string): Promise<void>;
 }
 
 export interface RegisterInput {
@@ -59,6 +70,10 @@ export class AuthenticationError extends Error {
     super("Invalid email or password");
     this.name = "AuthenticationError";
   }
+}
+
+export function hashSessionToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 export class AuthService {
@@ -96,11 +111,19 @@ export class AuthService {
     const expiresAt = new Date(input.now.getTime() + sessionLifetimeMilliseconds);
     await this.repository.createSession({
       userId: user.id,
-      tokenHash: createHash("sha256").update(token).digest("hex"),
+      tokenHash: hashSessionToken(token),
       expiresAt,
     });
 
     return { token, expiresAt };
+  }
+
+  resolveSession(token: string, now: Date = new Date()): Promise<SessionUser | null> {
+    return this.repository.findSessionUser(hashSessionToken(token), now);
+  }
+
+  revokeSession(token: string): Promise<void> {
+    return this.repository.deleteSession(hashSessionToken(token));
   }
 }
 

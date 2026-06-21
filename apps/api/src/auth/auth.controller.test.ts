@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it, vi } from "vitest";
 import { AuthService, type CreateAuthUserInput, type UserAuthRepository } from "./auth.service.js";
 import { PasswordHasher } from "./password-hasher.js";
 import { AuthController, type CookieReply } from "./auth.controller.js";
@@ -13,6 +13,8 @@ function createController(): AuthController {
       return user;
     },
     createSession: async () => undefined,
+    findSessionUser: async () => null,
+    deleteSession: async () => undefined,
   };
   return new AuthController(new AuthService(repository, new PasswordHasher()), false);
 }
@@ -31,6 +33,9 @@ describe("AuthController", () => {
   });
 
   it("sets an HTTP-only same-site session cookie without returning its token", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-21T00:00:00.000Z"));
+
     const controller = createController();
     await controller.register({
       email: "player@example.com",
@@ -47,7 +52,6 @@ describe("AuthController", () => {
     const response = await controller.login(
       { email: "player@example.com", password: "a-long-player-password" },
       reply,
-      new Date("2026-06-21T00:00:00.000Z"),
     );
 
     expect(response).toEqual({ expiresAt: "2026-07-21T00:00:00.000Z" });
@@ -55,5 +59,6 @@ describe("AuthController", () => {
     expect(headers.get("Set-Cookie")).toMatch(
       /^courtlink_session=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Expires=/,
     );
+    vi.useRealTimers();
   });
 });

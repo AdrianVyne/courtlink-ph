@@ -1,8 +1,9 @@
-import { PlatformRole, type PrismaClient } from "@courtlink/database";
+﻿import { PlatformRole, type PrismaClient } from "@courtlink/database";
 import type {
   AuthUser,
   CreateAuthUserInput,
   SessionRecord,
+  SessionUser,
   UserAuthRepository,
 } from "./auth.service.js";
 
@@ -33,12 +34,8 @@ export class PrismaAuthRepository implements UserAuthRepository {
       data: {
         email: input.email,
         displayName: input.displayName,
-        credentials: {
-          create: { passwordHash: input.passwordHash },
-        },
-        roles: {
-          create: { role: PlatformRole.PLAYER },
-        },
+        credentials: { create: { passwordHash: input.passwordHash } },
+        roles: { create: { role: PlatformRole.PLAYER } },
       },
       include: { credentials: true },
     });
@@ -57,8 +54,28 @@ export class PrismaAuthRepository implements UserAuthRepository {
   }
 
   async createSession(session: SessionRecord): Promise<void> {
-    await this.prisma.session.create({
-      data: session,
+    await this.prisma.session.create({ data: session });
+  }
+
+  async findSessionUser(tokenHash: string, now: Date): Promise<SessionUser | null> {
+    const session = await this.prisma.session.findUnique({
+      where: { tokenHash },
+      include: { user: { include: { roles: true } } },
     });
+
+    if (!session || session.expiresAt <= now) return null;
+    const { user } = session;
+    if (user.status !== "ACTIVE") return null;
+
+    return {
+      id: user.id,
+      email: user.email,
+      displayName: user.displayName,
+      roles: user.roles.map((entry) => entry.role) as SessionUser["roles"],
+    };
+  }
+
+  async deleteSession(tokenHash: string): Promise<void> {
+    await this.prisma.session.deleteMany({ where: { tokenHash } });
   }
 }
