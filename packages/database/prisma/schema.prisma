@@ -325,6 +325,7 @@ model CourtBooking {
   currency           String                   @default("PHP")
   proofDeadline      DateTime                 @db.Timestamptz(3)
   reviewDueAt        DateTime?                @db.Timestamptz(3)
+  reviewEscalatedAt  DateTime?                @db.Timestamptz(3)
   cancellationCause  String?
   cancellationReason String?
   createdAt          DateTime                 @default(now()) @db.Timestamptz(3)
@@ -482,6 +483,7 @@ model CoachBooking {
   currency      String                   @default("PHP")
   proofDeadline DateTime?                @db.Timestamptz(3)
   reviewDueAt   DateTime?                @db.Timestamptz(3)
+  reviewEscalatedAt  DateTime?                @db.Timestamptz(3)
   createdAt     DateTime                 @default(now()) @db.Timestamptz(3)
   updatedAt     DateTime                 @updatedAt @db.Timestamptz(3)
   request       CoachRequest             @relation(fields: [requestId], references: [id], onDelete: Restrict)

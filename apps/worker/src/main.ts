@@ -1,10 +1,15 @@
-﻿import {
+import {
   buildHoldExpiryQueue,
   buildHoldExpiryWorker,
   buildPrismaClient,
   buildRedisConnection,
   scheduleHoldExpiry,
 } from "./hold-expiry.js";
+import {
+  buildReviewEscalationQueue,
+  buildReviewEscalationWorker,
+  scheduleReviewEscalation,
+} from "./review-escalation.js";
 
 function log(message: string, fields: Record<string, unknown> = {}): void {
   process.stdout.write(`${JSON.stringify({ ts: new Date().toISOString(), message, ...fields })}\n`);
@@ -18,23 +23,35 @@ async function main(): Promise<void> {
 
   const connection = buildRedisConnection(redisUrl);
   const prisma = buildPrismaClient(databaseUrl);
-  const queue = buildHoldExpiryQueue(connection);
-  await scheduleHoldExpiry(queue);
 
-  const worker = buildHoldExpiryWorker(connection, prisma);
-  worker.on("completed", (job, result) => {
+  const holdQueue = buildHoldExpiryQueue(connection);
+  await scheduleHoldExpiry(holdQueue);
+  const holdWorker = buildHoldExpiryWorker(connection, prisma);
+  holdWorker.on("completed", (job, result) => {
     log("hold-expiry.completed", { jobId: job.id, expired: result.count });
   });
-  worker.on("failed", (job, error) => {
+  holdWorker.on("failed", (job, error) => {
     log("hold-expiry.failed", { jobId: job?.id, error: error.message });
   });
 
-  log("worker.ready", { queue: queue.name });
+  const escalationQueue = buildReviewEscalationQueue(connection);
+  await scheduleReviewEscalation(escalationQueue);
+  const escalationWorker = buildReviewEscalationWorker(connection, prisma);
+  escalationWorker.on("completed", (job, result) => {
+    log("review-escalation.completed", { jobId: job.id, ...result });
+  });
+  escalationWorker.on("failed", (job, error) => {
+    log("review-escalation.failed", { jobId: job?.id, error: error.message });
+  });
+
+  log("worker.ready", { queues: [holdQueue.name, escalationQueue.name] });
 
   const shutdown = async (signal: string): Promise<void> => {
     log("worker.shutdown", { signal });
-    await worker.close();
-    await queue.close();
+    await holdWorker.close();
+    await escalationWorker.close();
+    await holdQueue.close();
+    await escalationQueue.close();
     await connection.quit();
     await prisma.$disconnect();
     process.exit(0);
