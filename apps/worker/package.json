@@ -9,6 +9,7 @@
     "lint": "biome lint src",
     "start": "node dist/main.js",
     "test": "vitest run src",
+    "test:integration": "vitest run --passWithNoTests",
     "test:coverage": "vitest run src --coverage",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },

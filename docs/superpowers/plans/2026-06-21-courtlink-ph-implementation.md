@@ -12,22 +12,22 @@
 
 ### Task 1: Repository baseline and governance
 
-- [ ] Persist approved specification and this plan.
-- [ ] Add AGPL-3.0 license, contribution/security policies, templates, ADR structure, and project memory conventions.
-- [ ] Initialize Git, create a clean baseline commit, and create an isolated implementation worktree.
+- [x] Persist approved specification and this plan.
+- [x] Add AGPL-3.0 license, contribution/security policies, templates, ADR structure, and project memory conventions.
+- [x] Initialize Git, create a clean baseline commit, and create an isolated implementation worktree.
 - [ ] Create the public `courtlink-ph` GitHub repository after GitHub CLI authentication is available.
 
 ### Task 2: Monorepo and quality gates
 
-- [ ] Scaffold pnpm workspace applications and focused shared packages.
-- [ ] Configure strict TypeScript, formatting, linting, unit tests, coverage, and Turborepo tasks.
+- [x] Scaffold pnpm workspace applications and focused shared packages.
+- [x] Configure strict TypeScript, formatting, linting, unit tests, coverage, and Turborepo tasks.
 - [ ] Add Docker development services and environment validation.
-- [ ] Add CI for checks, tests, builds, dependency scanning, and ARM64 images.
+- [x] Add CI for checks, tests, builds, and dependency updates; image publishing follows production Dockerfiles.
 
 ### Task 3: Data and API foundations
 
-- [ ] Write failing schema/service tests for users, businesses, memberships, venues, courts, audits, and notifications.
-- [ ] Add Prisma schema and migrations that satisfy tenant and audit invariants.
+- [x] Write failing domain and database tests for booking, payment-review, refund, and offer invariants.
+- [x] Add Prisma schema and migrations that satisfy tenant, scheduling, and audit invariants.
 - [ ] Implement versioned API errors, correlation IDs, health endpoints, idempotency, and OpenAPI generation.
 - [ ] Verify migration rollback/forward behavior and integration tests against PostgreSQL.
 

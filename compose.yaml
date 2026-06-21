@@ -1,0 +1,37 @@
+name: courtlink-ph
+
+services:
+  postgres:
+    image: postgres:17.5-alpine
+    environment:
+      POSTGRES_DB: courtlink
+      POSTGRES_USER: courtlink
+      POSTGRES_PASSWORD: courtlink
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courtlink -d courtlink"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "127.0.0.1:5433:5432"
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7.4.3-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory-policy", "noeviction"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "127.0.0.1:6379:6379"
+    restart: unless-stopped
+    volumes:
+      - redis-data:/data
+
+volumes:
+  postgres-data:
+  redis-data:

@@ -1,0 +1,631 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum PlatformRole {
+  PLAYER
+  COACH
+  SUPER_ADMIN
+}
+
+enum OrganizationRole {
+  OWNER
+  MANAGER
+  STAFF
+}
+
+enum VenueStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum CoachVerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum BookingStatus {
+  HELD
+  PROOF_SUBMITTED
+  CONFIRMED
+  REJECTED
+  EXPIRED
+  CANCELLED
+  COMPLETED
+  REFUND_REQUESTED
+  REFUNDED
+}
+
+enum PaymentChannel {
+  GCASH
+  MAYA
+  QR_PH
+  BANK_TRANSFER
+  OTHER
+}
+
+enum PaymentProofStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum RefundStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CoachRequestStatus {
+  OPEN
+  MATCHED
+  CANCELLED
+  EXPIRED
+}
+
+enum CoachOfferStatus {
+  ACTIVE
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+}
+
+enum ModerationStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  DISMISSED
+}
+
+model User {
+  id                    String               @id @default(uuid()) @db.Uuid
+  email                 String               @unique
+  displayName           String
+  avatarObjectKey       String?
+  emailVerifiedAt       DateTime?            @db.Timestamptz(3)
+  status                UserStatus           @default(ACTIVE)
+  createdAt             DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime             @updatedAt @db.Timestamptz(3)
+  roles                 UserPlatformRole[]
+  credentials           PasswordCredential?
+  oauthAccounts         OAuthAccount[]
+  sessions              Session[]
+  memberships           BusinessMembership[]
+  coachProfile          CoachProfile?
+  courtBookings         CourtBooking[]       @relation("PlayerCourtBookings")
+  coachRequests         CoachRequest[]       @relation("PlayerCoachRequests")
+  coachBookings         CoachBooking[]       @relation("PlayerCoachBookings")
+  notifications         Notification[]
+  reviewsWritten        Review[]             @relation("ReviewAuthor")
+  favoriteVenues        FavoriteVenue[]
+  moderationCasesOpened ModerationCase[]     @relation("ModerationReporter")
+  auditEvents           AuditEvent[]         @relation("AuditActor")
+
+  @@index([status])
+  @@map("users")
+}
+
+model UserPlatformRole {
+  userId    String       @db.Uuid
+  role      PlatformRole
+  createdAt DateTime     @default(now()) @db.Timestamptz(3)
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, role])
+  @@map("user_platform_roles")
+}
+
+model PasswordCredential {
+  userId       String   @id @db.Uuid
+  passwordHash String
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_credentials")
+}
+
+model OAuthAccount {
+  id                String   @id @default(uuid()) @db.Uuid
+  userId            String   @db.Uuid
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  tokenHash String   @unique
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("sessions")
+}
+
+model VerificationToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String
+  tokenHash String   @unique
+  purpose   String
+  expiresAt DateTime @db.Timestamptz(3)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  @@index([email, purpose])
+  @@map("verification_tokens")
+}
+
+model Business {
+  id          String               @id @default(uuid()) @db.Uuid
+  name        String
+  legalName   String?
+  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime             @updatedAt @db.Timestamptz(3)
+  memberships BusinessMembership[]
+  venues      Venue[]
+
+  @@map("businesses")
+}
+
+model BusinessMembership {
+  businessId String           @db.Uuid
+  userId     String           @db.Uuid
+  role       OrganizationRole
+  createdAt  DateTime         @default(now()) @db.Timestamptz(3)
+  business   Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([businessId, userId])
+  @@index([userId])
+  @@map("business_memberships")
+}
+
+model Venue {
+  id               String               @id @default(uuid()) @db.Uuid
+  businessId       String               @db.Uuid
+  name             String
+  slug             String               @unique
+  description      String?
+  status           VenueStatus          @default(DRAFT)
+  regionCode       String
+  provinceCode     String?
+  cityMunicipality String
+  barangay         String?
+  streetAddress    String
+  latitude         Decimal?             @db.Decimal(9, 6)
+  longitude        Decimal?             @db.Decimal(9, 6)
+  timezone         String               @default("Asia/Manila")
+  approvedAt       DateTime?            @db.Timestamptz(3)
+  createdAt        DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime             @updatedAt @db.Timestamptz(3)
+  business         Business             @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  courts           Court[]
+  paymentMethods   VenuePaymentMethod[]
+  reviews          Review[]
+  favorites        FavoriteVenue[]
+  promotions       Promotion[]
+
+  @@index([businessId])
+  @@index([status, regionCode, cityMunicipality])
+  @@map("venues")
+}
+
+model VenuePaymentMethod {
+  id               String         @id @default(uuid()) @db.Uuid
+  venueId          String         @db.Uuid
+  channel          PaymentChannel
+  label            String
+  encryptedDetails String
+  qrObjectKey      String?
+  active           Boolean        @default(true)
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+  venue            Venue          @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, active])
+  @@map("venue_payment_methods")
+}
+
+model Court {
+  id                 String               @id @default(uuid()) @db.Uuid
+  venueId            String               @db.Uuid
+  name               String
+  description        String?
+  indoor             Boolean              @default(false)
+  active             Boolean              @default(true)
+  slotIncrementMin   Int                  @default(30)
+  minimumDurationMin Int                  @default(60)
+  maximumDurationMin Int                  @default(240)
+  createdAt          DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime             @updatedAt @db.Timestamptz(3)
+  venue              Venue                @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  operatingHours     CourtOperatingHour[]
+  closures           CourtClosure[]
+  pricingRules       CourtPricingRule[]
+  bookings           CourtBooking[]
+
+  @@unique([venueId, name])
+  @@index([venueId, active])
+  @@map("courts")
+}
+
+model CourtOperatingHour {
+  id           String @id @default(uuid()) @db.Uuid
+  courtId      String @db.Uuid
+  dayOfWeek    Int
+  opensMinute  Int
+  closesMinute Int
+  court        Court  @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@unique([courtId, dayOfWeek, opensMinute])
+  @@map("court_operating_hours")
+}
+
+model CourtClosure {
+  id       String   @id @default(uuid()) @db.Uuid
+  courtId  String   @db.Uuid
+  startsAt DateTime @db.Timestamptz(3)
+  endsAt   DateTime @db.Timestamptz(3)
+  reason   String?
+  court    Court    @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@index([courtId, startsAt, endsAt])
+  @@map("court_closures")
+}
+
+model CourtPricingRule {
+  id             String    @id @default(uuid()) @db.Uuid
+  courtId        String    @db.Uuid
+  dayOfWeek      Int?
+  startsMinute   Int
+  endsMinute     Int
+  pricePerHour   Decimal   @db.Decimal(12, 2)
+  effectiveFrom  DateTime? @db.Timestamptz(3)
+  effectiveUntil DateTime? @db.Timestamptz(3)
+  priority       Int       @default(0)
+  court          Court     @relation(fields: [courtId], references: [id], onDelete: Cascade)
+
+  @@index([courtId, dayOfWeek, priority])
+  @@map("court_pricing_rules")
+}
+
+model CourtBooking {
+  id                 String                   @id @default(uuid()) @db.Uuid
+  courtId            String                   @db.Uuid
+  playerId           String                   @db.Uuid
+  status             BookingStatus            @default(HELD)
+  startsAt           DateTime                 @db.Timestamptz(3)
+  endsAt             DateTime                 @db.Timestamptz(3)
+  timezone           String                   @default("Asia/Manila")
+  quotedAmount       Decimal                  @db.Decimal(12, 2)
+  currency           String                   @default("PHP")
+  proofDeadline      DateTime                 @db.Timestamptz(3)
+  reviewDueAt        DateTime?                @db.Timestamptz(3)
+  cancellationCause  String?
+  cancellationReason String?
+  createdAt          DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                 @updatedAt @db.Timestamptz(3)
+  court              Court                    @relation(fields: [courtId], references: [id], onDelete: Restrict)
+  player             User                     @relation("PlayerCourtBookings", fields: [playerId], references: [id], onDelete: Restrict)
+  payments           CourtPaymentSubmission[]
+  refunds            CourtRefund[]
+  review             Review?                  @relation("CourtBookingReview")
+
+  @@index([courtId, startsAt, endsAt])
+  @@index([playerId, createdAt])
+  @@index([status, proofDeadline])
+  @@index([status, reviewDueAt])
+  @@map("court_bookings")
+}
+
+model CourtPaymentSubmission {
+  id             String             @id @default(uuid()) @db.Uuid
+  bookingId      String             @db.Uuid
+  channel        PaymentChannel
+  transactionRef String
+  proofObjectKey String
+  status         PaymentProofStatus @default(PENDING)
+  submittedAt    DateTime           @default(now()) @db.Timestamptz(3)
+  reviewedAt     DateTime?          @db.Timestamptz(3)
+  reviewedById   String?            @db.Uuid
+  reviewReason   String?
+  booking        CourtBooking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, transactionRef])
+  @@index([bookingId, status])
+  @@map("court_payment_submissions")
+}
+
+model CourtRefund {
+  id             String          @id @default(uuid()) @db.Uuid
+  bookingId      String          @db.Uuid
+  status         RefundStatus    @default(REQUESTED)
+  amount         Decimal         @db.Decimal(12, 2)
+  reason         String
+  channel        PaymentChannel?
+  transactionRef String?
+  requestedAt    DateTime        @default(now()) @db.Timestamptz(3)
+  decidedAt      DateTime?       @db.Timestamptz(3)
+  completedAt    DateTime?       @db.Timestamptz(3)
+  booking        CourtBooking    @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, status])
+  @@map("court_refunds")
+}
+
+model CoachProfile {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  userId             String                  @unique @db.Uuid
+  bio                String?
+  experience         String?
+  hourlyRate         Decimal                 @db.Decimal(12, 2)
+  verificationStatus CoachVerificationStatus @default(UNVERIFIED)
+  active             Boolean                 @default(true)
+  createdAt          DateTime                @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime                @updatedAt @db.Timestamptz(3)
+  user               User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  availability       CoachAvailability[]
+  offers             CoachOffer[]
+  bookings           CoachBooking[]
+  paymentMethods     CoachPaymentMethod[]
+  reviews            Review[]
+
+  @@index([active, verificationStatus])
+  @@map("coach_profiles")
+}
+
+model CoachAvailability {
+  id       String       @id @default(uuid()) @db.Uuid
+  coachId  String       @db.Uuid
+  startsAt DateTime     @db.Timestamptz(3)
+  endsAt   DateTime     @db.Timestamptz(3)
+  location String
+  active   Boolean      @default(true)
+  coach    CoachProfile @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId, startsAt, endsAt])
+  @@map("coach_availability")
+}
+
+model CoachPaymentMethod {
+  id               String         @id @default(uuid()) @db.Uuid
+  coachId          String         @db.Uuid
+  channel          PaymentChannel
+  label            String
+  encryptedDetails String
+  qrObjectKey      String?
+  active           Boolean        @default(true)
+  coach            CoachProfile   @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@index([coachId, active])
+  @@map("coach_payment_methods")
+}
+
+model CoachRequest {
+  id            String             @id @default(uuid()) @db.Uuid
+  playerId      String             @db.Uuid
+  targetCoachId String?            @db.Uuid
+  status        CoachRequestStatus @default(OPEN)
+  startsAt      DateTime           @db.Timestamptz(3)
+  endsAt        DateTime           @db.Timestamptz(3)
+  location      String
+  groupSize     Int
+  skillLevel    String
+  goals         String?
+  notes         String?
+  createdAt     DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @db.Timestamptz(3)
+  player        User               @relation("PlayerCoachRequests", fields: [playerId], references: [id], onDelete: Restrict)
+  offers        CoachOffer[]
+  booking       CoachBooking?
+
+  @@index([status, startsAt])
+  @@index([playerId, createdAt])
+  @@map("coach_requests")
+}
+
+model CoachOffer {
+  id        String           @id @default(uuid()) @db.Uuid
+  requestId String           @db.Uuid
+  coachId   String           @db.Uuid
+  status    CoachOfferStatus @default(ACTIVE)
+  amount    Decimal          @db.Decimal(12, 2)
+  message   String?
+  expiresAt DateTime         @db.Timestamptz(3)
+  createdAt DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime         @updatedAt @db.Timestamptz(3)
+  request   CoachRequest     @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  coach     CoachProfile     @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  booking   CoachBooking?
+
+  @@unique([requestId, coachId])
+  @@index([requestId, status, expiresAt])
+  @@index([coachId, status])
+  @@map("coach_offers")
+}
+
+model CoachBooking {
+  id            String                   @id @default(uuid()) @db.Uuid
+  requestId     String                   @unique @db.Uuid
+  offerId       String                   @unique @db.Uuid
+  coachId       String                   @db.Uuid
+  playerId      String                   @db.Uuid
+  status        BookingStatus
+  startsAt      DateTime                 @db.Timestamptz(3)
+  endsAt        DateTime                 @db.Timestamptz(3)
+  location      String
+  amount        Decimal                  @db.Decimal(12, 2)
+  currency      String                   @default("PHP")
+  proofDeadline DateTime?                @db.Timestamptz(3)
+  reviewDueAt   DateTime?                @db.Timestamptz(3)
+  createdAt     DateTime                 @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime                 @updatedAt @db.Timestamptz(3)
+  request       CoachRequest             @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  offer         CoachOffer               @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  coach         CoachProfile             @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  player        User                     @relation("PlayerCoachBookings", fields: [playerId], references: [id], onDelete: Restrict)
+  payments      CoachPaymentSubmission[]
+  refunds       CoachRefund[]
+  review        Review?                  @relation("CoachBookingReview")
+
+  @@index([coachId, startsAt, endsAt])
+  @@index([playerId, createdAt])
+  @@index([status, reviewDueAt])
+  @@map("coach_bookings")
+}
+
+model CoachPaymentSubmission {
+  id             String             @id @default(uuid()) @db.Uuid
+  bookingId      String             @db.Uuid
+  channel        PaymentChannel
+  transactionRef String
+  proofObjectKey String
+  status         PaymentProofStatus @default(PENDING)
+  submittedAt    DateTime           @default(now()) @db.Timestamptz(3)
+  reviewedAt     DateTime?          @db.Timestamptz(3)
+  reviewReason   String?
+  booking        CoachBooking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@unique([channel, transactionRef])
+  @@index([bookingId, status])
+  @@map("coach_payment_submissions")
+}
+
+model CoachRefund {
+  id             String          @id @default(uuid()) @db.Uuid
+  bookingId      String          @db.Uuid
+  status         RefundStatus    @default(REQUESTED)
+  amount         Decimal         @db.Decimal(12, 2)
+  reason         String
+  channel        PaymentChannel?
+  transactionRef String?
+  requestedAt    DateTime        @default(now()) @db.Timestamptz(3)
+  completedAt    DateTime?       @db.Timestamptz(3)
+  booking        CoachBooking    @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, status])
+  @@map("coach_refunds")
+}
+
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  type      String
+  title     String
+  body      String
+  data      Json?
+  readAt    DateTime? @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @db.Timestamptz(3)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt, createdAt])
+  @@map("notifications")
+}
+
+model Review {
+  id             String        @id @default(uuid()) @db.Uuid
+  authorId       String        @db.Uuid
+  venueId        String?       @db.Uuid
+  coachId        String?       @db.Uuid
+  courtBookingId String?       @unique @db.Uuid
+  coachBookingId String?       @unique @db.Uuid
+  rating         Int
+  comment        String?
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+  author         User          @relation("ReviewAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  venue          Venue?        @relation(fields: [venueId], references: [id], onDelete: Restrict)
+  coach          CoachProfile? @relation(fields: [coachId], references: [id], onDelete: Restrict)
+  courtBooking   CourtBooking? @relation("CourtBookingReview", fields: [courtBookingId], references: [id], onDelete: Restrict)
+  coachBooking   CoachBooking? @relation("CoachBookingReview", fields: [coachBookingId], references: [id], onDelete: Restrict)
+
+  @@index([venueId, createdAt])
+  @@index([coachId, createdAt])
+  @@map("reviews")
+}
+
+model FavoriteVenue {
+  userId    String   @db.Uuid
+  venueId   String   @db.Uuid
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@id([userId, venueId])
+  @@map("favorite_venues")
+}
+
+model Promotion {
+  id            String   @id @default(uuid()) @db.Uuid
+  venueId       String   @db.Uuid
+  title         String
+  description   String?
+  startsAt      DateTime @db.Timestamptz(3)
+  endsAt        DateTime @db.Timestamptz(3)
+  discountType  String
+  discountValue Decimal  @db.Decimal(12, 2)
+  active        Boolean  @default(true)
+  venue         Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@index([venueId, active, startsAt, endsAt])
+  @@map("promotions")
+}
+
+model ModerationCase {
+  id          String           @id @default(uuid()) @db.Uuid
+  reporterId  String           @db.Uuid
+  subjectType String
+  subjectId   String
+  reason      String
+  status      ModerationStatus @default(OPEN)
+  resolution  String?
+  createdAt   DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime         @updatedAt @db.Timestamptz(3)
+  reporter    User             @relation("ModerationReporter", fields: [reporterId], references: [id], onDelete: Restrict)
+
+  @@index([status, createdAt])
+  @@index([subjectType, subjectId])
+  @@map("moderation_cases")
+}
+
+model AuditEvent {
+  id            String   @id @default(uuid()) @db.Uuid
+  actorId       String?  @db.Uuid
+  action        String
+  subjectType   String
+  subjectId     String
+  businessId    String?  @db.Uuid
+  correlationId String?
+  metadata      Json?
+  occurredAt    DateTime @default(now()) @db.Timestamptz(3)
+  actor         User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([subjectType, subjectId, occurredAt])
+  @@index([businessId, occurredAt])
+  @@index([actorId, occurredAt])
+  @@map("audit_events")
+}

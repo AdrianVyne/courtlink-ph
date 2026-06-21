@@ -1,0 +1,58 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.5-alpine
+        env:
+          POSTGRES_DB: courtlink
+          POSTGRES_USER: courtlink
+          POSTGRES_PASSWORD: courtlink
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U courtlink -d courtlink"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7.4.3-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://courtlink:courtlink@localhost:5432/courtlink?schema=public
+      REDIS_URL: redis://localhost:6379
+      NEXT_TELEMETRY_DISABLED: "1"
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.8.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @courtlink/database db:migrate
+      - run: pnpm check
+      - run: pnpm test:integration
+      - run: docker compose config
+

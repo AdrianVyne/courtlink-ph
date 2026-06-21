@@ -1,0 +1,33 @@
+{
+  "name": "@courtlink/database",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./generated/client/client.ts"
+  },
+  "scripts": {
+    "build": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate deploy",
+    "db:validate": "prisma validate",
+    "lint": "biome lint prisma.config.ts",
+    "test": "vitest run unit --passWithNoTests",
+    "test:integration": "vitest run integration",
+    "test:coverage": "vitest run --coverage --passWithNoTests",
+    "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@prisma/client": "7.8.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.0",
+    "@types/node": "24.10.1",
+    "@types/pg": "8.20.0",
+    "dotenv": "17.2.3",
+    "prisma": "7.8.0",
+    "pg": "8.22.0",
+    "typescript": "6.0.3",
+    "vitest": "4.1.9"
+  }
+}

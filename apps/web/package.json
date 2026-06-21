@@ -8,6 +8,7 @@
     "lint": "biome lint app components lib",
     "start": "next start",
     "test": "vitest run --passWithNoTests",
+    "test:integration": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
     "typecheck": "tsc --noEmit"
   },

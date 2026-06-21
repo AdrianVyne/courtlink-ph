@@ -19,4 +19,11 @@ describe("booking lifecycle", () => {
       "BOOKING_INVALID_TRANSITION:expired->confirmed",
     );
   });
+
+  it("supports the reviewed payment and refund lifecycle", () => {
+    expect(canTransitionBooking(BookingStatus.ProofSubmitted, BookingStatus.Confirmed)).toBe(true);
+    expect(canTransitionBooking(BookingStatus.ProofSubmitted, BookingStatus.Rejected)).toBe(true);
+    expect(canTransitionBooking(BookingStatus.Confirmed, BookingStatus.RefundRequested)).toBe(true);
+    expect(canTransitionBooking(BookingStatus.RefundRequested, BookingStatus.Refunded)).toBe(true);
+  });
 });

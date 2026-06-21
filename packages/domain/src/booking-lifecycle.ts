@@ -3,10 +3,19 @@ export enum BookingStatus {
   ProofSubmitted = "proof_submitted",
   Confirmed = "confirmed",
   Expired = "expired",
+  Rejected = "rejected",
+  RefundRequested = "refund_requested",
+  Refunded = "refunded",
 }
 
-const transitions: ReadonlyMap<BookingStatus, ReadonlySet<BookingStatus>> = new Map([
+const transitions: ReadonlyMap<BookingStatus, ReadonlySet<BookingStatus>> = new Map<
+  BookingStatus,
+  ReadonlySet<BookingStatus>
+>([
   [BookingStatus.Held, new Set([BookingStatus.ProofSubmitted, BookingStatus.Expired])],
+  [BookingStatus.ProofSubmitted, new Set([BookingStatus.Confirmed, BookingStatus.Rejected])],
+  [BookingStatus.Confirmed, new Set([BookingStatus.RefundRequested])],
+  [BookingStatus.RefundRequested, new Set([BookingStatus.Refunded])],
 ]);
 
 export function canTransitionBooking(from: BookingStatus, to: BookingStatus): boolean {
