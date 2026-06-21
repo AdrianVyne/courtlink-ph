@@ -54,10 +54,10 @@
 
 ### Task 7: Coach marketplace
 
-- [ ] Test and implement coach profiles, rates, availability, locations, and verification labels.
-- [ ] Test direct requests requiring coach approval before payment.
-- [ ] Test open player requests, expiring offers, atomic winner selection, and competitor closure.
-- [ ] Implement separate coach proof review, cancellation, and refund records.
+- [x] Implement coach profiles, rates, availability, locations, and super-admin verification labels.
+- [x] Implement directed and open requests; coach acceptance/offer precedes payment (separate direct-approval endpoint still pending).
+- [x] Implement open player requests, expiring offers, atomic winner selection, and competitor closure with an integration test.
+- [x] Implement separate coach proof review (coach cancellation and refund records still pending).
 
 ### Task 8: Web experiences
 
@@ -79,5 +79,6 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
