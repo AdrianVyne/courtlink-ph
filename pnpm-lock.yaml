@@ -139,15 +139,27 @@ importers:
 
   apps/worker:
     dependencies:
+      '@courtlink/database':
+        specifier: workspace:*
+        version: link:../../packages/database
       '@courtlink/domain':
         specifier: workspace:*
         version: link:../../packages/domain
+      '@prisma/adapter-pg':
+        specifier: 7.8.0
+        version: 7.8.0
       bullmq:
         specifier: 5.66.4
         version: 5.66.4
       ioredis:
         specifier: 5.8.2
         version: 5.8.2
+      pg:
+        specifier: 8.22.0
+        version: 8.22.0
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
     devDependencies:
       '@biomejs/biome':
         specifier: 2.5.0

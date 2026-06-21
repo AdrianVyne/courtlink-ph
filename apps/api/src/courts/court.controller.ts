@@ -1,0 +1,163 @@
+﻿import {
+  BadRequestException,
+  Body,
+  Controller,
+  ForbiddenException,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
+import { z } from "zod";
+import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/session.guard.js";
+// biome-ignore lint/style/useImportType: TenancyService is injected at runtime.
+import { TenancyService } from "../tenancy/tenancy.service.js";
+// biome-ignore lint/style/useImportType: VenueService is injected at runtime.
+import { VenueService } from "../venues/venue.service.js";
+// biome-ignore lint/style/useImportType: BookingService is injected at runtime.
+import { BookingService } from "./booking.service.js";
+// biome-ignore lint/style/useImportType: CourtService is injected at runtime.
+import { CourtService } from "./court.service.js";
+
+const createCourtSchema = z.object({
+  venueId: z.string().uuid(),
+  name: z.string().min(1).max(80),
+  description: z.string().max(2000).optional().nullable(),
+  indoor: z.boolean().optional(),
+  slotIncrementMin: z.number().int().min(15).max(120).optional(),
+  minimumDurationMin: z.number().int().min(30).max(480).optional(),
+  maximumDurationMin: z.number().int().min(30).max(720).optional(),
+});
+
+const quoteSchema = z.object({
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime(),
+});
+
+const submitProofSchema = z.object({
+  bookingId: z.string().uuid(),
+  channel: z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]),
+  transactionRef: z.string().min(2).max(120),
+  proofObjectKey: z.string().min(2).max(255),
+});
+
+const reviewSchema = z.object({
+  submissionId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+  reason: z.string().max(500).optional().nullable(),
+});
+
+@Controller({ path: "courts", version: "1" })
+export class CourtController {
+  constructor(
+    private readonly courts: CourtService,
+    private readonly bookings: BookingService,
+    private readonly tenancy: TenancyService,
+    private readonly venues: VenueService,
+  ) {}
+
+  @Public()
+  @Get(":id")
+  async detail(@Param("id") id: string) {
+    const court = await this.courts.findCourtById(id);
+    if (!court) throw new BadRequestException({ code: "COURT_NOT_FOUND" });
+    return court;
+  }
+
+  @Public()
+  @Get(":id/quote")
+  async quote(@Param("id") id: string, @Query() query: Record<string, string>) {
+    const input = quoteSchema.parse(query);
+    return this.bookings.quote(id, {
+      startsAt: new Date(input.startsAt),
+      endsAt: new Date(input.endsAt),
+    });
+  }
+
+  @Post(":id/hold")
+  @HttpCode(201)
+  async hold(@Req() request: AuthenticatedRequest, @Param("id") id: string, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = quoteSchema.parse(body);
+    return this.bookings.createHold({
+      courtId: id,
+      playerId: user.id,
+      startsAt: new Date(input.startsAt),
+      endsAt: new Date(input.endsAt),
+    });
+  }
+
+  @Post("bookings/proof")
+  @HttpCode(200)
+  async proof(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = submitProofSchema.parse(body);
+    return this.bookings.submitProof({ ...input, playerId: user.id });
+  }
+
+  @Post("bookings/proof/approve")
+  @HttpCode(200)
+  async approve(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = reviewSchema.parse(body);
+    await this.assertVenueStaff(user.id, input.bookingId);
+    return this.bookings.approveProof({
+      submissionId: input.submissionId,
+      bookingId: input.bookingId,
+      reviewedById: user.id,
+      reason: input.reason ?? null,
+    });
+  }
+
+  @Post("bookings/proof/reject")
+  @HttpCode(200)
+  async reject(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = reviewSchema.parse(body);
+    if (!input.reason) throw new BadRequestException({ code: "REJECTION_REASON_REQUIRED" });
+    await this.assertVenueStaff(user.id, input.bookingId);
+    return this.bookings.rejectProof({
+      submissionId: input.submissionId,
+      bookingId: input.bookingId,
+      reviewedById: user.id,
+      reason: input.reason,
+    });
+  }
+
+  @Post("venues/:venueId")
+  @HttpCode(201)
+  async createCourt(
+    @Req() request: AuthenticatedRequest,
+    @Param("venueId") venueId: string,
+    @Body() body: unknown,
+  ) {
+    const user = getSessionUser(request);
+    const venue = await this.venues.findVenueById(venueId);
+    if (!venue) throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
+    await this.tenancy.assertRole(user.id, venue.businessId, ["OWNER", "MANAGER"]);
+    const input = createCourtSchema.parse({ ...((body as object) ?? {}), venueId });
+    return this.courts.createCourt(input);
+  }
+
+  @Public()
+  @Get("venues/:venueId/list")
+  async listForVenue(@Param("venueId") venueId: string) {
+    return this.courts.listCourtsForVenue(venueId);
+  }
+
+  private async assertVenueStaff(userId: string, bookingId: string): Promise<void> {
+    const booking = await this.bookings.getBookingById(bookingId);
+    if (!booking) throw new BadRequestException({ code: "BOOKING_NOT_FOUND" });
+    const court = await this.courts.findCourtById(booking.courtId);
+    if (!court) throw new BadRequestException({ code: "COURT_NOT_FOUND" });
+    const venue = await this.venues.findVenueById(court.venueId);
+    if (!venue) throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
+    try {
+      await this.tenancy.assertRole(userId, venue.businessId, ["OWNER", "MANAGER", "STAFF"]);
+    } catch {
+      throw new ForbiddenException({ code: "BOOKING_FORBIDDEN" });
+    }
+  }
+}
