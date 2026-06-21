@@ -49,7 +49,7 @@
 
 - [x] Test the court-booking state machine and five-minute hold lifecycle.
 - [x] Implement price quotes and transactional holds with worker-driven expiry (idempotency keys still pending).
-- [x] Implement proof submission, transaction references, and staff approval/rejection (object-storage upload and two-hour escalation still pending).
+- [x] Implement proof upload to S3-compatible object storage, transaction references, staff approval/rejection, and short-lived signed review URLs (two-hour escalation still pending).
 - [x] Implement seven-day refund eligibility, venue-caused cancellation, and manual refund records (unit + integration tested).
 
 ### Task 7: Coach marketplace
@@ -79,6 +79,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

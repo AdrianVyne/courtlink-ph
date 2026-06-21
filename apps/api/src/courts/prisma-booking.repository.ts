@@ -1,4 +1,4 @@
-﻿import { BookingStatus } from "@courtlink/database";
+import { BookingStatus } from "@courtlink/database";
 import type { PaymentChannel, PaymentProofStatus } from "@courtlink/database";
 import type { PrismaClient } from "@courtlink/database";
 import type {
@@ -80,6 +80,18 @@ export class PrismaBookingRepository implements BookingRepository {
       },
     });
     return toRecord(booking);
+  }
+
+  async getSubmission(
+    id: string,
+  ): Promise<{ id: string; bookingId: string; proofObjectKey: string } | null> {
+    const submission = await this.prisma.courtPaymentSubmission.findUnique({ where: { id } });
+    if (!submission) return null;
+    return {
+      id: submission.id,
+      bookingId: submission.bookingId,
+      proofObjectKey: submission.proofObjectKey,
+    };
   }
 
   async getBooking(id: string): Promise<BookingRecord | null> {

@@ -1,4 +1,4 @@
-﻿import { randomUUID } from "node:crypto";
+import { randomUUID } from "node:crypto";
 import {
   type CourtRepository,
   type CourtSummary,
@@ -59,6 +59,9 @@ export interface BookingRepository {
     proofDeadline: Date;
   }): Promise<BookingRecord>;
   getBooking(id: string): Promise<BookingRecord | null>;
+  getSubmission(
+    id: string,
+  ): Promise<{ id: string; bookingId: string; proofObjectKey: string } | null>;
   transitionStatus(
     id: string,
     expected: BookingStatus,
@@ -97,6 +100,12 @@ export class BookingService {
 
   getBookingById(id: string): Promise<BookingRecord | null> {
     return this.bookings.getBooking(id);
+  }
+
+  getSubmissionById(
+    id: string,
+  ): Promise<{ id: string; bookingId: string; proofObjectKey: string } | null> {
+    return this.bookings.getSubmission(id);
   }
 
   async quote(courtId: string, input: QuoteInput): Promise<Quote & { court: CourtSummary }> {

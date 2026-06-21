@@ -17,11 +17,14 @@ beforeAll(async () => {
   await prisma.$connect();
 });
 
+const TEST_EMAIL = { endsWith: "@auth.integration.test" } as const;
+
 afterAll(async () => {
-  await prisma.session.deleteMany();
-  await prisma.userPlatformRole.deleteMany();
-  await prisma.passwordCredential.deleteMany();
-  await prisma.user.deleteMany({ where: { email: { endsWith: "@auth.integration.test" } } });
+  const where = { user: { email: TEST_EMAIL } };
+  await prisma.session.deleteMany({ where });
+  await prisma.userPlatformRole.deleteMany({ where });
+  await prisma.passwordCredential.deleteMany({ where });
+  await prisma.user.deleteMany({ where: { email: TEST_EMAIL } });
   await prisma.$disconnect();
 });
 

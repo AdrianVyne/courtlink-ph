@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   BookingError,
   type BookingRecord,
@@ -45,6 +45,16 @@ class FakeBookingRepo implements BookingRepository {
 
   async getBooking(id: string): Promise<BookingRecord | null> {
     return this.bookings.find((b) => b.id === id) ?? null;
+  }
+
+  async getSubmission(id: string) {
+    const submission = this.submissions.find((s) => s.id === id);
+    if (!submission) return null;
+    return {
+      id: submission.id,
+      bookingId: submission.bookingId,
+      proofObjectKey: submission.proofObjectKey,
+    };
   }
 
   async transitionStatus(

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { CalendarClock } from "lucide-react";
 import Link from "next/link";
@@ -6,10 +6,6 @@ import { useState } from "react";
 import { ApiError, type BookingRecord, type CourtSummary, type Quote, apiFetch } from "../lib/api";
 
 type Channel = "GCASH" | "MAYA" | "QR_PH" | "BANK_TRANSFER" | "OTHER";
-
-interface ProofResult {
-  booking: BookingRecord;
-}
 
 export function CourtBooking({
   court,
@@ -75,18 +71,34 @@ export function CourtBooking({
 
   async function submitProof(form: FormData) {
     if (!booking) return;
+    const file = form.get("file");
+    if (!(file instanceof File) || file.size === 0) {
+      setError("Attach a screenshot of your payment.");
+      return;
+    }
     setError(null);
     setPending(true);
     try {
-      await apiFetch<ProofResult>("/courts/bookings/proof", {
+      const upload = new FormData();
+      upload.set("channel", String(form.get("channel") ?? "GCASH") as Channel);
+      upload.set("transactionRef", String(form.get("transactionRef") ?? ""));
+      upload.set("file", file);
+      const response = await fetch(`/api/v1/courts/bookings/${booking.id}/proof-upload`, {
         method: "POST",
-        body: {
-          bookingId: booking.id,
-          channel: String(form.get("channel") ?? "GCASH") as Channel,
-          transactionRef: String(form.get("transactionRef") ?? ""),
-          proofObjectKey: String(form.get("proofObjectKey") ?? ""),
-        },
+        body: upload,
+        credentials: "include",
       });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as {
+          code?: string;
+          message?: string;
+        };
+        throw new ApiError(
+          response.status,
+          body.code ?? "API_ERROR",
+          body.message ?? "Upload failed",
+        );
+      }
       setConfirmed(true);
     } catch (err) {
       setError(err instanceof ApiError ? friendly(err) : "Could not submit proof.");
@@ -139,14 +151,8 @@ export function CourtBooking({
             <input name="transactionRef" type="text" required minLength={2} />
           </label>
           <label className="field">
-            <span className="field-label">Proof file key</span>
-            <input
-              name="proofObjectKey"
-              type="text"
-              required
-              minLength={2}
-              placeholder="proofs/your-receipt.jpg"
-            />
+            <span className="field-label">Payment screenshot</span>
+            <input name="file" type="file" accept="image/png,image/jpeg,image/webp" required />
           </label>
           <button className="button button-small" type="submit" disabled={pending}>
             Submit proof
@@ -233,6 +239,12 @@ function friendly(error: ApiError): string {
     case "QUOTE_DURATION_TOO_LONG":
     case "QUOTE_INVALID_INCREMENT":
       return "That duration is not available for this court.";
+    case "PROOF_TYPE_UNSUPPORTED":
+      return "Upload a JPEG, PNG, or WebP image.";
+    case "PROOF_TOO_LARGE":
+      return "That image is too large. Use one 5 MB or smaller.";
+    case "HOLD_EXPIRED":
+      return "Your 5-minute hold expired. Please book the slot again.";
     case "AUTH_REQUIRED":
       return "Please log in to continue.";
     default:

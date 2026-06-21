@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  Inject,
   Param,
   Post,
   Query,
@@ -24,6 +25,13 @@ import { CourtService } from "./court.service.js";
 import { BookingQueryService } from "./booking-query.service.js";
 // biome-ignore lint/style/useImportType: RefundService is injected at runtime.
 import { RefundService } from "./refund.service.js";
+import { OBJECT_STORAGE } from "../auth/tokens.js";
+import {
+  type ObjectStorage,
+  assertProofContentType,
+  assertProofSize,
+  buildProofObjectKey,
+} from "../storage/object-storage.js";
 
 const createCourtSchema = z.object({
   venueId: z.string().uuid(),
@@ -45,6 +53,11 @@ const submitProofSchema = z.object({
   channel: z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]),
   transactionRef: z.string().min(2).max(120),
   proofObjectKey: z.string().min(2).max(255),
+});
+
+const uploadFieldsSchema = z.object({
+  channel: z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]),
+  transactionRef: z.string().min(2).max(120),
 });
 
 const reviewSchema = z.object({
@@ -85,6 +98,7 @@ export class CourtController {
     private readonly refunds: RefundService,
     private readonly tenancy: TenancyService,
     private readonly venues: VenueService,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
   @Public()
@@ -129,6 +143,53 @@ export class CourtController {
     const user = getSessionUser(request);
     const venueIds = await this.managedVenueIds(user.id);
     return this.bookingQuery.listVenueQueue(venueIds, ["PROOF_SUBMITTED", "REFUND_REQUESTED"]);
+  }
+
+  @Post("bookings/:id/proof-upload")
+  @HttpCode(200)
+  async uploadProof(@Req() request: AuthenticatedRequest, @Param("id") bookingId: string) {
+    const user = getSessionUser(request);
+    const multipart = request as unknown as {
+      file(): Promise<
+        | {
+            mimetype: string;
+            toBuffer(): Promise<Buffer>;
+            fields: Record<string, { value?: string } | undefined>;
+          }
+        | undefined
+      >;
+    };
+    const file = await multipart.file();
+    if (!file) throw new BadRequestException({ code: "PROOF_FILE_REQUIRED" });
+    const contentType = assertProofContentType(file.mimetype);
+    const buffer = await file.toBuffer();
+    assertProofSize(buffer.length);
+    const channel = uploadFieldsSchema.parse({
+      channel: file.fields.channel?.value,
+      transactionRef: file.fields.transactionRef?.value,
+    });
+    const objectKey = buildProofObjectKey("court", bookingId, contentType);
+    await this.storage.putObject({ key: objectKey, body: buffer, contentType });
+    return this.bookings.submitProof({
+      bookingId,
+      playerId: user.id,
+      channel: channel.channel,
+      transactionRef: channel.transactionRef,
+      proofObjectKey: objectKey,
+    });
+  }
+
+  @Get("bookings/proof/:submissionId/url")
+  async proofDownloadUrl(
+    @Req() request: AuthenticatedRequest,
+    @Param("submissionId") submissionId: string,
+  ) {
+    const user = getSessionUser(request);
+    const submission = await this.bookings.getSubmissionById(submissionId);
+    if (!submission) throw new BadRequestException({ code: "SUBMISSION_NOT_FOUND" });
+    await this.assertVenueStaff(user.id, submission.bookingId);
+    const url = await this.storage.getSignedDownloadUrl(submission.proofObjectKey, 300);
+    return { url, expiresInSeconds: 300 };
   }
 
   @Post("bookings/proof")
