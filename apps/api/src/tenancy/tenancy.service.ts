@@ -1,4 +1,4 @@
-﻿import type { OrganizationRole } from "@courtlink/database";
+import type { OrganizationRole } from "@courtlink/database";
 
 export interface BusinessSummary {
   id: string;
@@ -22,6 +22,7 @@ export interface TenancyRepository {
   createBusinessWithOwner(input: CreateBusinessInput, userId: string): Promise<BusinessSummary>;
   listMembershipsForUser(userId: string): Promise<MembershipSummary[]>;
   findMembership(userId: string, businessId: string): Promise<MembershipSummary | null>;
+  listMemberUserIds(businessId: string): Promise<string[]>;
 }
 
 export class ForbiddenTenantError extends Error {
@@ -47,6 +48,10 @@ export class TenancyService {
 
   listMyMemberships(userId: string): Promise<MembershipSummary[]> {
     return this.repository.listMembershipsForUser(userId);
+  }
+
+  listMemberUserIds(businessId: string): Promise<string[]> {
+    return this.repository.listMemberUserIds(businessId);
   }
 
   async assertRole(

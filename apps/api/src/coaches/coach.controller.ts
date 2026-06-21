@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Body,
   Controller,
@@ -18,6 +18,8 @@ import { CoachBookingService } from "./coach-booking.service.js";
 import { CoachMarketService } from "./coach-market.service.js";
 // biome-ignore lint/style/useImportType: CoachService is injected at runtime.
 import { CoachService } from "./coach.service.js";
+// biome-ignore lint/style/useImportType: NotificationDispatcher is injected at runtime.
+import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
 
 const channelEnum = z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]);
 
@@ -72,6 +74,7 @@ export class CoachController {
     private readonly coaches: CoachService,
     private readonly market: CoachMarketService,
     private readonly bookings: CoachBookingService,
+    private readonly notifier: NotificationDispatcher,
   ) {}
 
   @Public()
@@ -168,7 +171,17 @@ export class CoachController {
   async acceptOffer(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     const user = getSessionUser(request);
     const input = acceptSchema.parse(body);
-    return this.market.acceptOffer({ offerId: input.offerId, playerId: user.id });
+    const result = await this.market.acceptOffer({ offerId: input.offerId, playerId: user.id });
+    const coach = await this.coaches.findProfileById(result.booking.coachId);
+    if (coach) {
+      await this.notifier.dispatch([coach.userId], {
+        type: "COACH_OFFER_ACCEPTED",
+        title: "Your coaching offer was accepted",
+        body: "A player accepted your offer. Await their payment proof.",
+        data: { bookingId: result.booking.id },
+      });
+    }
+    return result;
   }
 
   @Post("bookings/proof")
@@ -185,11 +198,18 @@ export class CoachController {
     const user = getSessionUser(request);
     const input = reviewSchema.parse(body);
     await this.assertCoachOwnsBooking(user.id, input.bookingId);
-    return this.bookings.approveProof({
+    const confirmed = await this.bookings.approveProof({
       submissionId: input.submissionId,
       bookingId: input.bookingId,
       reason: input.reason ?? null,
     });
+    await this.notifier.dispatch([confirmed.playerId], {
+      type: "COACH_BOOKING_CONFIRMED",
+      title: "Your coaching session is confirmed",
+      body: "The coach approved your payment. Your session is booked.",
+      data: { bookingId: confirmed.id },
+    });
+    return confirmed;
   }
 
   @Post("bookings/proof/reject")
@@ -199,11 +219,18 @@ export class CoachController {
     const input = reviewSchema.parse(body);
     if (!input.reason) throw new BadRequestException({ code: "REJECTION_REASON_REQUIRED" });
     await this.assertCoachOwnsBooking(user.id, input.bookingId);
-    return this.bookings.rejectProof({
+    const rejected = await this.bookings.rejectProof({
       submissionId: input.submissionId,
       bookingId: input.bookingId,
       reason: input.reason,
     });
+    await this.notifier.dispatch([rejected.playerId], {
+      type: "COACH_PROOF_REJECTED",
+      title: "Coaching payment proof rejected",
+      body: input.reason,
+      data: { bookingId: rejected.id },
+    });
+    return rejected;
   }
 
   private async assertCoachOwnsBooking(userId: string, bookingId: string): Promise<void> {

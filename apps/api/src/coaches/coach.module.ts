@@ -1,8 +1,9 @@
-﻿import { Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import type { PrismaClient } from "@courtlink/database";
 import { PRISMA_CLIENT } from "../auth/tokens.js";
 import { CoachBookingService } from "./coach-booking.service.js";
 import { CoachController } from "./coach.controller.js";
+import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
 import { CoachMarketService } from "./coach-market.service.js";
 import { CoachService } from "./coach.service.js";
 import { PrismaCoachBookingRepository } from "./prisma-coach-booking.repository.js";
@@ -48,8 +49,9 @@ import { PrismaCoachRepository } from "./prisma-coach.repository.js";
         coaches: CoachService,
         market: CoachMarketService,
         bookings: CoachBookingService,
-      ) => new CoachController(coaches, market, bookings),
-      inject: [CoachService, CoachMarketService, CoachBookingService],
+        notifier: NotificationDispatcher,
+      ) => new CoachController(coaches, market, bookings, notifier),
+      inject: [CoachService, CoachMarketService, CoachBookingService, NotificationDispatcher],
     },
   ],
   exports: [CoachService, CoachMarketService, CoachBookingService],

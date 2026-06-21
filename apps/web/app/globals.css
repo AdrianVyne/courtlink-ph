@@ -753,3 +753,86 @@ h2 {
   background: #fcebea;
   color: #9a2a22;
 }
+
+/* Notifications */
+.notif-bell {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  display: inline-flex;
+  height: 40px;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+}
+
+.notif-bell:hover {
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.notif-badge {
+  background: #c0362c;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 700;
+  line-height: 1;
+  min-width: 18px;
+  padding: 0.15rem 0.25rem;
+  position: absolute;
+  right: -4px;
+  text-align: center;
+  top: -4px;
+}
+
+.notif-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.notif-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notif-row {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.notif-unread {
+  border-left: 3px solid var(--green);
+}
+
+.notif-item {
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.notif-title {
+  font-weight: 700;
+}
+
+.notif-body {
+  color: #4a544e;
+  font-size: 0.9rem;
+}
+
+.notif-when {
+  color: var(--muted);
+  font-size: 0.8rem;
+}

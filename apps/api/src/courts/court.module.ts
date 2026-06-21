@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import type { PrismaClient } from "@courtlink/database";
 import type { ObjectStorage } from "../storage/object-storage.js";
 import { OBJECT_STORAGE, PRISMA_CLIENT } from "../auth/tokens.js";
+import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
 import { TenancyModule } from "../tenancy/tenancy.module.js";
 import { TenancyService } from "../tenancy/tenancy.service.js";
 import { VenueModule } from "../venues/venue.module.js";
@@ -71,7 +72,18 @@ import { RefundService } from "./refund.service.js";
         tenancy: TenancyService,
         venues: VenueService,
         storage: ObjectStorage,
-      ) => new CourtController(courts, bookings, bookingQuery, refunds, tenancy, venues, storage),
+        notifier: NotificationDispatcher,
+      ) =>
+        new CourtController(
+          courts,
+          bookings,
+          bookingQuery,
+          refunds,
+          tenancy,
+          venues,
+          storage,
+          notifier,
+        ),
       inject: [
         CourtService,
         BookingService,
@@ -80,6 +92,7 @@ import { RefundService } from "./refund.service.js";
         TenancyService,
         VenueService,
         OBJECT_STORAGE,
+        NotificationDispatcher,
       ],
     },
   ],

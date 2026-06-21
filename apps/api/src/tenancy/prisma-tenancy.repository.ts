@@ -1,4 +1,4 @@
-﻿import { OrganizationRole, type PrismaClient } from "@courtlink/database";
+import { OrganizationRole, type PrismaClient } from "@courtlink/database";
 import type {
   BusinessSummary,
   CreateBusinessInput,
@@ -50,6 +50,14 @@ export class PrismaTenancyRepository implements TenancyRepository {
       role: row.role,
       business: toSummary(row.business),
     }));
+  }
+
+  async listMemberUserIds(businessId: string): Promise<string[]> {
+    const rows = await this.prisma.businessMembership.findMany({
+      where: { businessId },
+      select: { userId: true },
+    });
+    return rows.map((row) => row.userId);
   }
 
   async findMembership(userId: string, businessId: string): Promise<MembershipSummary | null> {

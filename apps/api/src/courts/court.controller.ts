@@ -25,6 +25,8 @@ import { CourtService } from "./court.service.js";
 import { BookingQueryService } from "./booking-query.service.js";
 // biome-ignore lint/style/useImportType: RefundService is injected at runtime.
 import { RefundService } from "./refund.service.js";
+// biome-ignore lint/style/useImportType: NotificationDispatcher is injected at runtime.
+import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
 import { OBJECT_STORAGE } from "../auth/tokens.js";
 import {
   type ObjectStorage,
@@ -99,6 +101,7 @@ export class CourtController {
     private readonly tenancy: TenancyService,
     private readonly venues: VenueService,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
+    private readonly notifier: NotificationDispatcher,
   ) {}
 
   @Public()
@@ -197,7 +200,14 @@ export class CourtController {
   async proof(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     const user = getSessionUser(request);
     const input = submitProofSchema.parse(body);
-    return this.bookings.submitProof({ ...input, playerId: user.id });
+    const result = await this.bookings.submitProof({ ...input, playerId: user.id });
+    await this.notifyVenueOfBooking(result.booking.id, {
+      type: "COURT_PROOF_SUBMITTED",
+      title: "New payment proof to review",
+      body: "A player submitted payment proof for a court booking.",
+      data: { bookingId: result.booking.id },
+    });
+    return result;
   }
 
   @Post("bookings/proof/approve")
@@ -206,12 +216,19 @@ export class CourtController {
     const user = getSessionUser(request);
     const input = reviewSchema.parse(body);
     await this.assertVenueStaff(user.id, input.bookingId);
-    return this.bookings.approveProof({
+    const confirmed = await this.bookings.approveProof({
       submissionId: input.submissionId,
       bookingId: input.bookingId,
       reviewedById: user.id,
       reason: input.reason ?? null,
     });
+    await this.notifier.dispatch([confirmed.playerId], {
+      type: "COURT_BOOKING_CONFIRMED",
+      title: "Your booking is confirmed",
+      body: "The venue approved your payment. Your court is booked.",
+      data: { bookingId: confirmed.id },
+    });
+    return confirmed;
   }
 
   @Post("bookings/proof/reject")
@@ -221,12 +238,19 @@ export class CourtController {
     const input = reviewSchema.parse(body);
     if (!input.reason) throw new BadRequestException({ code: "REJECTION_REASON_REQUIRED" });
     await this.assertVenueStaff(user.id, input.bookingId);
-    return this.bookings.rejectProof({
+    const rejected = await this.bookings.rejectProof({
       submissionId: input.submissionId,
       bookingId: input.bookingId,
       reviewedById: user.id,
       reason: input.reason,
     });
+    await this.notifier.dispatch([rejected.playerId], {
+      type: "COURT_PROOF_REJECTED",
+      title: "Payment proof rejected",
+      body: input.reason,
+      data: { bookingId: rejected.id },
+    });
+    return rejected;
   }
 
   @Post("bookings/refund/request")
@@ -247,7 +271,20 @@ export class CourtController {
     const user = getSessionUser(request);
     const input = refundDecisionSchema.parse(body);
     await this.assertVenueStaff(user.id, input.bookingId);
-    return this.refunds.decideRefund({ refundId: input.refundId, decision: input.decision });
+    const refund = await this.refunds.decideRefund({
+      refundId: input.refundId,
+      decision: input.decision,
+    });
+    await this.notifier.dispatch([await this.playerOfBooking(input.bookingId)], {
+      type: "COURT_REFUND_DECIDED",
+      title: refund.status === "APPROVED" ? "Refund approved" : "Refund rejected",
+      body:
+        refund.status === "APPROVED"
+          ? "Your refund was approved and the booking was cancelled."
+          : "Your refund request was rejected.",
+      data: { bookingId: input.bookingId, refundId: refund.id },
+    });
+    return refund;
   }
 
   @Post("bookings/refund/complete")
@@ -269,7 +306,17 @@ export class CourtController {
     const user = getSessionUser(request);
     const input = venueCancelSchema.parse(body);
     await this.assertVenueStaff(user.id, input.bookingId);
-    return this.refunds.cancelByVenue({ bookingId: input.bookingId, reason: input.reason });
+    const refund = await this.refunds.cancelByVenue({
+      bookingId: input.bookingId,
+      reason: input.reason,
+    });
+    await this.notifier.dispatch([await this.playerOfBooking(input.bookingId)], {
+      type: "COURT_BOOKING_CANCELLED",
+      title: "Your booking was cancelled by the venue",
+      body: input.reason,
+      data: { bookingId: input.bookingId, refundId: refund.id },
+    });
+    return refund;
   }
 
   @Post("venues/:venueId")
@@ -291,6 +338,25 @@ export class CourtController {
   @Get("venues/:venueId/list")
   async listForVenue(@Param("venueId") venueId: string) {
     return this.courts.listCourtsForVenue(venueId);
+  }
+
+  private async playerOfBooking(bookingId: string): Promise<string> {
+    const booking = await this.bookings.getBookingById(bookingId);
+    return booking?.playerId ?? "";
+  }
+
+  private async notifyVenueOfBooking(
+    bookingId: string,
+    input: { type: string; title: string; body: string; data?: Record<string, unknown> },
+  ): Promise<void> {
+    const booking = await this.bookings.getBookingById(bookingId);
+    if (!booking) return;
+    const court = await this.courts.findCourtById(booking.courtId);
+    if (!court) return;
+    const venue = await this.venues.findVenueById(court.venueId);
+    if (!venue) return;
+    const memberIds = await this.tenancy.listMemberUserIds(venue.businessId);
+    await this.notifier.dispatch(memberIds, input);
   }
 
   private async managedVenueIds(userId: string): Promise<string[]> {

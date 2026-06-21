@@ -1,6 +1,7 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import type { SessionUser } from "../lib/api";
 import { LogoutButton } from "./logout-button";
+import { NotificationBell } from "./notification-bell";
 
 export function SiteHeader({ session }: { session: SessionUser | null }) {
   return (
@@ -17,6 +18,7 @@ export function SiteHeader({ session }: { session: SessionUser | null }) {
       <div className="header-actions">
         {session ? (
           <>
+            <NotificationBell />
             <Link className="text-button" href="/dashboard">
               {session.displayName}
             </Link>

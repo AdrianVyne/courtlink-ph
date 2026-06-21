@@ -1,4 +1,4 @@
-﻿import type { OrganizationRole } from "@courtlink/database";
+import type { OrganizationRole } from "@courtlink/database";
 import { describe, expect, it } from "vitest";
 import {
   type BusinessSummary,
@@ -30,6 +30,10 @@ class InMemoryTenancyRepository implements TenancyRepository {
 
   async listMembershipsForUser(_userId: string): Promise<MembershipSummary[]> {
     return [...this.memberships];
+  }
+
+  async listMemberUserIds(_businessId: string): Promise<string[]> {
+    return [];
   }
 
   async findMembership(_userId: string, businessId: string): Promise<MembershipSummary | null> {
