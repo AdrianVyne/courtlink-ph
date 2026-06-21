@@ -1,4 +1,4 @@
-# CourtLink PH Implementation Plan
+﻿# CourtLink PH Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -29,27 +29,27 @@
 - [x] Write failing domain and database tests for booking, payment-review, refund, and offer invariants.
 - [x] Add Prisma schema and migrations that satisfy tenant, scheduling, and audit invariants.
 - [ ] Implement versioned API errors, correlation IDs, health endpoints, idempotency, and OpenAPI generation.
-- [ ] Verify migration rollback/forward behavior and integration tests against PostgreSQL.
+- [x] Verify migration apply and integration tests against PostgreSQL (rollback procedure still pending).
 
 ### Task 4: Authentication and authorization
 
-- [ ] Test and implement email/password registration, verification, login/logout, reset, Google OAuth, and secure sessions.
-- [ ] Test and implement platform roles and organization memberships.
-- [ ] Enforce tenant authorization in services and prove cross-tenant denial with integration tests.
-- [ ] Add venue onboarding, staff invitations, approval, suspension, and audit history.
+- [x] Implement email/password registration, login/logout, and secure HTTP-only sessions (email verification, reset, and Google OAuth still pending).
+- [x] Implement platform roles and organization memberships.
+- [x] Enforce tenant authorization in services and prove cross-tenant denial with integration tests.
+- [x] Add venue onboarding and super-admin approval/rejection (staff invitations, suspension, and audit history still pending).
 
 ### Task 5: Court inventory and pricing
 
-- [ ] Test and implement courts, amenities, hours, closures, slot increments, duration bounds, and pricing rules.
-- [ ] Test availability across Philippine-time boundaries and closures.
-- [ ] Add PostgreSQL overlap protection and concurrency tests.
-- [ ] Expose public venue/court discovery and availability contracts.
+- [x] Implement courts, slot increments, duration bounds, and pricing rules (amenities, hours, and closures still pending).
+- [x] Test pricing across Asia/Manila time boundaries (closure-aware availability still pending).
+- [x] Add PostgreSQL overlap protection and a conflicting-booking integration test.
+- [x] Expose public venue/court discovery and price-quote contracts (slot-availability listing still pending).
 
 ### Task 6: Court booking and manual payment
 
-- [ ] Test the court-booking state machine and five-minute hold lifecycle.
-- [ ] Implement idempotent price quotes and transactional holds.
-- [ ] Implement private proof upload, transaction references, staff approval/rejection, and two-hour escalation.
+- [x] Test the court-booking state machine and five-minute hold lifecycle.
+- [x] Implement price quotes and transactional holds with worker-driven expiry (idempotency keys still pending).
+- [x] Implement proof submission, transaction references, and staff approval/rejection (object-storage upload and two-hour escalation still pending).
 - [ ] Test seven-day refund eligibility, venue-caused cancellation, and manual refund records.
 
 ### Task 7: Coach marketplace
@@ -79,4 +79,5 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
