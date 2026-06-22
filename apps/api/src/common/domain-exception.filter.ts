@@ -4,8 +4,10 @@ import {
   type ExceptionFilter,
   HttpException,
   Logger,
+  type LoggerService,
 } from "@nestjs/common";
 import { ZodError } from "zod";
+import { requestCorrelationId } from "../observability/correlation.js";
 
 interface CodedError {
   code: string;
@@ -46,12 +48,13 @@ function isCodedError(value: unknown): value is CodedError {
 
 @Catch()
 export class DomainExceptionFilter implements ExceptionFilter {
-  private readonly logger = new Logger("Exception");
+  constructor(private readonly logger: Pick<LoggerService, "error"> = new Logger("Exception")) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<{
       status(code: number): { send(body: unknown): unknown };
     }>();
+    const request = host.switchToHttp().getRequest<unknown>();
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -73,7 +76,11 @@ export class DomainExceptionFilter implements ExceptionFilter {
       return;
     }
 
-    this.logger.error(exception instanceof Error ? exception.stack : String(exception));
+    this.logger.error({
+      event: "request.exception",
+      correlationId: requestCorrelationId(request),
+      error: exception instanceof Error ? exception.message : String(exception),
+    });
     response.status(500).send({ code: "INTERNAL", message: "Internal server error" });
   }
 }

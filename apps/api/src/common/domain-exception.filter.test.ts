@@ -1,13 +1,15 @@
 import { ForbiddenException } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 import { z } from "zod";
+import { CORRELATION_ID } from "../observability/correlation.js";
 import { DomainExceptionFilter } from "./domain-exception.filter.js";
 
 function makeHost() {
   const send = vi.fn();
   const status = vi.fn(() => ({ send }));
+  const request = { [CORRELATION_ID]: "e652a326-5f5a-46df-bbad-c771b18c3f9f" };
   const host = {
-    switchToHttp: () => ({ getResponse: () => ({ status }) }),
+    switchToHttp: () => ({ getResponse: () => ({ status }), getRequest: () => request }),
   } as never;
   return { host, status, send };
 }
@@ -58,12 +60,18 @@ describe("DomainExceptionFilter", () => {
   });
 
   it("falls back to a stable 500 for unexpected errors", () => {
-    const filter = new DomainExceptionFilter();
+    const error = vi.fn();
+    const filter = new DomainExceptionFilter({ error } as never);
     const { host, status, send } = makeHost();
 
     filter.catch(new Error("boom"), host);
 
     expect(status).toHaveBeenCalledWith(500);
     expect(send).toHaveBeenCalledWith({ code: "INTERNAL", message: "Internal server error" });
+    expect(error).toHaveBeenCalledWith({
+      event: "request.exception",
+      correlationId: "e652a326-5f5a-46df-bbad-c771b18c3f9f",
+      error: "boom",
+    });
   });
 });
