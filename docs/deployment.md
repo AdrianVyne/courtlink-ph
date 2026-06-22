@@ -54,7 +54,48 @@ The `migrate` service runs `prisma migrate deploy` on every start and exits;
 
 - TLS: when `SITE_ADDRESS` is a public hostname, Caddy obtains and renews
   certificates automatically. Ports 80 and 443 must be reachable.
-- Backups and private payment-proof storage (OCI Object Storage) are tracked as
-  follow-up operational work in the implementation plan.
+- Private payment-proof storage uses OCI Object Storage via the same S3 adapter.
 - Resource limits in `compose.prod.yaml` are sized for a small Always Free VM
   and can be raised on larger shapes.
+
+## Backups and restore
+
+Backups are encrypted (AES-256-GCM) `pg_dump` archives uploaded to object
+storage by the `backup` compose profile. The encryption key is independent of
+the database; keep `BACKUP_ENCRYPTION_KEY` somewhere other than the VM.
+
+Run a backup on demand:
+
+```bash
+docker compose -f compose.prod.yaml --profile backup run --rm backup
+```
+
+Schedule it from the host crontab (daily at 18:10 UTC):
+
+```cron
+10 18 * * * cd /opt/courtlink && docker compose -f compose.prod.yaml --profile backup run --rm backup >> /var/log/courtlink-backup.log 2>&1
+```
+
+Each run writes an object like `backups/2026/06/courtlink-<timestamp>.sql.gz.enc`.
+Configure an object-storage lifecycle rule on the `backups/` prefix for
+retention.
+
+Restore into a database (defaults to `DATABASE_URL`; point it at a scratch
+database first to rehearse):
+
+```bash
+# from object storage
+docker compose -f compose.prod.yaml --profile backup run --rm \
+  backup node packages/backup/bin/restore.mjs --s3-key backups/2026/06/courtlink-<timestamp>.sql.gz.enc
+
+# from a local file
+docker compose -f compose.prod.yaml --profile backup run --rm \
+  -v "$PWD/dump.sql.gz.enc:/tmp/dump.enc" \
+  backup node packages/backup/bin/restore.mjs --file /tmp/dump.enc
+```
+
+### Monthly restore drill
+
+Once a month, restore the latest backup into a throwaway database and confirm
+row counts and key constraints match production. A wrong key or a truncated or
+tampered archive fails the restore instead of loading corrupt data.

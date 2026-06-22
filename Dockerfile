@@ -18,6 +18,7 @@ COPY apps/web/package.json apps/web/package.json
 COPY apps/worker/package.json apps/worker/package.json
 COPY packages/domain/package.json packages/domain/package.json
 COPY packages/database/package.json packages/database/package.json
+COPY packages/backup/package.json packages/backup/package.json
 RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
     pnpm install --frozen-lockfile
 
@@ -51,3 +52,24 @@ WORKDIR /app/apps/web
 USER node
 EXPOSE 3000
 CMD ["pnpm", "start"]
+
+# --- Runtime: Backup (encrypted pg_dump -> object storage) ---
+# Bundles postgresql-client-17 so pg_dump matches the Postgres 17 server.
+FROM base AS backup
+ENV NODE_ENV=production
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates gnupg \
+    && install -d /usr/share/postgresql-common/pgdg \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+       -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+    && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+       > /etc/apt/sources.list.d/pgdg.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-17 \
+    && rm -rf /var/lib/apt/lists/*
+COPY --from=build /app /app
+WORKDIR /app
+USER node
+# Defaults to an object-storage backup; override the command for restores.
+CMD ["node", "packages/backup/bin/backup.mjs", "--s3"]
