@@ -2,14 +2,14 @@
 
 ## Method
 
-This audit compares the approved product design and implementation plan with current source, database schema, automated tests, production Compose behavior, and published Git state through commit `7b814a9`. A schema table or UI label is not treated as proof of working behavior. Requirements with only indirect evidence remain incomplete.
+This audit compares the approved product design and implementation plan with current source, database schema, automated tests, production Compose behavior, and Git state. A schema table or UI label is not treated as proof of working behavior. Requirements with only indirect evidence remain incomplete.
 
 ## Proven slices
 
 - Repository governance, monorepo quality gates, Docker development services, CI, and public GitHub publication.
 - Strict TypeScript domain/API/worker/web builds and PostgreSQL integration tests.
 - Role-based sessions, tenant service authorization, venue onboarding/approval, and super-admin moderation.
-- Court pricing, transactional holds, overlap constraints, private proof upload/review, escalation, court cancellation, and manual court refunds.
+- Court pricing, Manila-local operating hours, closure management, public priced slots, transactional holds, overlap constraints, private proof upload/review, escalation, court cancellation, and manual court refunds.
 - Coach profiles/availability, open and targeted requests, competitive offers, atomic offer acceptance, separate payment proof review, and coach/player workspaces.
 - In-app notifications, completed-booking reviews, favorites, promotions, PWA support, encrypted backups, restore tooling, structured operations, queue retries, retained failures, alerts, and admin status.
 
@@ -20,8 +20,8 @@ This audit compares the approved product design and implementation plan with cur
 | Verified email and password reset | Verification-token tables exist; no service/controller/UI flow | Incomplete |
 | Google OAuth | OAuth account table exists; no OAuth routes or provider exchange | Incomplete |
 | Staff invitations and tenant audit history | Membership table exists; no invitation lifecycle or tenant audit API | Incomplete |
-| Court amenities, hours, closures | Hours/closure tables exist; no management API or availability enforcement | Incomplete |
-| Availability search and slot listing | Discovery filters location text only; no closure-aware slot contract | Incomplete |
+| Court amenities | No amenity persistence, management, or public filter contract | Incomplete |
+| Nationwide availability search | Per-court closure-aware priced slots are proven; discovery filters location text only and does not filter by time, live availability, price, or amenities | Incomplete |
 | Idempotent booking/payment mutations | Domain transitions are guarded; no `Idempotency-Key` persistence/replay contract | Incomplete |
 | Directed coach approval | Targeted requests exist, but there is no explicit approve-before-payment endpoint | Incomplete |
 | Coach cancellation/refunds | Coach refund table exists; no service/controller/UI lifecycle | Incomplete |

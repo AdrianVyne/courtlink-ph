@@ -216,20 +216,20 @@ git commit -m "feat: add priced court slot booking"
 - Modify: `docs/superpowers/plans/2026-06-21-courtlink-ph-implementation.md`
 - Create: `docs/verification/2026-06-22-court-availability.md`
 
-- [ ] **Step 1: Write a failing manager-component test**
+- [x] **Step 1: Write a failing manager-component test**
 
 Render a court schedule, edit Monday to `08:00-22:00`, submit normalized minute values, add a Manila-local closure converted to UTC, and assert no controls appear for a read-only role.
 
-- [ ] **Step 2: Verify the component test fails**
+- [x] **Step 2: Verify the component test fails**
 
 Run: `pnpm --filter @courtlink/web test -- components/court-schedule-manager.test.tsx`
 Expected: FAIL because the manager does not exist.
 
-- [ ] **Step 3: Implement the manager and venue workspace wiring**
+- [x] **Step 3: Implement the manager and venue workspace wiring**
 
 Load schedule data for each managed court on the server. Render weekday windows and upcoming closures, submit API mutations, and refresh on success. Display Manila-local values and stable API errors.
 
-- [ ] **Step 4: Run the full quality and integration gates**
+- [x] **Step 4: Run the full quality and integration gates**
 
 Run: `pnpm check`
 Expected: all format, lint, typecheck, unit-test, and build tasks pass.
@@ -237,15 +237,15 @@ Expected: all format, lint, typecheck, unit-test, and build tasks pass.
 Run: `$env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'; $env:REDIS_URL='redis://localhost:6379'; pnpm test:integration`
 Expected: all task groups pass including schedule, closure, authorization, and overlap scenarios.
 
-- [ ] **Step 5: Verify live HTTP behavior**
+- [x] **Step 5: Verify live HTTP behavior**
 
 Seed the database, authenticate as venue owner, configure hours and a closure, confirm public slots omit the closure, confirm a closed slot quote/hold returns the stable error, and confirm a valid slot creates a hold.
 
-- [ ] **Step 6: Update tracking and verification evidence**
+- [x] **Step 6: Update tracking and verification evidence**
 
 Mark hours/closures and closure-aware availability complete in the main plan. Record exact commands, counts, and live HTTP results in the verification document without user/payment data.
 
-- [ ] **Step 7: Commit the workspace and evidence**
+- [x] **Step 7: Commit the workspace and evidence**
 
 ```bash
 git add apps/web docs/superpowers/plans/2026-06-21-courtlink-ph-implementation.md docs/verification/2026-06-22-court-availability.md

@@ -177,6 +177,27 @@ export interface CourtAvailabilitySlot {
   currency: "PHP";
 }
 
+export interface CourtOperatingWindow {
+  id: string;
+  courtId: string;
+  dayOfWeek: number;
+  opensMinute: number;
+  closesMinute: number;
+}
+
+export interface CourtClosure {
+  id: string;
+  courtId: string;
+  startsAt: string;
+  endsAt: string;
+  reason: string | null;
+}
+
+export interface CourtSchedule {
+  operatingHours: CourtOperatingWindow[];
+  closures: CourtClosure[];
+}
+
 export interface BookingRecord {
   id: string;
   courtId: string;
@@ -272,7 +293,7 @@ function buildQuery(query?: Query): string {
 }
 
 export interface RequestOptions {
-  method?: "GET" | "POST" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   body?: unknown;
   query?: Query;
   cookie?: string;

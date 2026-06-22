@@ -607,6 +607,78 @@ h2 {
   color: var(--green-dark);
 }
 
+.venue-workspace {
+  border-top: 1px solid var(--line);
+  margin-top: 2rem;
+  padding-top: 0.25rem;
+}
+
+.workspace-title {
+  font-size: 1rem;
+  margin: 0 0 1rem;
+}
+
+.schedule-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.schedule-manager {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.25rem;
+}
+
+.schedule-manager h4 {
+  margin: 1.5rem 0 0.75rem;
+}
+
+.schedule-hours {
+  display: grid;
+  gap: 0.65rem;
+  margin-top: 1rem;
+}
+
+.schedule-day {
+  align-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0.5rem 0 0.75rem;
+}
+
+.schedule-day legend {
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0;
+}
+
+.schedule-window {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.schedule-window .field {
+  min-width: 135px;
+}
+
+.schedule-readonly {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+}
+
+.schedule-readonly p {
+  color: var(--muted);
+  font-size: 0.88rem;
+  margin: 0;
+}
+
 .proof-form {
   flex-direction: column;
   margin-top: 0.75rem;

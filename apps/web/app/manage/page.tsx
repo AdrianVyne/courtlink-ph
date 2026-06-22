@@ -1,8 +1,16 @@
 import { redirect } from "next/navigation";
+import { CourtScheduleManager } from "../../components/court-schedule-manager";
 import { PromotionManager } from "../../components/promotion-manager";
 import { SiteHeader } from "../../components/site-header";
 import { VenueQueue } from "../../components/venue-queue";
-import { type BookingListItem, type Promotion, type VenueSummary, apiFetch } from "../../lib/api";
+import {
+  type BookingListItem,
+  type CourtSchedule,
+  type CourtSummary,
+  type Promotion,
+  type VenueSummary,
+  apiFetch,
+} from "../../lib/api";
 import { getSession } from "../../lib/session";
 
 export const dynamic = "force-dynamic";
@@ -34,11 +42,20 @@ export default async function ManagePage() {
   const manageable = mine.filter(
     (m) => m.membershipRole === "OWNER" || m.membershipRole === "MANAGER",
   );
-  const promosByVenue = await Promise.all(
-    manageable.map(async (m) => ({
-      venue: m.venue,
-      promotions: await load<Promotion[]>(`/promotions/venues/${m.venue.id}`, cookie, []),
-    })),
+  const workspaces = await Promise.all(
+    manageable.map(async (membership) => {
+      const [promotions, courts] = await Promise.all([
+        load<Promotion[]>(`/promotions/venues/${membership.venue.id}`, cookie, []),
+        load<CourtSummary[]>(`/courts/venues/${membership.venue.id}/list`, cookie, []),
+      ]);
+      const schedules = await Promise.all(
+        courts.map(async (court) => ({
+          court,
+          schedule: await load<CourtSchedule | null>(`/courts/${court.id}/schedule`, cookie, null),
+        })),
+      );
+      return { membership, promotions, schedules };
+    }),
   );
 
   return (
@@ -52,10 +69,39 @@ export default async function ManagePage() {
         </div>
         <VenueQueue bookings={queue} />
 
-        {promosByVenue.map(({ venue, promotions }) => (
-          <div className="venue-promo-block" key={venue.id}>
-            <h2 className="section-title">{venue.name}</h2>
-            <PromotionManager venueId={venue.id} promotions={promotions} />
+        {workspaces.map(({ membership, promotions, schedules }) => (
+          <div className="venue-workspace" key={membership.venue.id}>
+            <h2 className="section-title">{membership.venue.name}</h2>
+            <section aria-labelledby={`schedule-${membership.venue.id}`}>
+              <h3 className="workspace-title" id={`schedule-${membership.venue.id}`}>
+                Court schedules
+              </h3>
+              {schedules.length === 0 ? (
+                <p className="empty-state">No courts are configured for this venue.</p>
+              ) : (
+                <div className="schedule-grid">
+                  {schedules.map(({ court, schedule }) =>
+                    schedule ? (
+                      <CourtScheduleManager
+                        key={court.id}
+                        court={court}
+                        schedule={schedule}
+                        canEdit={
+                          membership.membershipRole === "OWNER" ||
+                          membership.membershipRole === "MANAGER"
+                        }
+                      />
+                    ) : (
+                      <article className="schedule-manager" key={court.id}>
+                        <h3>{court.name}</h3>
+                        <p className="form-error">Schedule unavailable. Reload before editing.</p>
+                      </article>
+                    ),
+                  )}
+                </div>
+              )}
+            </section>
+            <PromotionManager venueId={membership.venue.id} promotions={promotions} />
           </div>
         ))}
       </section>
