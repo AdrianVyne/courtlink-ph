@@ -565,6 +565,48 @@ h2 {
   gap: 0.65rem;
 }
 
+.slot-list {
+  border: 0;
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  margin: 0;
+  padding: 0;
+}
+
+.sr-only {
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  padding: 0;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.slot-button {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+}
+
+.slot-button:hover,
+.slot-button.is-selected {
+  border-color: var(--green);
+}
+
+.slot-button.is-selected {
+  background: #e9f6ee;
+  color: var(--green-dark);
+}
+
 .proof-form {
   flex-direction: column;
   margin-top: 0.75rem;

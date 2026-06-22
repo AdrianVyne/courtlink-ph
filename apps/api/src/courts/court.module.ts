@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { AvailabilityController } from "./availability.controller.js";
+import { AvailabilityService } from "./availability.service.js";
 import type { PrismaClient } from "@courtlink/database";
 import type { ObjectStorage } from "../storage/object-storage.js";
 import { OBJECT_STORAGE, PRISMA_CLIENT } from "../auth/tokens.js";
@@ -21,7 +23,7 @@ import { RefundService } from "./refund.service.js";
 
 @Module({
   imports: [TenancyModule, VenueModule],
-  controllers: [CourtController, CourtScheduleController],
+  controllers: [CourtController, CourtScheduleController, AvailabilityController],
   providers: [
     {
       provide: PrismaCourtRepository,
@@ -56,6 +58,11 @@ import { RefundService } from "./refund.service.js";
     {
       provide: CourtScheduleService,
       useFactory: (repo: PrismaCourtRepository) => new CourtScheduleService(repo),
+      inject: [PrismaCourtRepository],
+    },
+    {
+      provide: AvailabilityService,
+      useFactory: (repo: PrismaCourtRepository) => new AvailabilityService(repo),
       inject: [PrismaCourtRepository],
     },
     {
@@ -111,6 +118,11 @@ import { RefundService } from "./refund.service.js";
         venues: VenueService,
       ) => new CourtScheduleController(schedules, courts, tenancy, venues),
       inject: [CourtScheduleService, CourtService, TenancyService, VenueService],
+    },
+    {
+      provide: AvailabilityController,
+      useFactory: (availability: AvailabilityService) => new AvailabilityController(availability),
+      inject: [AvailabilityService],
     },
   ],
   exports: [CourtService, BookingService, PrismaBookingRepository],

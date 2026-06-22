@@ -172,33 +172,33 @@ git commit -m "feat: add tenant-authorized court schedules"
 - Modify: `apps/web/components/court-booking.test.tsx`
 - Modify: `apps/web/components/court-booking.tsx`
 
-- [ ] **Step 1: Write failing priced-slot service tests**
+- [x] **Step 1: Write failing priced-slot service tests**
 
 Generate candidates, remove closure and blocking-booking overlaps, omit candidates without pricing, and return UTC ISO ranges with PHP prices sorted ascending.
 
-- [ ] **Step 2: Verify service tests fail**
+- [x] **Step 2: Verify service tests fail**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts/availability.service.test.ts`
 Expected: FAIL because availability service does not exist.
 
-- [ ] **Step 3: Implement public availability service and endpoint**
+- [x] **Step 3: Implement public availability service and endpoint**
 
 Validate `date` and `durationMin`, load court/schedule/bookings/pricing once, generate candidates, filter overlaps, quote survivors, and return `{ startsAt, endsAt, totalAmount, currency }[]` from `GET :id/availability`.
 
-- [ ] **Step 4: Write a failing booking-component test**
+- [x] **Step 4: Write a failing booking-component test**
 
 Mock the API to return two server slots. Assert the UI renders those exact Manila times, creates a hold with the selected UTC timestamps, and never synthesizes an unreturned slot.
 
-- [ ] **Step 5: Implement server-slot selection in the booking component**
+- [x] **Step 5: Implement server-slot selection in the booking component**
 
 Replace free-form datetime inputs with date, duration, load-availability action, and selectable returned slots. Keep proof upload and hold lifecycle unchanged after selection.
 
-- [ ] **Step 6: Run API/web tests, typechecks, and web build**
+- [x] **Step 6: Run API/web tests, typechecks, and web build**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts && pnpm --filter @courtlink/web test -- components/court-booking.test.tsx && pnpm --filter @courtlink/api typecheck && pnpm --filter @courtlink/web typecheck && pnpm --filter @courtlink/web build`
 Expected: all tests/typechecks pass and production routes build.
 
-- [ ] **Step 7: Commit public availability**
+- [x] **Step 7: Commit public availability**
 
 ```bash
 git add apps/api/src/courts apps/web/lib/api.ts apps/web/components/court-booking.tsx apps/web/components/court-booking.test.tsx

@@ -3,7 +3,13 @@
 import { CalendarClock } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
-import { ApiError, type BookingRecord, type CourtSummary, type Quote, apiFetch } from "../lib/api";
+import {
+  ApiError,
+  type BookingRecord,
+  type CourtAvailabilitySlot,
+  type CourtSummary,
+  apiFetch,
+} from "../lib/api";
 
 type Channel = "GCASH" | "MAYA" | "QR_PH" | "BANK_TRANSFER" | "OTHER";
 
@@ -14,52 +20,48 @@ export function CourtBooking({
   court: CourtSummary;
   isAuthenticated: boolean;
 }) {
-  const [startsAt, setStartsAt] = useState("");
+  const [date, setDate] = useState("");
   const [durationMin, setDurationMin] = useState(court.minimumDurationMin);
-  const [quote, setQuote] = useState<Quote | null>(null);
+  const [slots, setSlots] = useState<CourtAvailabilitySlot[]>([]);
+  const [selectedSlot, setSelectedSlot] = useState<CourtAvailabilitySlot | null>(null);
+  const [loaded, setLoaded] = useState(false);
   const [booking, setBooking] = useState<BookingRecord | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  function toRange(): { startIso: string; endIso: string } | null {
-    if (!startsAt) return null;
-    const start = new Date(startsAt);
-    if (Number.isNaN(start.getTime())) return null;
-    const end = new Date(start.getTime() + durationMin * 60 * 1000);
-    return { startIso: start.toISOString(), endIso: end.toISOString() };
-  }
-
-  async function getQuote() {
-    const range = toRange();
-    if (!range) {
-      setError("Pick a start time first.");
+  async function loadAvailability() {
+    if (!date) {
+      setError("Pick a date first.");
       return;
     }
     setError(null);
     setPending(true);
     try {
-      const result = await apiFetch<Quote>(`/courts/${court.id}/quote`, {
-        query: { startsAt: range.startIso, endsAt: range.endIso },
+      const result = await apiFetch<CourtAvailabilitySlot[]>(`/courts/${court.id}/availability`, {
+        query: { date, durationMin },
       });
-      setQuote(result);
+      setSlots(result);
+      setSelectedSlot(null);
+      setLoaded(true);
     } catch (err) {
-      setError(err instanceof ApiError ? friendly(err) : "Could not price this slot.");
-      setQuote(null);
+      setError(err instanceof ApiError ? friendly(err) : "Could not load available times.");
+      setSlots([]);
+      setSelectedSlot(null);
+      setLoaded(false);
     } finally {
       setPending(false);
     }
   }
 
   async function placeHold() {
-    const range = toRange();
-    if (!range) return;
+    if (!selectedSlot) return;
     setError(null);
     setPending(true);
     try {
       const result = await apiFetch<BookingRecord>(`/courts/${court.id}/hold`, {
         method: "POST",
-        body: { startsAt: range.startIso, endsAt: range.endIso },
+        body: { startsAt: selectedSlot.startsAt, endsAt: selectedSlot.endsAt },
       });
       setBooking(result);
     } catch (err) {
@@ -161,13 +163,15 @@ export function CourtBooking({
       ) : (
         <div className="booking-controls">
           <label className="field">
-            <span className="field-label">Start</span>
+            <span className="field-label">Date</span>
             <input
-              type="datetime-local"
-              value={startsAt}
+              type="date"
+              value={date}
               onChange={(event) => {
-                setStartsAt(event.target.value);
-                setQuote(null);
+                setDate(event.target.value);
+                setSlots([]);
+                setSelectedSlot(null);
+                setLoaded(false);
               }}
             />
           </label>
@@ -177,7 +181,9 @@ export function CourtBooking({
               value={durationMin}
               onChange={(event) => {
                 setDurationMin(Number(event.target.value));
-                setQuote(null);
+                setSlots([]);
+                setSelectedSlot(null);
+                setLoaded(false);
               }}
             >
               {durations.map((minutes) => (
@@ -191,22 +197,39 @@ export function CourtBooking({
             <button
               className="button button-secondary button-small"
               type="button"
-              onClick={getQuote}
+              onClick={loadAvailability}
               disabled={pending}
             >
-              <CalendarClock size={16} aria-hidden="true" /> Get price
+              <CalendarClock size={16} aria-hidden="true" /> Load available times
             </button>
-            {quote ? (
+            {selectedSlot ? (
               <button
                 className="button button-small"
                 type="button"
                 onClick={placeHold}
                 disabled={pending}
               >
-                Hold for {quote.currency} {quote.totalAmount.toFixed(2)}
+                Hold for {selectedSlot.currency} {selectedSlot.totalAmount.toFixed(2)}
               </button>
             ) : null}
           </div>
+          {slots.length > 0 ? (
+            <fieldset className="slot-list">
+              <legend className="sr-only">Available times</legend>
+              {slots.map((slot) => (
+                <button
+                  className={`slot-button${selectedSlot?.startsAt === slot.startsAt ? " is-selected" : ""}`}
+                  key={slot.startsAt}
+                  type="button"
+                  onClick={() => setSelectedSlot(slot)}
+                >
+                  {formatSlot(slot)} · {slot.currency} {slot.totalAmount.toFixed(2)}
+                </button>
+              ))}
+            </fieldset>
+          ) : loaded ? (
+            <p className="court-note">No available times for that date and duration.</p>
+          ) : null}
         </div>
       )}
 
@@ -217,6 +240,16 @@ export function CourtBooking({
       ) : null}
     </article>
   );
+}
+
+function formatSlot(slot: CourtAvailabilitySlot): string {
+  const format = (value: string) =>
+    new Date(value).toLocaleTimeString("en-US", {
+      hour: "numeric",
+      minute: "2-digit",
+      timeZone: "Asia/Manila",
+    });
+  return `${format(slot.startsAt)} – ${format(slot.endsAt)}`;
 }
 
 function durationOptions(court: CourtSummary): number[] {
@@ -245,6 +278,10 @@ function friendly(error: ApiError): string {
       return "That image is too large. Use one 5 MB or smaller.";
     case "HOLD_EXPIRED":
       return "Your 5-minute hold expired. Please book the slot again.";
+    case "COURT_CLOSED":
+    case "COURT_CLOSURE_CONFLICT":
+    case "COURT_BOOKING_CONFLICT":
+      return "That time is no longer available. Load the schedule again.";
     case "AUTH_REQUIRED":
       return "Please log in to continue.";
     default:

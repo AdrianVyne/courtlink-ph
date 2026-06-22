@@ -170,6 +170,13 @@ export interface Quote {
   court: CourtSummary;
 }
 
+export interface CourtAvailabilitySlot {
+  startsAt: string;
+  endsAt: string;
+  totalAmount: number;
+  currency: "PHP";
+}
+
 export interface BookingRecord {
   id: string;
   courtId: string;
