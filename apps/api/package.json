@@ -14,8 +14,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "3.726.1",
-    "@aws-sdk/s3-request-presigner": "3.726.1",
+    "@aws-sdk/client-s3": "3.1073.0",
+    "@aws-sdk/s3-request-presigner": "3.1073.0",
     "@courtlink/database": "workspace:*",
     "@courtlink/domain": "workspace:*",
     "@fastify/multipart": "9.2.1",
@@ -23,10 +23,10 @@
     "@nestjs/common": "11.1.27",
     "@nestjs/core": "11.1.27",
     "@nestjs/platform-fastify": "11.1.27",
-    "@nestjs/swagger": "11.2.6",
+    "@nestjs/swagger": "11.4.4",
     "@prisma/adapter-pg": "7.8.0",
     "argon2": "0.44.0",
-    "fastify": "5.7.0",
+    "fastify": "5.8.5",
     "pg": "8.22.0",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2",
@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.0",
-    "@nestjs/cli": "11.0.16",
+    "@nestjs/cli": "11.0.23",
     "@nestjs/testing": "11.1.27",
     "@types/node": "24.10.1",
     "@types/pg": "8.20.0",
