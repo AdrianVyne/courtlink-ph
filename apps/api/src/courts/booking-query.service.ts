@@ -17,6 +17,7 @@ export interface BookingListItem {
     proofObjectKey: string;
   } | null;
   refund: { id: string; status: string; amount: number } | null;
+  reviewed: boolean;
 }
 
 export interface BookingQueryRepository {

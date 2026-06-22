@@ -1,8 +1,14 @@
-﻿import { MapPin } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CourtBooking } from "../../../components/court-booking";
+import { RatingBadge } from "../../../components/rating-badge";
 import { SiteHeader } from "../../../components/site-header";
-import { type CourtSummary, type VenueSummary, apiFetch } from "../../../lib/api";
+import {
+  type CourtSummary,
+  type VenueReviews,
+  type VenueSummary,
+  apiFetch,
+} from "../../../lib/api";
 import { getSession } from "../../../lib/session";
 
 export const dynamic = "force-dynamic";
@@ -23,11 +29,23 @@ async function loadCourts(venueId: string): Promise<CourtSummary[]> {
   }
 }
 
+async function loadReviews(venueId: string): Promise<VenueReviews> {
+  try {
+    return await apiFetch<VenueReviews>(`/reviews/venues/${venueId}`);
+  } catch {
+    return { rating: { average: 0, count: 0 }, items: [] };
+  }
+}
+
+function formatWhen(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-PH", { dateStyle: "medium" });
+}
+
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [venue, session] = await Promise.all([loadVenue(slug), getSession()]);
   if (!venue) notFound();
-  const courts = await loadCourts(venue.id);
+  const [courts, reviews] = await Promise.all([loadCourts(venue.id), loadReviews(venue.id)]);
 
   return (
     <main>
@@ -40,6 +58,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <MapPin size={16} aria-hidden="true" />
             {venue.streetAddress}, {venue.cityMunicipality}
           </p>
+          <RatingBadge average={reviews.rating.average} count={reviews.rating.count} />
           {venue.description ? <p className="venue-desc">{venue.description}</p> : null}
         </div>
 
@@ -52,6 +71,21 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             ))}
           </div>
         )}
+
+        {reviews.items.length > 0 ? (
+          <div className="review-section">
+            <h2 className="section-title">Player reviews</h2>
+            <ul className="review-list">
+              {reviews.items.map((review) => (
+                <li className="review-row" key={review.id}>
+                  <span className="review-rating">{"\u2605".repeat(review.rating)}</span>
+                  {review.comment ? <span className="review-comment">{review.comment}</span> : null}
+                  <span className="review-when">{formatWhen(review.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </section>
     </main>
   );

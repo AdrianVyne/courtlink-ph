@@ -79,6 +79,24 @@ export interface BookingRecord {
   reviewDueAt: string | null;
 }
 
+export interface RatingSummary {
+  average: number;
+  count: number;
+}
+
+export interface ReviewItem {
+  id: string;
+  authorId: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface VenueReviews {
+  rating: RatingSummary;
+  items: ReviewItem[];
+}
+
 export interface NotificationItem {
   id: string;
   type: string;
@@ -108,6 +126,7 @@ export interface BookingListItem {
     proofObjectKey: string;
   } | null;
   refund: { id: string; status: string; amount: number } | null;
+  reviewed: boolean;
 }
 
 type Query = Record<string, string | number | boolean | undefined>;

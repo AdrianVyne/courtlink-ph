@@ -5,6 +5,7 @@ import { CourtModule } from "./courts/court.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthController } from "./health/health.controller.js";
 import { NotificationModule } from "./notifications/notification.module.js";
+import { ReviewModule } from "./reviews/review.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 import { TenancyModule } from "./tenancy/tenancy.module.js";
 import { VenueModule } from "./venues/venue.module.js";
@@ -19,6 +20,7 @@ import { VenueModule } from "./venues/venue.module.js";
     CourtModule,
     CoachModule,
     NotificationModule,
+    ReviewModule,
   ],
   controllers: [HealthController],
 })

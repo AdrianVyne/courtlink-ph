@@ -19,12 +19,14 @@ type BookingWithRelations = {
     proofObjectKey: string;
   }>;
   refunds: Array<{ id: string; status: string; amount: { toString(): string } | number | string }>;
+  review: { id: string } | null;
 };
 
 const include = {
   court: { include: { venue: true } },
   payments: { orderBy: { submittedAt: "desc" }, take: 1 },
   refunds: { orderBy: { requestedAt: "desc" }, take: 1 },
+  review: { select: { id: true } },
 } as const;
 
 function toItem(row: BookingWithRelations): BookingListItem {
@@ -51,6 +53,7 @@ function toItem(row: BookingWithRelations): BookingListItem {
         }
       : null,
     refund: refund ? { id: refund.id, status: refund.status, amount: Number(refund.amount) } : null,
+    reviewed: row.review !== null,
   };
 }
 

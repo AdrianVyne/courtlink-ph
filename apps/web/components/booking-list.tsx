@@ -1,4 +1,5 @@
 import type { BookingListItem } from "../lib/api";
+import { ReviewForm } from "./review-form";
 
 const STATUS_LABEL: Record<string, string> = {
   HELD: "Hold (awaiting proof)",
@@ -31,6 +32,9 @@ export function BookingList({ bookings }: { bookings: BookingListItem[] }) {
             <strong>{booking.court.name}</strong>
             <span className="booking-venue">{booking.venue.name}</span>
             <span className="booking-when">{formatWhen(booking.startsAt)}</span>
+            {booking.status === "COMPLETED" && !booking.reviewed ? (
+              <ReviewForm scope="courts" bookingId={booking.id} />
+            ) : null}
           </div>
           <div className="booking-meta">
             <span className={`status-pill status-${booking.status.toLowerCase()}`}>

@@ -10,6 +10,11 @@ import {
   buildReviewEscalationWorker,
   scheduleReviewEscalation,
 } from "./review-escalation.js";
+import {
+  buildBookingCompletionQueue,
+  buildBookingCompletionWorker,
+  scheduleBookingCompletion,
+} from "./booking-completion.js";
 
 function log(message: string, fields: Record<string, unknown> = {}): void {
   process.stdout.write(`${JSON.stringify({ ts: new Date().toISOString(), message, ...fields })}\n`);
@@ -44,14 +49,26 @@ async function main(): Promise<void> {
     log("review-escalation.failed", { jobId: job?.id, error: error.message });
   });
 
-  log("worker.ready", { queues: [holdQueue.name, escalationQueue.name] });
+  const completionQueue = buildBookingCompletionQueue(connection);
+  await scheduleBookingCompletion(completionQueue);
+  const completionWorker = buildBookingCompletionWorker(connection, prisma);
+  completionWorker.on("completed", (job, result) => {
+    log("booking-completion.completed", { jobId: job.id, ...result });
+  });
+  completionWorker.on("failed", (job, error) => {
+    log("booking-completion.failed", { jobId: job?.id, error: error.message });
+  });
+
+  log("worker.ready", { queues: [holdQueue.name, escalationQueue.name, completionQueue.name] });
 
   const shutdown = async (signal: string): Promise<void> => {
     log("worker.shutdown", { signal });
     await holdWorker.close();
     await escalationWorker.close();
+    await completionWorker.close();
     await holdQueue.close();
     await escalationQueue.close();
+    await completionQueue.close();
     await connection.quit();
     await prisma.$disconnect();
     process.exit(0);
