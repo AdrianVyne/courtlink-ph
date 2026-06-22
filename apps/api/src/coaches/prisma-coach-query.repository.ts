@@ -2,11 +2,33 @@ import type { PrismaClient } from "@courtlink/database";
 import type {
   CoachBookingListItem,
   CoachQueryRepository,
+  DirectedRequestItem,
   PlayerCoachRequestItem,
 } from "./coach-query.service.js";
 
 export class PrismaCoachQueryRepository implements CoachQueryRepository {
   constructor(private readonly prisma: PrismaClient) {}
+
+  async listDirectedPendingForCoach(coachId: string): Promise<DirectedRequestItem[]> {
+    const rows = await this.prisma.coachRequest.findMany({
+      where: { targetCoachId: coachId, status: "PENDING_COACH" },
+      include: { player: { select: { displayName: true } } },
+      orderBy: { createdAt: "desc" },
+      take: 100,
+    });
+    return rows.map((row) => ({
+      id: row.id,
+      status: row.status,
+      startsAt: row.startsAt.toISOString(),
+      endsAt: row.endsAt.toISOString(),
+      location: row.location,
+      groupSize: row.groupSize,
+      skillLevel: row.skillLevel,
+      goals: row.goals,
+      notes: row.notes,
+      player: { displayName: row.player.displayName },
+    }));
+  }
 
   async listBookingsForCoach(coachId: string): Promise<CoachBookingListItem[]> {
     const rows = await this.prisma.coachBooking.findMany({

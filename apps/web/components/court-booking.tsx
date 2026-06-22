@@ -89,6 +89,7 @@ export function CourtBooking({
         method: "POST",
         body: upload,
         credentials: "include",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as {
@@ -223,7 +224,7 @@ export function CourtBooking({
                   type="button"
                   onClick={() => setSelectedSlot(slot)}
                 >
-                  {formatSlot(slot)} · {slot.currency} {slot.totalAmount.toFixed(2)}
+                  {formatSlot(slot)} ?? {slot.currency} {slot.totalAmount.toFixed(2)}
                 </button>
               ))}
             </fieldset>
@@ -249,7 +250,7 @@ function formatSlot(slot: CourtAvailabilitySlot): string {
       minute: "2-digit",
       timeZone: "Asia/Manila",
     });
-  return `${format(slot.startsAt)} – ${format(slot.endsAt)}`;
+  return `${format(slot.startsAt)} ??? ${format(slot.endsAt)}`;
 }
 
 function durationOptions(court: CourtSummary): number[] {

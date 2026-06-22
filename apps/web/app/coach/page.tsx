@@ -4,6 +4,7 @@ import { SiteHeader } from "../../components/site-header";
 import {
   type CoachBookingListItem,
   type CoachMe,
+  type DirectedRequest,
   type OpenCoachJob,
   apiFetch,
 } from "../../lib/api";
@@ -24,10 +25,11 @@ export default async function CoachPage() {
   if (!session) redirect("/login");
   const { cookies } = await import("next/headers");
   const cookie = (await cookies()).toString();
-  const [me, jobs, bookings] = await Promise.all([
+  const [me, jobs, bookings, directed] = await Promise.all([
     load<CoachMe>("/coaches/me", cookie, { profile: null, availability: [] }),
     load<OpenCoachJob[]>("/coaches/requests/open", cookie, []),
     load<CoachBookingListItem[]>("/coaches/me/bookings", cookie, []),
+    load<DirectedRequest[]>("/coaches/requests/directed", cookie, []),
   ]);
 
   return (
@@ -39,7 +41,7 @@ export default async function CoachPage() {
           <h1>Coaching</h1>
           <p className="page-sub">Manage your profile, availability, offers, and bookings.</p>
         </div>
-        <CoachWorkspace me={me} jobs={jobs} bookings={bookings} />
+        <CoachWorkspace me={me} jobs={jobs} bookings={bookings} directed={directed} />
       </section>
     </main>
   );

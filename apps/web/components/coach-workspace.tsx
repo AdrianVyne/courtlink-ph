@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, X } from "lucide-react";
+import { Ban, Check, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import {
@@ -8,6 +8,7 @@ import {
   type AvailabilitySlot,
   type CoachBookingListItem,
   type CoachMe,
+  type DirectedRequest,
   type OpenCoachJob,
   apiFetch,
 } from "../lib/api";
@@ -24,10 +25,12 @@ export function CoachWorkspace({
   me,
   jobs,
   bookings,
+  directed,
 }: {
   me: CoachMe;
   jobs: OpenCoachJob[];
   bookings: CoachBookingListItem[];
+  directed: DirectedRequest[];
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +162,58 @@ export function CoachWorkspace({
             </button>
           </form>
 
+          <h2 className="section-title">Directed requests</h2>
+          {directed.length === 0 ? (
+            <p className="empty-state">No directed requests awaiting your approval.</p>
+          ) : (
+            <div className="queue-list">
+              {directed.map((req) => (
+                <article className="queue-card" key={req.id}>
+                  <div className="queue-head">
+                    <strong>
+                      {req.player.displayName} - {req.groupSize} players
+                    </strong>
+                    <span className="status-pill status-pending_coach">Awaiting approval</span>
+                  </div>
+                  <p className="queue-when">
+                    {formatWhen(req.startsAt)} at {req.location}
+                  </p>
+                  {req.goals ? <p className="court-note">{req.goals}</p> : null}
+                  <div className="queue-actions">
+                    <button
+                      className="button button-small"
+                      type="button"
+                      disabled={pending}
+                      onClick={() =>
+                        call(() =>
+                          apiFetch(`/coaches/requests/${req.id}/approve`, {
+                            method: "POST",
+                          }),
+                        )
+                      }
+                    >
+                      <Check size={16} aria-hidden="true" /> Approve
+                    </button>
+                    <button
+                      className="button button-secondary button-small"
+                      type="button"
+                      disabled={pending}
+                      onClick={() =>
+                        call(() =>
+                          apiFetch(`/coaches/requests/${req.id}/decline`, {
+                            method: "POST",
+                          }),
+                        )
+                      }
+                    >
+                      <X size={16} aria-hidden="true" /> Decline
+                    </button>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+
           <h2 className="section-title">Open coaching jobs</h2>
           {jobs.length === 0 ? (
             <p className="empty-state">No open requests right now.</p>
@@ -211,6 +266,27 @@ export function CoachWorkspace({
                   <p className="queue-amount">
                     {booking.currency} {booking.amount.toFixed(2)}
                   </p>
+                  {booking.status === "CONFIRMED" ? (
+                    <div className="queue-actions">
+                      <button
+                        className="button button-secondary button-small"
+                        type="button"
+                        disabled={pending}
+                        onClick={() => {
+                          const reason = window.prompt("Reason for cancelling this session?");
+                          if (!reason) return;
+                          void call(() =>
+                            apiFetch("/coaches/bookings/cancel-by-coach", {
+                              method: "POST",
+                              body: { bookingId: booking.id, reason },
+                            }),
+                          );
+                        }}
+                      >
+                        <Ban size={16} aria-hidden="true" /> Cancel session
+                      </button>
+                    </div>
+                  ) : null}
                   {booking.status === "PROOF_SUBMITTED" && booking.submission ? (
                     <div className="queue-actions">
                       <button

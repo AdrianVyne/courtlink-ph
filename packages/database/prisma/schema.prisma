@@ -91,9 +91,11 @@ enum RefundStatus {
 }
 
 enum CoachRequestStatus {
+  PENDING_COACH
   OPEN
   MATCHED
   CANCELLED
+  DECLINED
   EXPIRED
 }
 
@@ -567,6 +569,7 @@ model CoachRefund {
   channel        PaymentChannel?
   transactionRef String?
   requestedAt    DateTime        @default(now()) @db.Timestamptz(3)
+  decidedAt      DateTime?       @db.Timestamptz(3)
   completedAt    DateTime?       @db.Timestamptz(3)
   booking        CoachBooking    @relation(fields: [bookingId], references: [id], onDelete: Restrict)
 
@@ -729,3 +732,4 @@ model CourtAmenity {
   @@index([amenityId])
   @@map("court_amenities")
 }
+

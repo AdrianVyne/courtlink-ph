@@ -89,6 +89,19 @@ export interface OpenCoachJob {
   notes: string | null;
 }
 
+export interface DirectedRequest {
+  id: string;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  groupSize: number;
+  skillLevel: string;
+  goals: string | null;
+  notes: string | null;
+  player: { displayName: string };
+}
+
 export interface CoachBookingListItem {
   id: string;
   status: string;
@@ -310,6 +323,7 @@ export interface RequestOptions {
   query?: Query;
   cookie?: string;
   cache?: RequestCache;
+  idempotencyKey?: string;
 }
 
 function apiBaseUrl(): string {
@@ -321,10 +335,11 @@ function apiBaseUrl(): string {
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = "GET", body, query, cookie, cache } = options;
+  const { method = "GET", body, query, cookie, cache, idempotencyKey } = options;
   const headers: Record<string, string> = {};
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (cookie) headers.cookie = cookie;
+  if (method !== "GET") headers["Idempotency-Key"] = idempotencyKey ?? crypto.randomUUID();
 
   const init: RequestInit = {
     method,

@@ -1,4 +1,4 @@
-﻿import type { PrismaClient } from "@courtlink/database";
+import type { PrismaClient } from "@courtlink/database";
 import {
   type AcceptOfferResult,
   type CoachBookingRecord,
@@ -6,6 +6,7 @@ import {
   type CoachMarketRepository,
   type CoachOfferRecord,
   type CoachRequestRecord,
+  type CoachRequestStatus,
   type CreateOfferInput,
   type CreateRequestInput,
 } from "./coach-market.service.js";
@@ -65,11 +66,15 @@ function toOffer(row: OfferRow): CoachOfferRecord {
 export class PrismaCoachMarketRepository implements CoachMarketRepository {
   constructor(private readonly prisma: PrismaClient) {}
 
-  async createRequest(input: CreateRequestInput): Promise<CoachRequestRecord> {
+  async createRequest(
+    input: CreateRequestInput,
+    status: CoachRequestStatus,
+  ): Promise<CoachRequestRecord> {
     const request = await this.prisma.coachRequest.create({
       data: {
         playerId: input.playerId,
         targetCoachId: input.targetCoachId ?? null,
+        status,
         startsAt: input.startsAt,
         endsAt: input.endsAt,
         location: input.location,
@@ -78,6 +83,17 @@ export class PrismaCoachMarketRepository implements CoachMarketRepository {
         goals: input.goals ?? null,
         notes: input.notes ?? null,
       },
+    });
+    return toRequest(request);
+  }
+
+  async updateRequestStatus(
+    requestId: string,
+    status: CoachRequestStatus,
+  ): Promise<CoachRequestRecord> {
+    const request = await this.prisma.coachRequest.update({
+      where: { id: requestId },
+      data: { status },
     });
     return toRequest(request);
   }

@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   type AcceptOfferResult,
   type CoachBookingRecord,
@@ -7,6 +7,7 @@ import {
   CoachMarketService,
   type CoachOfferRecord,
   type CoachRequestRecord,
+  type CoachRequestStatus,
   type CreateOfferInput,
   type CreateRequestInput,
   offerIsAcceptable,
@@ -17,12 +18,15 @@ class InMemoryCoachMarketRepo implements CoachMarketRepository {
   readonly offers: CoachOfferRecord[] = [];
   readonly bookings: CoachBookingRecord[] = [];
 
-  async createRequest(input: CreateRequestInput): Promise<CoachRequestRecord> {
+  async createRequest(
+    input: CreateRequestInput,
+    status: CoachRequestStatus,
+  ): Promise<CoachRequestRecord> {
     const request: CoachRequestRecord = {
       id: `req-${this.requests.length + 1}`,
       playerId: input.playerId,
       targetCoachId: input.targetCoachId ?? null,
-      status: "OPEN",
+      status,
       startsAt: input.startsAt,
       endsAt: input.endsAt,
       location: input.location,
@@ -32,6 +36,16 @@ class InMemoryCoachMarketRepo implements CoachMarketRepository {
       notes: input.notes ?? null,
     };
     this.requests.push(request);
+    return request;
+  }
+
+  async updateRequestStatus(
+    requestId: string,
+    status: CoachRequestStatus,
+  ): Promise<CoachRequestRecord> {
+    const request = this.requests.find((r) => r.id === requestId);
+    if (!request) throw new CoachMarketError("REQUEST_NOT_FOUND", "missing");
+    request.status = status;
     return request;
   }
 
@@ -174,13 +188,17 @@ describe("CoachMarketService offers", () => {
     ).rejects.toMatchObject({ code: "OFFER_EXPIRY_AFTER_SESSION" });
   });
 
-  it("rejects offers from non-targeted coaches on a directed request", async () => {
+  it("rejects offers from non-targeted coaches on an approved directed request", async () => {
     const repo = new InMemoryCoachMarketRepo();
     const service = new CoachMarketService(repo);
-    await service.createRequest(requestInput({ targetCoachId: "coach-9" }));
+    const request = await service.createRequest(requestInput({ targetCoachId: "coach-9" }));
+    await service.approveDirectedRequest({ requestId: request.id, coachId: "coach-9" });
 
     await expect(
-      service.createOffer({ ...offerInput(), now: new Date("2026-06-24T12:00:00.000Z") }),
+      service.createOffer({
+        ...offerInput({ requestId: request.id }),
+        now: new Date("2026-06-24T12:00:00.000Z"),
+      }),
     ).rejects.toMatchObject({ code: "REQUEST_TARGETED" });
   });
 });
@@ -257,5 +275,78 @@ describe("CoachMarketService acceptance", () => {
     expect(
       offerIsAcceptable({ ...base, status: "WITHDRAWN" }, new Date("2026-06-24T00:00:00.000Z")),
     ).toBe(false);
+  });
+});
+
+describe("CoachMarketService directed approval", () => {
+  const now = new Date("2026-06-24T12:00:00.000Z");
+
+  it("creates a directed request awaiting coach approval", async () => {
+    const service = new CoachMarketService(new InMemoryCoachMarketRepo());
+    const request = await service.createRequest(requestInput({ targetCoachId: "coach-1" }));
+    expect(request.status).toBe("PENDING_COACH");
+  });
+
+  it("blocks offers until the targeted coach approves", async () => {
+    const repo = new InMemoryCoachMarketRepo();
+    const service = new CoachMarketService(repo);
+    const request = await service.createRequest(requestInput({ targetCoachId: "coach-1" }));
+
+    await expect(
+      service.createOffer({
+        requestId: request.id,
+        coachId: "coach-1",
+        amount: 800,
+        expiresAt: new Date("2026-06-25T00:00:00.000Z"),
+        now,
+      }),
+    ).rejects.toMatchObject({ code: "REQUEST_NOT_OPEN" });
+
+    const approved = await service.approveDirectedRequest({
+      requestId: request.id,
+      coachId: "coach-1",
+    });
+    expect(approved.status).toBe("OPEN");
+
+    const offer = await service.createOffer({
+      requestId: request.id,
+      coachId: "coach-1",
+      amount: 800,
+      expiresAt: new Date("2026-06-25T00:00:00.000Z"),
+      now,
+    });
+    expect(offer.status).toBe("ACTIVE");
+  });
+
+  it("rejects approval by a coach who is not the target", async () => {
+    const repo = new InMemoryCoachMarketRepo();
+    const service = new CoachMarketService(repo);
+    const request = await service.createRequest(requestInput({ targetCoachId: "coach-1" }));
+    await expect(
+      service.approveDirectedRequest({ requestId: request.id, coachId: "coach-2" }),
+    ).rejects.toMatchObject({ code: "REQUEST_FORBIDDEN" });
+  });
+
+  it("declines a directed request and blocks further offers", async () => {
+    const repo = new InMemoryCoachMarketRepo();
+    const service = new CoachMarketService(repo);
+    const request = await service.createRequest(requestInput({ targetCoachId: "coach-1" }));
+    const declined = await service.declineDirectedRequest({
+      requestId: request.id,
+      coachId: "coach-1",
+    });
+    expect(declined.status).toBe("DECLINED");
+    await expect(
+      service.approveDirectedRequest({ requestId: request.id, coachId: "coach-1" }),
+    ).rejects.toMatchObject({ code: "REQUEST_NOT_PENDING" });
+  });
+
+  it("rejects approving an open (non-directed) request", async () => {
+    const repo = new InMemoryCoachMarketRepo();
+    const service = new CoachMarketService(repo);
+    const request = await service.createRequest(requestInput());
+    await expect(
+      service.approveDirectedRequest({ requestId: request.id, coachId: "coach-1" }),
+    ).rejects.toMatchObject({ code: "REQUEST_NOT_PENDING" });
   });
 });

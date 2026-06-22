@@ -18,6 +18,8 @@ import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/sessi
 import { CoachBookingService } from "./coach-booking.service.js";
 // biome-ignore lint/style/useImportType: CoachMarketService is injected at runtime.
 import { CoachMarketService } from "./coach-market.service.js";
+// biome-ignore lint/style/useImportType: CoachRefundService is injected at runtime.
+import { CoachRefundService } from "./coach-refund.service.js";
 // biome-ignore lint/style/useImportType: CoachService is injected at runtime.
 import { CoachService } from "./coach.service.js";
 // biome-ignore lint/style/useImportType: NotificationDispatcher is injected at runtime.
@@ -84,6 +86,29 @@ const reviewSchema = z.object({
   reason: z.string().max(500).optional().nullable(),
 });
 
+const refundRequestSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+});
+
+const refundDecisionSchema = z.object({
+  refundId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+  decision: z.enum(["APPROVED", "REJECTED"]),
+});
+
+const refundCompleteSchema = z.object({
+  refundId: z.string().uuid(),
+  bookingId: z.string().uuid(),
+  channel: channelEnum,
+  transactionRef: z.string().min(2).max(120),
+});
+
+const coachCancelSchema = z.object({
+  bookingId: z.string().uuid(),
+  reason: z.string().min(2).max(500),
+});
+
 @Controller({ path: "coaches", version: "1" })
 export class CoachController {
   constructor(
@@ -91,6 +116,7 @@ export class CoachController {
     private readonly market: CoachMarketService,
     private readonly bookings: CoachBookingService,
     private readonly bookingQuery: CoachQueryService,
+    private readonly refunds: CoachRefundService,
     private readonly notifier: NotificationDispatcher,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
@@ -122,6 +148,12 @@ export class CoachController {
   async myRequests(@Req() request: AuthenticatedRequest) {
     const user = getSessionUser(request);
     return this.bookingQuery.listRequestsForPlayer(user.id);
+  }
+
+  @Get("requests/directed")
+  async myDirectedRequests(@Req() request: AuthenticatedRequest) {
+    const profile = await this.requireCoachProfile(request);
+    return this.bookingQuery.listDirectedPendingForCoach(profile.id);
   }
 
   @Public()
@@ -169,7 +201,7 @@ export class CoachController {
   async createRequest(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
     const user = getSessionUser(request);
     const input = requestSchema.parse(body);
-    return this.market.createRequest({
+    const created = await this.market.createRequest({
       playerId: user.id,
       targetCoachId: input.targetCoachId ?? null,
       startsAt: new Date(input.startsAt),
@@ -180,6 +212,18 @@ export class CoachController {
       goals: input.goals ?? null,
       notes: input.notes ?? null,
     });
+    if (created.targetCoachId) {
+      const coach = await this.coaches.findProfileById(created.targetCoachId);
+      if (coach) {
+        await this.notifier.dispatch([coach.userId], {
+          type: "COACH_REQUEST_DIRECTED",
+          title: "A player requested you directly",
+          body: "Review and approve or decline this directed coaching request.",
+          data: { requestId: created.id },
+        });
+      }
+    }
+    return created;
   }
 
   @Get("requests/open")
@@ -190,6 +234,42 @@ export class CoachController {
   @Get("requests/:id/offers")
   async offersForRequest(@Param("id") id: string) {
     return this.market.listOffersForRequest(id);
+  }
+
+  @Idempotent()
+  @Post("requests/:id/approve")
+  @HttpCode(200)
+  async approveRequest(@Req() request: AuthenticatedRequest, @Param("id") id: string) {
+    const profile = await this.requireCoachProfile(request);
+    const updated = await this.market.approveDirectedRequest({
+      requestId: id,
+      coachId: profile.id,
+    });
+    await this.notifier.dispatch([updated.playerId], {
+      type: "COACH_REQUEST_APPROVED",
+      title: "A coach approved your request",
+      body: "Your directed coaching request was approved. Await the coach's offer.",
+      data: { requestId: updated.id },
+    });
+    return updated;
+  }
+
+  @Idempotent()
+  @Post("requests/:id/decline")
+  @HttpCode(200)
+  async declineRequest(@Req() request: AuthenticatedRequest, @Param("id") id: string) {
+    const profile = await this.requireCoachProfile(request);
+    const updated = await this.market.declineDirectedRequest({
+      requestId: id,
+      coachId: profile.id,
+    });
+    await this.notifier.dispatch([updated.playerId], {
+      type: "COACH_REQUEST_DECLINED",
+      title: "A coach declined your request",
+      body: "Your directed coaching request was declined. You can send an open request instead.",
+      data: { requestId: updated.id },
+    });
+    return updated;
   }
 
   @Idempotent()
@@ -313,6 +393,104 @@ export class CoachController {
       data: { bookingId: rejected.id },
     });
     return rejected;
+  }
+
+  @Idempotent()
+  @Post("bookings/refund/request")
+  @HttpCode(201)
+  async requestRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundRequestSchema.parse(body);
+    const refund = await this.refunds.requestRefund({
+      bookingId: input.bookingId,
+      playerId: user.id,
+      reason: input.reason,
+    });
+    const booking = await this.bookings.getBookingById(input.bookingId);
+    if (booking) {
+      const coach = await this.coaches.findProfileById(booking.coachId);
+      if (coach) {
+        await this.notifier.dispatch([coach.userId], {
+          type: "COACH_REFUND_REQUESTED",
+          title: "A player requested a coaching refund",
+          body: input.reason,
+          data: { bookingId: input.bookingId, refundId: refund.id },
+        });
+      }
+    }
+    return refund;
+  }
+
+  @Idempotent()
+  @Post("bookings/refund/decide")
+  @HttpCode(200)
+  async decideRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundDecisionSchema.parse(body);
+    await this.assertCoachOwnsBooking(user.id, input.bookingId);
+    const refund = await this.refunds.decideRefund({
+      refundId: input.refundId,
+      decision: input.decision,
+    });
+    const booking = await this.bookings.getBookingById(input.bookingId);
+    if (booking) {
+      await this.notifier.dispatch([booking.playerId], {
+        type: "COACH_REFUND_DECIDED",
+        title: refund.status === "APPROVED" ? "Refund approved" : "Refund rejected",
+        body:
+          refund.status === "APPROVED"
+            ? "Your coaching refund was approved and the session was cancelled."
+            : "Your coaching refund request was rejected.",
+        data: { bookingId: input.bookingId, refundId: refund.id },
+      });
+    }
+    return refund;
+  }
+
+  @Idempotent()
+  @Post("bookings/refund/complete")
+  @HttpCode(200)
+  async completeRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = refundCompleteSchema.parse(body);
+    await this.assertCoachOwnsBooking(user.id, input.bookingId);
+    return this.refunds.completeRefund({
+      refundId: input.refundId,
+      channel: input.channel,
+      transactionRef: input.transactionRef,
+    });
+  }
+
+  @Idempotent()
+  @Post("bookings/cancel-by-coach")
+  @HttpCode(200)
+  async cancelByCoach(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
+    const user = getSessionUser(request);
+    const input = coachCancelSchema.parse(body);
+    await this.assertCoachOwnsBooking(user.id, input.bookingId);
+    const refund = await this.refunds.cancelByCoach({
+      bookingId: input.bookingId,
+      reason: input.reason,
+    });
+    const booking = await this.bookings.getBookingById(input.bookingId);
+    if (booking) {
+      await this.notifier.dispatch([booking.playerId], {
+        type: "COACH_BOOKING_CANCELLED",
+        title: "Your coaching session was cancelled by the coach",
+        body: input.reason,
+        data: { bookingId: input.bookingId, refundId: refund.id },
+      });
+    }
+    return refund;
+  }
+
+  private async requireCoachProfile(
+    request: AuthenticatedRequest,
+  ): Promise<{ id: string; userId: string }> {
+    const user = getSessionUser(request);
+    const profile = await this.coaches.findProfileByUserId(user.id);
+    if (!profile) throw new BadRequestException({ code: "COACH_PROFILE_REQUIRED" });
+    return profile;
   }
 
   private async assertCoachOwnsBooking(userId: string, bookingId: string): Promise<void> {

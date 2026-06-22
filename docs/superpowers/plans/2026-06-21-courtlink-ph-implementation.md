@@ -66,10 +66,10 @@
 
 - [x] Implement coach profiles, rates, availability, locations, and super-admin verification labels.
 - [x] Implement directed and open requests; coach acceptance/offer precedes payment.
-- [ ] Add an explicit directed-request coach approval flow before payment.
+- [x] Add an explicit directed-request coach approval flow before payment.
 - [x] Implement open player requests, expiring offers, atomic winner selection, and competitor closure with an integration test.
 - [x] Implement separate coach proof review.
-- [ ] Add coach/player cancellation rules and manual coach refund records.
+- [x] Add coach/player cancellation rules and manual coach refund records.
 
 ### Task 8: Web experiences
 
@@ -93,6 +93,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

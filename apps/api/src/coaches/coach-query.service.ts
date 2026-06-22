@@ -34,7 +34,21 @@ export interface PlayerCoachRequestItem {
   booking: { id: string; status: string } | null;
 }
 
+export interface DirectedRequestItem {
+  id: string;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  groupSize: number;
+  skillLevel: string;
+  goals: string | null;
+  notes: string | null;
+  player: { displayName: string };
+}
+
 export interface CoachQueryRepository {
+  listDirectedPendingForCoach(coachId: string): Promise<DirectedRequestItem[]>;
   listBookingsForCoach(coachId: string): Promise<CoachBookingListItem[]>;
   listRequestsForPlayer(playerId: string): Promise<PlayerCoachRequestItem[]>;
 }
@@ -44,6 +58,10 @@ export class CoachQueryService {
 
   listBookingsForCoach(coachId: string): Promise<CoachBookingListItem[]> {
     return this.repository.listBookingsForCoach(coachId);
+  }
+
+  listDirectedPendingForCoach(coachId: string): Promise<DirectedRequestItem[]> {
+    return this.repository.listDirectedPendingForCoach(coachId);
   }
 
   listRequestsForPlayer(playerId: string): Promise<PlayerCoachRequestItem[]> {

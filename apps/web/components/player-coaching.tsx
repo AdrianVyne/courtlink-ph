@@ -67,6 +67,7 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
         method: "POST",
         body: upload,
         credentials: "include",
+        headers: { "Idempotency-Key": crypto.randomUUID() },
       });
       if (!response.ok) {
         const body = (await response.json().catch(() => ({}))) as { message?: string };
@@ -202,7 +203,28 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
               ) : null}
 
               {request.booking && request.booking.status !== "HELD" ? (
-                <p className="court-note">Booking status: {request.booking.status}</p>
+                <div className="queue-actions">
+                  <p className="court-note">Booking status: {request.booking.status}</p>
+                  {request.booking.status === "CONFIRMED" ? (
+                    <button
+                      className="button button-secondary button-small"
+                      type="button"
+                      disabled={pending}
+                      onClick={() => {
+                        const reason = window.prompt("Reason for the refund request?");
+                        if (!reason) return;
+                        void call(() =>
+                          apiFetch("/coaches/bookings/refund/request", {
+                            method: "POST",
+                            body: { bookingId: request.booking?.id, reason },
+                          }),
+                        );
+                      }}
+                    >
+                      Request refund
+                    </button>
+                  ) : null}
+                </div>
               ) : null}
             </article>
           ))}

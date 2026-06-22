@@ -1,7 +1,13 @@
-﻿export const COACH_REVIEW_SLA_MS = 2 * 60 * 60 * 1000;
+export const COACH_REVIEW_SLA_MS = 2 * 60 * 60 * 1000;
 export const COACH_HOLD_MS = 5 * 60 * 1000;
 
-export type CoachRequestStatus = "OPEN" | "MATCHED" | "CANCELLED" | "EXPIRED";
+export type CoachRequestStatus =
+  | "PENDING_COACH"
+  | "OPEN"
+  | "MATCHED"
+  | "CANCELLED"
+  | "DECLINED"
+  | "EXPIRED";
 export type CoachOfferStatus = "ACTIVE" | "ACCEPTED" | "REJECTED" | "WITHDRAWN" | "EXPIRED";
 export type CoachBookingStatus =
   | "HELD"
@@ -79,7 +85,8 @@ export interface AcceptOfferResult {
 }
 
 export interface CoachMarketRepository {
-  createRequest(input: CreateRequestInput): Promise<CoachRequestRecord>;
+  createRequest(input: CreateRequestInput, status: CoachRequestStatus): Promise<CoachRequestRecord>;
+  updateRequestStatus(requestId: string, status: CoachRequestStatus): Promise<CoachRequestRecord>;
   getRequest(id: string): Promise<CoachRequestRecord | null>;
   listOpenRequests(limit: number): Promise<CoachRequestRecord[]>;
   createOffer(input: CreateOfferInput): Promise<CoachOfferRecord>;
@@ -119,7 +126,39 @@ export class CoachMarketService {
     if (input.location.trim().length < 2) {
       throw new CoachMarketError("REQUEST_LOCATION_REQUIRED", "Location is required");
     }
-    return this.repository.createRequest({ ...input, location: input.location.trim() });
+    const status: CoachRequestStatus = input.targetCoachId ? "PENDING_COACH" : "OPEN";
+    return this.repository.createRequest({ ...input, location: input.location.trim() }, status);
+  }
+
+  async approveDirectedRequest(input: {
+    requestId: string;
+    coachId: string;
+  }): Promise<CoachRequestRecord> {
+    const request = await this.requirePendingDirectedRequest(input.requestId, input.coachId);
+    return this.repository.updateRequestStatus(request.id, "OPEN");
+  }
+
+  async declineDirectedRequest(input: {
+    requestId: string;
+    coachId: string;
+  }): Promise<CoachRequestRecord> {
+    const request = await this.requirePendingDirectedRequest(input.requestId, input.coachId);
+    return this.repository.updateRequestStatus(request.id, "DECLINED");
+  }
+
+  private async requirePendingDirectedRequest(
+    requestId: string,
+    coachId: string,
+  ): Promise<CoachRequestRecord> {
+    const request = await this.repository.getRequest(requestId);
+    if (!request) throw new CoachMarketError("REQUEST_NOT_FOUND", "Request not found");
+    if (request.status !== "PENDING_COACH") {
+      throw new CoachMarketError("REQUEST_NOT_PENDING", `Request is ${request.status}`);
+    }
+    if (request.targetCoachId !== coachId) {
+      throw new CoachMarketError("REQUEST_FORBIDDEN", "Request is not directed to you");
+    }
+    return request;
   }
 
   listOpenRequests(limit = 50): Promise<CoachRequestRecord[]> {

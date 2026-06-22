@@ -5,6 +5,8 @@ import { CoachBookingService } from "./coach-booking.service.js";
 import { CoachController } from "./coach.controller.js";
 import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
 import { CoachMarketService } from "./coach-market.service.js";
+import { CoachRefundService } from "./coach-refund.service.js";
+import { PrismaCoachRefundRepository } from "./prisma-coach-refund.repository.js";
 import { CoachService } from "./coach.service.js";
 import { PrismaCoachBookingRepository } from "./prisma-coach-booking.repository.js";
 import { PrismaCoachMarketRepository } from "./prisma-coach-market.repository.js";
@@ -47,6 +49,16 @@ import type { ObjectStorage } from "../storage/object-storage.js";
       inject: [PrismaCoachBookingRepository],
     },
     {
+      provide: PrismaCoachRefundRepository,
+      useFactory: (prisma: PrismaClient) => new PrismaCoachRefundRepository(prisma),
+      inject: [PRISMA_CLIENT],
+    },
+    {
+      provide: CoachRefundService,
+      useFactory: (repo: PrismaCoachRefundRepository) => new CoachRefundService(repo),
+      inject: [PrismaCoachRefundRepository],
+    },
+    {
       provide: PrismaCoachQueryRepository,
       useFactory: (prisma: PrismaClient) => new PrismaCoachQueryRepository(prisma),
       inject: [PRISMA_CLIENT],
@@ -63,14 +75,16 @@ import type { ObjectStorage } from "../storage/object-storage.js";
         market: CoachMarketService,
         bookings: CoachBookingService,
         bookingQuery: CoachQueryService,
+        refunds: CoachRefundService,
         notifier: NotificationDispatcher,
         storage: ObjectStorage,
-      ) => new CoachController(coaches, market, bookings, bookingQuery, notifier, storage),
+      ) => new CoachController(coaches, market, bookings, bookingQuery, refunds, notifier, storage),
       inject: [
         CoachService,
         CoachMarketService,
         CoachBookingService,
         CoachQueryService,
+        CoachRefundService,
         NotificationDispatcher,
         OBJECT_STORAGE,
       ],

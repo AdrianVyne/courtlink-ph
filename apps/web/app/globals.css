@@ -856,6 +856,7 @@ h2 {
 .status-proof_submitted,
 .status-refund_requested,
 .status-pending_approval,
+.status-pending_coach,
 .status-held {
   background: #fff4d6;
   color: #8a5a00;
@@ -863,6 +864,7 @@ h2 {
 
 .status-rejected,
 .status-cancelled,
+.status-declined,
 .status-expired {
   background: #fcebea;
   color: #9a2a22;
