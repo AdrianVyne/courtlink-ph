@@ -4,6 +4,12 @@ x-app-build: &app-build
   context: .
   dockerfile: Dockerfile
 
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 services:
   postgres:
     image: postgres:17.5-alpine
@@ -18,6 +24,7 @@ services:
       retries: 10
     restart: unless-stopped
     mem_limit: 1g
+    logging: *default-logging
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
@@ -31,6 +38,7 @@ services:
       retries: 10
     restart: unless-stopped
     mem_limit: 256m
+    logging: *default-logging
     volumes:
       - redis-data:/data
 
@@ -46,6 +54,7 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    logging: *default-logging
 
   api:
     build:
@@ -56,6 +65,8 @@ services:
       PORT: "3001"
       DATABASE_URL: ${DATABASE_URL:?set DATABASE_URL}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      DATABASE_CAPACITY_BYTES: ${DATABASE_CAPACITY_BYTES:-10737418240}
+      READINESS_TIMEOUT_MS: ${READINESS_TIMEOUT_MS:-2000}
       SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET}
       ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
       OBJECT_STORAGE_ENDPOINT: ${OBJECT_STORAGE_ENDPOINT:?set OBJECT_STORAGE_ENDPOINT}
@@ -83,6 +94,7 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     mem_limit: 768m
+    logging: *default-logging
 
   worker:
     build:
@@ -101,6 +113,7 @@ services:
         condition: service_completed_successfully
     restart: unless-stopped
     mem_limit: 512m
+    logging: *default-logging
 
   web:
     build:
@@ -126,6 +139,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     mem_limit: 512m
+    logging: *default-logging
 
   caddy:
     image: caddy:2.10-alpine
@@ -145,6 +159,7 @@ services:
         condition: service_healthy
     restart: unless-stopped
     mem_limit: 128m
+    logging: *default-logging
 
   # One-shot encrypted backup of Postgres to object storage. Run on demand or
   # from a host cron: `docker compose -f compose.prod.yaml run --rm backup`.
@@ -167,6 +182,7 @@ services:
       postgres:
         condition: service_healthy
     restart: "no"
+    logging: *default-logging
 
 volumes:
   postgres-data:

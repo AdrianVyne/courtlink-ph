@@ -37,6 +37,7 @@ All three application services come from a single multi-stage `Dockerfile`
 
    ```bash
    docker compose -f compose.prod.yaml ps
+   curl -fsS http://localhost/api/v1/health/live
    curl -fsS http://localhost/api/v1/health/ready
    ```
 
@@ -57,6 +58,11 @@ The `migrate` service runs `prisma migrate deploy` on every start and exits;
 - Private payment-proof storage uses OCI Object Storage via the same S3 adapter.
 - Resource limits in `compose.prod.yaml` are sized for a small Always Free VM
   and can be raised on larger shapes.
+- JSON container logs rotate at 10 MiB with five files retained per service.
+- Configure the five-minute readiness probe and optional free webhook described
+  in `docs/runbooks/operations.md`.
+- Super admins inspect dependency, capacity, queue, and retained-failure state at
+  `/admin/operations`.
 
 ## Backups and restore
 
@@ -96,6 +102,7 @@ docker compose -f compose.prod.yaml --profile backup run --rm \
 
 ### Monthly restore drill
 
-Once a month, restore the latest backup into a throwaway database and confirm
-row counts and key constraints match production. A wrong key or a truncated or
-tampered archive fails the restore instead of loading corrupt data.
+Follow `docs/runbooks/restore-drill.md`. Restore the latest backup into a
+throwaway database and confirm migrations, representative aggregate row counts,
+and key constraints. A wrong key or a truncated or tampered archive fails the
+restore instead of loading corrupt data.

@@ -28,7 +28,7 @@
 
 - [x] Write failing domain and database tests for booking, payment-review, refund, and offer invariants.
 - [x] Add Prisma schema and migrations that satisfy tenant, scheduling, and audit invariants.
-- [x] Implement versioned API routes, health endpoint, and OpenAPI/Swagger setup (correlation IDs and idempotency keys still pending).
+- [x] Implement versioned API routes, dependency-aware health endpoints, correlation IDs, and OpenAPI/Swagger setup (idempotency keys still pending).
 - [x] Verify migration apply and integration tests against PostgreSQL (rollback procedure still pending).
 
 ### Task 4: Authentication and authorization
@@ -70,7 +70,7 @@
 
 - [x] Add production Compose, Caddy, non-root images, resource limits, health checks, and restart policies (API image build + boot + healthcheck verified).
 - [x] Add S3/OCI Object Storage integration, encrypted (AES-256-GCM) PostgreSQL backups, restore tooling, and retention guidance (verified by a live dump/restore round trip).
-- [ ] Add structured redacted logs, metrics/capacity checks, queue visibility, alerts, and runbooks.
+- [x] Add structured redacted logs, metrics/capacity checks, queue visibility, alerts, and runbooks.
 - [ ] Verify clean-machine deployment, restart recovery, backup restoration, and migration procedure (deployment runbook added at docs/deployment.md; backup/restore still pending).
 
 ### Task 10: Release verification
