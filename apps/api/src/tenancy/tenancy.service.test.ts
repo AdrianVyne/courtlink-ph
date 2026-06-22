@@ -23,7 +23,7 @@ class InMemoryTenancyRepository implements TenancyRepository {
       createdAt: new Date("2026-06-21T00:00:00.000Z"),
     };
     this.businesses.push(business);
-    this.memberships.push({ businessId: business.id, role: "OWNER", business });
+    this.memberships.push({ businessId: business.id, role: "OWNER", status: "ACTIVE", business });
     void userId;
     return business;
   }
@@ -66,6 +66,7 @@ describe("TenancyService", () => {
     repository.memberships.push({
       businessId: "business-1",
       role: "STAFF" as OrganizationRole,
+      status: "ACTIVE" as const,
       business: {
         id: "business-1",
         name: "Other",

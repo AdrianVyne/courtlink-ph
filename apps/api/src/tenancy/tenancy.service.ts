@@ -1,4 +1,4 @@
-import type { OrganizationRole } from "@courtlink/database";
+import type { MembershipStatus, OrganizationRole } from "@courtlink/database";
 
 export interface BusinessSummary {
   id: string;
@@ -10,6 +10,7 @@ export interface BusinessSummary {
 export interface MembershipSummary {
   businessId: string;
   role: OrganizationRole;
+  status: MembershipStatus;
   business: BusinessSummary;
 }
 
@@ -60,7 +61,7 @@ export class TenancyService {
     allowed: OrganizationRole[],
   ): Promise<MembershipSummary> {
     const membership = await this.repository.findMembership(userId, businessId);
-    if (!membership || !allowed.includes(membership.role)) {
+    if (!membership || membership.status !== "ACTIVE" || !allowed.includes(membership.role)) {
       throw new ForbiddenTenantError();
     }
     return membership;

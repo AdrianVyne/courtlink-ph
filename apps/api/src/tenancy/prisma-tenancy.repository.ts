@@ -48,6 +48,7 @@ export class PrismaTenancyRepository implements TenancyRepository {
     return rows.map((row) => ({
       businessId: row.businessId,
       role: row.role,
+      status: row.status,
       business: toSummary(row.business),
     }));
   }
@@ -69,6 +70,7 @@ export class PrismaTenancyRepository implements TenancyRepository {
     return {
       businessId: row.businessId,
       role: row.role,
+      status: row.status,
       business: toSummary(row.business),
     };
   }

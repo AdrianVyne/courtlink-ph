@@ -41,7 +41,7 @@
 - [x] Implement platform roles and organization memberships.
 - [x] Enforce tenant authorization in services and prove cross-tenant denial with integration tests.
 - [x] Add venue onboarding and super-admin approval/rejection.
-- [ ] Add organization staff invitations, membership suspension/removal, and tenant-visible audit history.
+- [x] Add organization staff invitations, membership suspension/removal, and tenant-visible audit.
 
 ### Task 5: Court inventory and pricing
 
@@ -93,6 +93,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 
