@@ -31,7 +31,7 @@
 - [x] Implement versioned API routes, dependency-aware health endpoints, correlation IDs, and OpenAPI/Swagger setup.
 - [x] Add idempotency-key handling for retry-safe booking and payment mutations.
 - [x] Verify migration apply and integration tests against PostgreSQL.
-- [ ] Document and rehearse a forward-fix/rollback migration procedure.
+- [x] Document and rehearse a forward-fix/rollback migration procedure.
 
 ### Task 4: Authentication and authorization
 
@@ -92,6 +92,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 
