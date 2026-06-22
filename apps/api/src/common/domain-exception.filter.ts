@@ -33,6 +33,11 @@ const STATUS_BY_CODE: Record<string, number> = {
   REFUND_NOT_FOUND: 404,
   REQUEST_NOT_FOUND: 404,
   OFFER_NOT_FOUND: 404,
+  CLOSURE_NOT_FOUND: 404,
+  COURT_BOOKING_CONFLICT: 409,
+  COURT_CLOSED: 409,
+  COURT_CLOSURE_CONFLICT: 409,
+  CLOSURE_BOOKINGS_EXIST: 409,
 };
 
 function isCodedError(value: unknown): value is CodedError {

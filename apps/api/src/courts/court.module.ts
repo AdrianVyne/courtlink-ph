@@ -9,6 +9,8 @@ import { VenueModule } from "../venues/venue.module.js";
 import { VenueService } from "../venues/venue.service.js";
 import { BookingService } from "./booking.service.js";
 import { CourtController } from "./court.controller.js";
+import { CourtScheduleController } from "./court-schedule.controller.js";
+import { CourtScheduleService } from "./court-schedule.service.js";
 import { CourtService } from "./court.service.js";
 import { BookingQueryService } from "./booking-query.service.js";
 import { PrismaBookingQueryRepository } from "./prisma-booking-query.repository.js";
@@ -19,7 +21,7 @@ import { RefundService } from "./refund.service.js";
 
 @Module({
   imports: [TenancyModule, VenueModule],
-  controllers: [CourtController],
+  controllers: [CourtController, CourtScheduleController],
   providers: [
     {
       provide: PrismaCourtRepository,
@@ -49,6 +51,11 @@ import { RefundService } from "./refund.service.js";
     {
       provide: CourtService,
       useFactory: (repo: PrismaCourtRepository) => new CourtService(repo),
+      inject: [PrismaCourtRepository],
+    },
+    {
+      provide: CourtScheduleService,
+      useFactory: (repo: PrismaCourtRepository) => new CourtScheduleService(repo),
       inject: [PrismaCourtRepository],
     },
     {
@@ -94,6 +101,16 @@ import { RefundService } from "./refund.service.js";
         OBJECT_STORAGE,
         NotificationDispatcher,
       ],
+    },
+    {
+      provide: CourtScheduleController,
+      useFactory: (
+        schedules: CourtScheduleService,
+        courts: CourtService,
+        tenancy: TenancyService,
+        venues: VenueService,
+      ) => new CourtScheduleController(schedules, courts, tenancy, venues),
+      inject: [CourtScheduleService, CourtService, TenancyService, VenueService],
     },
   ],
   exports: [CourtService, BookingService, PrismaBookingRepository],

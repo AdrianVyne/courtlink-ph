@@ -126,35 +126,35 @@ git commit -m "feat: enforce court schedules transactionally"
 - Modify: `apps/api/src/common/domain-exception.filter.ts`
 - Create: `apps/api/integration/court-schedule-authorization.test.ts`
 
-- [ ] **Step 1: Write failing schedule-service validation tests**
+- [x] **Step 1: Write failing schedule-service validation tests**
 
 Test weekday/minute bounds, positive windows, duplicate starts, overlap rejection, closure range validation, and deletion ownership.
 
-- [ ] **Step 2: Verify the focused tests fail**
+- [x] **Step 2: Verify the focused tests fail**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts/court-schedule.service.test.ts`
 Expected: FAIL because schedule service does not exist.
 
-- [ ] **Step 3: Implement schedule service and stable errors**
+- [x] **Step 3: Implement schedule service and stable errors**
 
 The service validates and sorts replacement windows, delegates atomic repository writes, and maps repository conflicts to `CLOSURE_BOOKINGS_EXIST`. Add schedule error codes to the global HTTP map with 404/409 statuses where appropriate.
 
-- [ ] **Step 4: Add controller routes and tenant authorization**
+- [x] **Step 4: Add controller routes and tenant authorization**
 
 Use Zod schemas for `PUT operating-hours`, `POST closures`, and `DELETE closures/:closureId`. Resolve court -> venue -> business and require `OWNER` or `MANAGER` before every management call. Keep `GET schedule` authenticated and tenant-scoped.
 
-- [ ] **Step 5: Prove cross-tenant denial with PostgreSQL integration**
+- [x] **Step 5: Prove cross-tenant denial with PostgreSQL integration**
 
 Create two businesses and a manager for only one. Assert the manager cannot read, replace, create, or delete schedule data on the other business's court.
 
-- [ ] **Step 6: Run API tests and integration authorization**
+- [x] **Step 6: Run API tests and integration authorization**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts`
 
 Run: `$env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'; pnpm --filter @courtlink/api test:integration -- integration/court-schedule-authorization.test.ts`
 Expected: all focused and authorization tests pass.
 
-- [ ] **Step 7: Commit schedule management API**
+- [x] **Step 7: Commit schedule management API**
 
 ```bash
 git add apps/api/src/courts apps/api/src/common/domain-exception.filter.ts apps/api/integration/court-schedule-authorization.test.ts
