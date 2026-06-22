@@ -12,6 +12,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { z } from "zod";
+import { Idempotent } from "../idempotency/idempotent.decorator.js";
 import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/session.guard.js";
 // biome-ignore lint/style/useImportType: TenancyService is injected at runtime.
 import { TenancyService } from "../tenancy/tenancy.service.js";
@@ -122,6 +123,7 @@ export class CourtController {
     });
   }
 
+  @Idempotent()
   @Post(":id/hold")
   @HttpCode(201)
   async hold(@Req() request: AuthenticatedRequest, @Param("id") id: string, @Body() body: unknown) {
@@ -148,6 +150,7 @@ export class CourtController {
     return this.bookingQuery.listVenueQueue(venueIds, ["PROOF_SUBMITTED", "REFUND_REQUESTED"]);
   }
 
+  @Idempotent()
   @Post("bookings/:id/proof-upload")
   @HttpCode(200)
   async uploadProof(@Req() request: AuthenticatedRequest, @Param("id") bookingId: string) {
@@ -195,6 +198,7 @@ export class CourtController {
     return { url, expiresInSeconds: 300 };
   }
 
+  @Idempotent()
   @Post("bookings/proof")
   @HttpCode(200)
   async proof(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -210,6 +214,7 @@ export class CourtController {
     return result;
   }
 
+  @Idempotent()
   @Post("bookings/proof/approve")
   @HttpCode(200)
   async approve(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -231,6 +236,7 @@ export class CourtController {
     return confirmed;
   }
 
+  @Idempotent()
   @Post("bookings/proof/reject")
   @HttpCode(200)
   async reject(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -253,6 +259,7 @@ export class CourtController {
     return rejected;
   }
 
+  @Idempotent()
   @Post("bookings/refund/request")
   @HttpCode(201)
   async requestRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -265,6 +272,7 @@ export class CourtController {
     });
   }
 
+  @Idempotent()
   @Post("bookings/refund/decide")
   @HttpCode(200)
   async decideRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -287,6 +295,7 @@ export class CourtController {
     return refund;
   }
 
+  @Idempotent()
   @Post("bookings/refund/complete")
   @HttpCode(200)
   async completeRefund(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -300,6 +309,7 @@ export class CourtController {
     });
   }
 
+  @Idempotent()
   @Post("bookings/cancel-by-venue")
   @HttpCode(200)
   async cancelByVenue(@Req() request: AuthenticatedRequest, @Body() body: unknown) {

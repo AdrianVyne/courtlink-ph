@@ -1,4 +1,4 @@
-﻿# CourtLink PH Implementation Plan
+# CourtLink PH Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
@@ -29,7 +29,7 @@
 - [x] Write failing domain and database tests for booking, payment-review, refund, and offer invariants.
 - [x] Add Prisma schema and migrations that satisfy tenant, scheduling, and audit invariants.
 - [x] Implement versioned API routes, dependency-aware health endpoints, correlation IDs, and OpenAPI/Swagger setup.
-- [ ] Add idempotency-key handling for retry-safe booking and payment mutations.
+- [x] Add idempotency-key handling for retry-safe booking and payment mutations.
 - [x] Verify migration apply and integration tests against PostgreSQL.
 - [ ] Document and rehearse a forward-fix/rollback migration procedure.
 
@@ -92,6 +92,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

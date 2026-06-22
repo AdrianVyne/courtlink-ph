@@ -12,6 +12,7 @@ import {
   Req,
 } from "@nestjs/common";
 import { z } from "zod";
+import { Idempotent } from "../idempotency/idempotent.decorator.js";
 import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/session.guard.js";
 // biome-ignore lint/style/useImportType: CoachBookingService is injected at runtime.
 import { CoachBookingService } from "./coach-booking.service.js";
@@ -162,6 +163,7 @@ export class CoachController {
     return this.coaches.setVerification(id, "VERIFIED");
   }
 
+  @Idempotent()
   @Post("requests")
   @HttpCode(201)
   async createRequest(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -190,6 +192,7 @@ export class CoachController {
     return this.market.listOffersForRequest(id);
   }
 
+  @Idempotent()
   @Post("offers")
   @HttpCode(201)
   async makeOffer(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -206,6 +209,7 @@ export class CoachController {
     });
   }
 
+  @Idempotent()
   @Post("offers/accept")
   @HttpCode(201)
   async acceptOffer(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -224,6 +228,7 @@ export class CoachController {
     return result;
   }
 
+  @Idempotent()
   @Post("bookings/:id/proof-upload")
   @HttpCode(200)
   async uploadProof(@Req() request: AuthenticatedRequest, @Param("id") bookingId: string) {
@@ -258,6 +263,7 @@ export class CoachController {
     });
   }
 
+  @Idempotent()
   @Post("bookings/proof")
   @HttpCode(200)
   async proof(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -266,6 +272,7 @@ export class CoachController {
     return this.bookings.submitProof({ ...input, playerId: user.id });
   }
 
+  @Idempotent()
   @Post("bookings/proof/approve")
   @HttpCode(200)
   async approve(@Req() request: AuthenticatedRequest, @Body() body: unknown) {
@@ -286,6 +293,7 @@ export class CoachController {
     return confirmed;
   }
 
+  @Idempotent()
   @Post("bookings/proof/reject")
   @HttpCode(200)
   async reject(@Req() request: AuthenticatedRequest, @Body() body: unknown) {

@@ -85,3 +85,12 @@ Do not run image, volume, or database cleanup commands without separately confir
 ## Incident record
 
 Record start/end times in UTC, alert codes, affected services, correlation IDs, impact, actions, verification evidence, and follow-up changes. Exclude all personal and payment data. Create an ADR when remediation changes architecture or operational policy.
+
+## Idempotency records
+
+Protected booking and payment mutations require an `Idempotency-Key` header and persist
+an `idempotency_records` row scoped to `(actorId, method, path, key)`. The worker runs the
+`idempotency.records.prune` queue hourly to delete records older than the 24-hour retention
+window. If the table grows unexpectedly, confirm the prune worker is processing jobs and
+inspect `idempotency.records.prune` failures before manually deleting rows with
+`createdAt` older than 24 hours.

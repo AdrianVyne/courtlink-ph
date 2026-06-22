@@ -631,3 +631,28 @@ model AuditEvent {
   @@index([actorId, occurredAt])
   @@map("audit_events")
 }
+
+model IdempotencyRecord {
+  id             String            @id @default(uuid()) @db.Uuid
+  actorId        String            @db.Uuid
+  method         String
+  path           String
+  idempotencyKey String
+  requestHash    String
+  status         IdempotencyStatus @default(IN_PROGRESS)
+  statusCode     Int?
+  responseBody   Json?
+  createdAt      DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime          @updatedAt @db.Timestamptz(3)
+
+  @@unique([actorId, method, path, idempotencyKey])
+  @@index([createdAt])
+  @@map("idempotency_records")
+}
+
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+

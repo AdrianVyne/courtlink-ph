@@ -4,6 +4,7 @@ import { CoachModule } from "./coaches/coach.module.js";
 import { CourtModule } from "./courts/court.module.js";
 import { DatabaseModule } from "./database/database.module.js";
 import { HealthController } from "./health/health.controller.js";
+import { IdempotencyModule } from "./idempotency/idempotency.module.js";
 import { NotificationModule } from "./notifications/notification.module.js";
 import { OperationsModule } from "./operations/operations.module.js";
 import { FavoriteModule } from "./favorites/favorite.module.js";
@@ -17,6 +18,7 @@ import { VenueModule } from "./venues/venue.module.js";
 @Module({
   imports: [
     DatabaseModule,
+    IdempotencyModule,
     StorageModule,
     AuthModule,
     TenancyModule,

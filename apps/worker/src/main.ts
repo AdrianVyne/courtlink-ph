@@ -15,6 +15,11 @@ import {
   buildBookingCompletionWorker,
   scheduleBookingCompletion,
 } from "./booking-completion.js";
+import {
+  buildIdempotencyPruneQueue,
+  buildIdempotencyPruneWorker,
+  scheduleIdempotencyPrune,
+} from "./idempotency-prune.js";
 import { buildFailedJobEvent } from "./queue-policy.js";
 
 function log(message: string, fields: Record<string, unknown> = {}): void {
@@ -66,16 +71,32 @@ async function main(): Promise<void> {
     log(String(event), fields);
   });
 
-  log("worker.ready", { queues: [holdQueue.name, escalationQueue.name, completionQueue.name] });
+  const pruneQueue = buildIdempotencyPruneQueue(connection);
+  await scheduleIdempotencyPrune(pruneQueue);
+  const pruneWorker = buildIdempotencyPruneWorker(connection, prisma);
+  pruneWorker.on("completed", (job, result) => {
+    log("idempotency-prune.completed", { jobId: job.id, pruned: result.count });
+  });
+  pruneWorker.on("failed", (job, error) => {
+    if (!job) return log("idempotency-prune.failed", { errorType: error.name });
+    const { event, ...fields } = buildFailedJobEvent(pruneQueue.name, job);
+    log(String(event), fields);
+  });
+
+  log("worker.ready", {
+    queues: [holdQueue.name, escalationQueue.name, completionQueue.name, pruneQueue.name],
+  });
 
   const shutdown = async (signal: string): Promise<void> => {
     log("worker.shutdown", { signal });
     await holdWorker.close();
     await escalationWorker.close();
     await completionWorker.close();
+    await pruneWorker.close();
     await holdQueue.close();
     await escalationQueue.close();
     await completionQueue.close();
+    await pruneQueue.close();
     await connection.quit();
     await prisma.$disconnect();
     process.exit(0);
