@@ -1,7 +1,8 @@
-﻿import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { z } from "zod";
 // biome-ignore lint/style/useImportType: AuthService is required as a runtime value for Nest DI.
+import { AccountSecurityService } from "./account-security.service.js";
 import { AuthService, type SessionUser } from "./auth.service.js";
 import {
   type AuthenticatedRequest,
@@ -23,6 +24,14 @@ const loginSchema = z.object({
   password: z.string().min(1).max(256),
 });
 
+const requestVerificationSchema = z.object({ email: z.string().email().max(254) });
+const verifyEmailSchema = z.object({ token: z.string().min(10).max(256) });
+const requestResetSchema = z.object({ email: z.string().email().max(254) });
+const resetPasswordSchema = z.object({
+  token: z.string().min(10).max(256),
+  password: z.string().min(12).max(256),
+});
+
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 
@@ -34,6 +43,7 @@ export interface CookieReply {
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
+    private readonly accountSecurity: AccountSecurityService,
     @Inject(SECURE_COOKIES) private readonly secureCookies: boolean,
   ) {}
 
@@ -42,7 +52,45 @@ export class AuthController {
   @HttpCode(201)
   async register(@Body() body: unknown) {
     const input = registerSchema.parse(body);
-    return this.authService.register(input);
+    const user = await this.authService.register(input);
+    await this.accountSecurity.requestEmailVerification(user.id);
+    return user;
+  }
+
+  @Public()
+  @Post("email/verification/request")
+  @HttpCode(202)
+  async requestEmailVerification(@Body() body: unknown) {
+    const input = requestVerificationSchema.parse(body);
+    await this.accountSecurity.requestEmailVerificationByEmail(input.email);
+    return { status: "accepted" };
+  }
+
+  @Public()
+  @Post("email/verify")
+  @HttpCode(200)
+  async verifyEmail(@Body() body: unknown) {
+    const input = verifyEmailSchema.parse(body);
+    await this.accountSecurity.verifyEmail(input.token);
+    return { status: "verified" };
+  }
+
+  @Public()
+  @Post("password/reset/request")
+  @HttpCode(202)
+  async requestPasswordReset(@Body() body: unknown) {
+    const input = requestResetSchema.parse(body);
+    await this.accountSecurity.requestPasswordReset(input.email);
+    return { status: "accepted" };
+  }
+
+  @Public()
+  @Post("password/reset")
+  @HttpCode(200)
+  async resetPassword(@Body() body: unknown) {
+    const input = resetPasswordSchema.parse(body);
+    await this.accountSecurity.resetPassword(input.token, input.password);
+    return { status: "reset" };
   }
 
   @Public()

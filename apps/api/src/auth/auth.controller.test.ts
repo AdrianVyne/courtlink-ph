@@ -1,6 +1,7 @@
-﻿import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { AuthService, type CreateAuthUserInput, type UserAuthRepository } from "./auth.service.js";
 import { PasswordHasher } from "./password-hasher.js";
+import { AccountSecurityService } from "./account-security.service.js";
 import { AuthController, type CookieReply } from "./auth.controller.js";
 
 function createController(): AuthController {
@@ -16,7 +17,18 @@ function createController(): AuthController {
     findSessionUser: async () => null,
     deleteSession: async () => undefined,
   };
-  return new AuthController(new AuthService(repository, new PasswordHasher()), false);
+  const accountSecurity = {
+    requestEmailVerification: async () => "verification-token",
+    requestEmailVerificationByEmail: async () => undefined,
+    verifyEmail: async () => undefined,
+    requestPasswordReset: async () => null,
+    resetPassword: async () => undefined,
+  } as unknown as AccountSecurityService;
+  return new AuthController(
+    new AuthService(repository, new PasswordHasher()),
+    accountSecurity,
+    false,
+  );
 }
 
 describe("AuthController", () => {

@@ -7,6 +7,7 @@ const environmentSchema = z.object({
   REDIS_URL: z.url().startsWith("redis://"),
   SESSION_SECRET: z.string().min(32),
   ENCRYPTION_KEY: z.string().min(32),
+  APP_BASE_URL: z.url().default("http://localhost:3000"),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;

@@ -42,6 +42,6 @@ import { PrismaUserDirectory } from "./prisma-user-directory.js";
       inject: [NotificationService, EMAIL_SENDER, PrismaUserDirectory],
     },
   ],
-  exports: [NotificationService, NotificationDispatcher],
+  exports: [NotificationService, NotificationDispatcher, EMAIL_SENDER],
 })
 export class NotificationModule {}
