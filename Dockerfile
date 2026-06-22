@@ -7,7 +7,10 @@ ENV PNPM_HOME=/pnpm \
     PATH=/pnpm:$PATH \
     NEXT_TELEMETRY_DISABLED=1 \
     TURBO_TELEMETRY_DISABLED=1
-RUN corepack enable
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends openssl ca-certificates \
+    && rm -rf /var/lib/apt/lists/* \
+    && corepack enable
 WORKDIR /app
 
 # Install all workspace dependencies against the committed lockfile.
