@@ -1,9 +1,12 @@
 ﻿import { describe, expect, it } from "vitest";
+import type { ClosureWindow } from "./availability-policy.js";
 import {
+  type ClosureInput,
   CourtService,
   type CourtRepository,
   type CourtSummary,
   type CreateCourtInput,
+  type OperatingWindowInput,
   type PricingRule,
   type QuoteInput,
   QuoteError,
@@ -40,6 +43,26 @@ class InMemoryCourtRepository implements CourtRepository {
 
   async listPricingRules(courtId: string): Promise<PricingRule[]> {
     return this.rules.get(courtId) ?? [];
+  }
+
+  async getSchedule() {
+    return { operatingHours: [], closures: [] };
+  }
+
+  async replaceOperatingHours(_courtId: string, _windows: OperatingWindowInput[]) {
+    return [];
+  }
+
+  async createClosure(input: ClosureInput): Promise<ClosureWindow> {
+    return { id: "closure-1", reason: input.reason ?? null, ...input };
+  }
+
+  async deleteClosure() {
+    return false;
+  }
+
+  async listBlockingBookings() {
+    return [];
   }
 }
 

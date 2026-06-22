@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { ClosureWindow, OperatingWindow } from "./availability-policy.js";
 import {
   BookingError,
   type BookingRecord,
@@ -8,9 +9,11 @@ import {
   type PaymentSubmissionRecord,
 } from "./booking.service.js";
 import {
+  type ClosureInput,
   CourtService,
   type CourtRepository,
   type CourtSummary,
+  type OperatingWindowInput,
   type PricingRule,
 } from "./court.service.js";
 
@@ -141,6 +144,16 @@ class FakeCourtRepo implements CourtRepository {
     effectiveFrom: null,
     effectiveUntil: null,
   };
+  operatingHours: OperatingWindow[] = [
+    {
+      id: "hours-1",
+      courtId: "court-1",
+      dayOfWeek: 0,
+      opensMinute: 480,
+      closesMinute: 1_320,
+    },
+  ];
+  closures: ClosureWindow[] = [];
 
   async createCourt() {
     return this.court;
@@ -153,6 +166,37 @@ class FakeCourtRepo implements CourtRepository {
   }
   async listPricingRules() {
     return [this.rule];
+  }
+  async getSchedule() {
+    return { operatingHours: this.operatingHours, closures: this.closures };
+  }
+  async replaceOperatingHours(courtId: string, windows: OperatingWindowInput[]) {
+    this.operatingHours = windows.map((window, index) => ({
+      id: `hours-${index + 1}`,
+      courtId,
+      ...window,
+    }));
+    return this.operatingHours;
+  }
+  async createClosure(input: ClosureInput) {
+    const closure: ClosureWindow = {
+      id: `closure-${this.closures.length + 1}`,
+      courtId: input.courtId,
+      startsAt: input.startsAt,
+      endsAt: input.endsAt,
+      reason: input.reason ?? null,
+    };
+    this.closures.push(closure);
+    return closure;
+  }
+  async deleteClosure(_courtId: string, closureId: string) {
+    const index = this.closures.findIndex((closure) => closure.id === closureId);
+    if (index < 0) return false;
+    this.closures.splice(index, 1);
+    return true;
+  }
+  async listBlockingBookings() {
+    return [];
   }
 }
 
@@ -176,6 +220,47 @@ describe("BookingService", () => {
     expect(booking.status).toBe("HELD");
     expect(booking.quotedAmount).toBe(200);
     expect(booking.proofDeadline.getTime() - now.getTime()).toBe(HOLD_DURATION_MS);
+  });
+
+  it("rejects quotes and holds when no operating window contains the interval", async () => {
+    const repo = new FakeBookingRepo();
+    const courtRepo = new FakeCourtRepo();
+    courtRepo.operatingHours = [];
+    const service = new BookingService(repo, courtRepo);
+    const interval = {
+      startsAt: new Date("2026-06-21T01:00:00.000Z"),
+      endsAt: new Date("2026-06-21T02:00:00.000Z"),
+    };
+
+    await expect(service.quote("court-1", interval)).rejects.toMatchObject({
+      code: "COURT_CLOSED",
+    });
+    await expect(
+      service.createHold({ courtId: "court-1", playerId: "player-1", ...interval }),
+    ).rejects.toMatchObject({ code: "COURT_CLOSED" });
+    expect(repo.bookings).toHaveLength(0);
+  });
+
+  it("rejects an interval overlapping a closure", async () => {
+    const repo = new FakeBookingRepo();
+    const courtRepo = new FakeCourtRepo();
+    courtRepo.closures = [
+      {
+        id: "closure-1",
+        courtId: "court-1",
+        startsAt: new Date("2026-06-21T01:30:00.000Z"),
+        endsAt: new Date("2026-06-21T03:00:00.000Z"),
+        reason: "Maintenance",
+      },
+    ];
+    const service = new BookingService(repo, courtRepo);
+
+    await expect(
+      service.quote("court-1", {
+        startsAt: new Date("2026-06-21T01:00:00.000Z"),
+        endsAt: new Date("2026-06-21T02:00:00.000Z"),
+      }),
+    ).rejects.toMatchObject({ code: "COURT_CLOSURE_CONFLICT" });
   });
 
   it("transitions to PROOF_SUBMITTED and sets a two-hour review SLA", async () => {

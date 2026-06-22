@@ -76,6 +76,13 @@ async function confirmedBooking(startsAt: Date) {
     data: {
       venueId: venue.id,
       name: "RFT Court",
+      operatingHours: {
+        create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
+          dayOfWeek,
+          opensMinute: 0,
+          closesMinute: 1_440,
+        })),
+      },
       pricingRules: {
         create: { startsMinute: 0, endsMinute: 24 * 60, pricePerHour: "250.00", priority: 0 },
       },

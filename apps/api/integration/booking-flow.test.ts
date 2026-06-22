@@ -96,6 +96,13 @@ async function setup() {
       slotIncrementMin: 30,
       minimumDurationMin: 60,
       maximumDurationMin: 240,
+      operatingHours: {
+        create: Array.from({ length: 7 }, (_, dayOfWeek) => ({
+          dayOfWeek,
+          opensMinute: 0,
+          closesMinute: 1_440,
+        })),
+      },
       pricingRules: {
         create: {
           startsMinute: 0,
@@ -176,7 +183,7 @@ describe("Court booking lifecycle", () => {
         startsAt: new Date("2026-06-22T03:30:00.000Z"),
         endsAt: new Date("2026-06-22T04:30:00.000Z"),
       }),
-    ).rejects.toMatchObject({ cause: { originalCode: "23P01" } });
+    ).rejects.toMatchObject({ code: "COURT_BOOKING_CONFLICT" });
   });
 
   it("expires stale holds via the worker query", async () => {

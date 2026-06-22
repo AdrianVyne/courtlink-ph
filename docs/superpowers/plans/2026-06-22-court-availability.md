@@ -17,7 +17,7 @@
 - Create: `apps/api/src/courts/availability-policy.ts`
 - Modify: `apps/api/src/courts/court.service.ts`
 
-- [ ] **Step 1: Write failing schedule-policy tests**
+- [x] **Step 1: Write failing schedule-policy tests**
 
 ```ts
 expect(manilaParts(new Date("2026-06-21T23:30:00.000Z"))).toEqual({
@@ -30,16 +30,16 @@ expect(() => validateScheduledInterval(court, mondayHours, [], misalignedStart, 
 expect(() => validateScheduledInterval(court, mondayHours, [closure], start, end)).toThrow(ScheduleError);
 ```
 
-- [ ] **Step 2: Verify the tests fail because the policy is absent**
+- [x] **Step 2: Verify the tests fail because the policy is absent**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts/availability-policy.test.ts`
 Expected: FAIL on missing `availability-policy.js`.
 
-- [ ] **Step 3: Implement pure Manila conversion and interval validation**
+- [x] **Step 3: Implement pure Manila conversion and interval validation**
 
 Define `OperatingWindow`, `ClosureWindow`, `ScheduleError`, `manilaParts`, `intervalsOverlap`, and `validateScheduledInterval`. Use fixed UTC+08:00, reject cross-day intervals, require containment in one weekday window, align starts relative to `opensMinute`, and check closure overlap.
 
-- [ ] **Step 4: Add candidate-slot generation tests and implementation**
+- [x] **Step 4: Add candidate-slot generation tests and implementation**
 
 ```ts
 expect(generateCandidateIntervals(court, mondayHours, "2026-06-22", 60)).toEqual([
@@ -50,12 +50,12 @@ expect(generateCandidateIntervals(court, mondayHours, "2026-06-22", 60)).toEqual
 
 Parse the date strictly, convert Manila midnight to UTC by subtracting eight hours, and iterate each matching window at `slotIncrementMin` while the requested duration fits.
 
-- [ ] **Step 5: Run policy tests and API typecheck**
+- [x] **Step 5: Run policy tests and API typecheck**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts/availability-policy.test.ts && pnpm --filter @courtlink/api typecheck`
 Expected: all policy tests pass and TypeScript exits zero.
 
-- [ ] **Step 6: Commit the policy slice**
+- [x] **Step 6: Commit the policy slice**
 
 ```bash
 git add apps/api/src/courts/availability-policy.ts apps/api/src/courts/availability-policy.test.ts apps/api/src/courts/court.service.ts
@@ -73,43 +73,43 @@ git commit -m "feat: add Manila court schedule policy"
 - Create: `apps/api/integration/court-availability-flow.test.ts`
 - Modify: `packages/database/prisma/seed.ts`
 
-- [ ] **Step 1: Write failing service tests for schedule-aware quote and hold**
+- [x] **Step 1: Write failing service tests for schedule-aware quote and hold**
 
 Extend the fake court repository with hours, closures, and blocking intervals. Assert `quote()` rejects closed/closure intervals and `createHold()` passes schedule validation before repository insertion.
 
-- [ ] **Step 2: Verify the booking-service tests fail**
+- [x] **Step 2: Verify the booking-service tests fail**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts/booking.service.test.ts`
 Expected: FAIL because quote/hold do not load schedule data.
 
-- [ ] **Step 3: Extend court repository contracts and Prisma reads**
+- [x] **Step 3: Extend court repository contracts and Prisma reads**
 
 Add `getSchedule(courtId)`, `replaceOperatingHours(courtId, windows)`, `createClosure(input)`, `deleteClosure(courtId, closureId)`, and `listBlockingBookings(courtId, startsAt, endsAt)`. Map all dates and numeric fields into framework-independent records.
 
-- [ ] **Step 4: Enforce schedule during quote and hold**
+- [x] **Step 4: Enforce schedule during quote and hold**
 
 `BookingService.quote()` loads schedule and calls `validateScheduledInterval`. `PrismaBookingRepository.createHold()` repeats operating-hour and closure checks inside its existing transaction immediately before booking creation; map exclusion violations to `COURT_BOOKING_CONFLICT`.
 
-- [ ] **Step 5: Write failing PostgreSQL integration scenarios**
+- [x] **Step 5: Write failing PostgreSQL integration scenarios**
 
 Create a court with Monday hours and a closure. Prove a hold inside hours succeeds, a hold in the closure fails, a closure overlapping an active booking fails, and two concurrent overlapping holds yield one success and one conflict.
 
-- [ ] **Step 6: Implement transactional closure conflict checks**
+- [x] **Step 6: Implement transactional closure conflict checks**
 
 Inside `createClosure`, query blocking bookings with `startsAt < closureEnd AND endsAt > closureStart` and blocking statuses. Throw `CLOSURE_BOOKINGS_EXIST` before insert when any exists.
 
-- [ ] **Step 7: Seed explicit weekly operating hours**
+- [x] **Step 7: Seed explicit weekly operating hours**
 
 Create deterministic `08:00-22:00` Manila windows for each demo court on all seven weekdays. Re-seeding must remain idempotent by replacing or upserting the windows.
 
-- [ ] **Step 8: Run unit and integration tests**
+- [x] **Step 8: Run unit and integration tests**
 
 Run: `pnpm --filter @courtlink/api test -- src/courts`
 
 Run: `$env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'; pnpm --filter @courtlink/api test:integration -- integration/court-availability-flow.test.ts`
 Expected: unit tests and all court-availability integration scenarios pass.
 
-- [ ] **Step 9: Commit transactional enforcement**
+- [x] **Step 9: Commit transactional enforcement**
 
 ```bash
 git add apps/api/src/courts apps/api/integration/court-availability-flow.test.ts packages/database/prisma/seed.ts

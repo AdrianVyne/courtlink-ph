@@ -127,6 +127,18 @@ async function main() {
     });
   }
 
+  await prisma.$transaction([
+    prisma.courtOperatingHour.deleteMany({ where: { courtId: court.id } }),
+    prisma.courtOperatingHour.createMany({
+      data: Array.from({ length: 7 }, (_, dayOfWeek) => ({
+        courtId: court.id,
+        dayOfWeek,
+        opensMinute: 8 * 60,
+        closesMinute: 22 * 60,
+      })),
+    }),
+  ]);
+
   await prisma.coachProfile.upsert({
     where: { userId: coachUser.id },
     update: { verificationStatus: "VERIFIED", hourlyRate: "800.00", active: true },

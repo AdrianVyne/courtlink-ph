@@ -1,13 +1,16 @@
 import { BookingStatus } from "@courtlink/database";
 import type { PaymentChannel, PaymentProofStatus } from "@courtlink/database";
 import type { PrismaClient } from "@courtlink/database";
-import type {
-  BookingRecord,
-  BookingRepository,
-  BookingStatus as ServiceBookingStatus,
-  PaymentChannel as ServicePaymentChannel,
-  PaymentSubmissionRecord,
+import {
+  BookingError,
+  type BookingRecord,
+  type BookingRepository,
+  type BookingStatus as ServiceBookingStatus,
+  type PaymentChannel as ServicePaymentChannel,
+  type PaymentSubmissionRecord,
 } from "./booking.service.js";
+import { ScheduleError, validateScheduledInterval } from "./availability-policy.js";
+import { toCourtSummary } from "./court.service.js";
 
 type PrismaBookingShape = {
   id: string;
@@ -68,18 +71,47 @@ export class PrismaBookingRepository implements BookingRepository {
     quotedAmount: number;
     proofDeadline: Date;
   }): Promise<BookingRecord> {
-    const booking = await this.prisma.courtBooking.create({
-      data: {
-        courtId: input.courtId,
-        playerId: input.playerId,
-        status: BookingStatus.HELD,
-        startsAt: input.startsAt,
-        endsAt: input.endsAt,
-        quotedAmount: input.quotedAmount.toFixed(2),
-        proofDeadline: input.proofDeadline,
-      },
-    });
-    return toRecord(booking);
+    try {
+      const booking = await this.prisma.$transaction(async (tx) => {
+        await tx.$queryRaw`
+          SELECT pg_advisory_xact_lock(hashtextextended(${input.courtId}, 0)) IS NULL AS "locked"
+        `;
+        const court = await tx.court.findUniqueOrThrow({
+          where: { id: input.courtId },
+          include: {
+            operatingHours: true,
+            closures: {
+              where: { startsAt: { lt: input.endsAt }, endsAt: { gt: input.startsAt } },
+            },
+          },
+        });
+        validateScheduledInterval(
+          toCourtSummary(court),
+          court.operatingHours,
+          court.closures,
+          input.startsAt,
+          input.endsAt,
+        );
+        return tx.courtBooking.create({
+          data: {
+            courtId: input.courtId,
+            playerId: input.playerId,
+            status: BookingStatus.HELD,
+            startsAt: input.startsAt,
+            endsAt: input.endsAt,
+            quotedAmount: input.quotedAmount.toFixed(2),
+            proofDeadline: input.proofDeadline,
+          },
+        });
+      });
+      return toRecord(booking);
+    } catch (error) {
+      if (error instanceof ScheduleError) throw error;
+      if (isActiveOverlapError(error)) {
+        throw new BookingError("COURT_BOOKING_CONFLICT", "Court slot is no longer available");
+      }
+      throw error;
+    }
   }
 
   async getSubmission(
@@ -164,4 +196,15 @@ export class PrismaBookingRepository implements BookingRepository {
     });
     return result.count;
   }
+}
+
+function isActiveOverlapError(error: unknown): boolean {
+  if (typeof error !== "object" || error === null) return false;
+  const code = "code" in error ? String(error.code) : "";
+  const message = "message" in error ? String(error.message) : "";
+  return (
+    code === "23P01" ||
+    message.includes("court_bookings_no_active_overlap") ||
+    message.includes("23P01")
+  );
 }

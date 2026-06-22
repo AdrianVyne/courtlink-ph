@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { ScheduleError, validateScheduledInterval } from "./availability-policy.js";
 import {
   type CourtRepository,
   type CourtSummary,
@@ -113,9 +114,18 @@ export class BookingService {
     if (!court?.active) throw new BookingError("COURT_NOT_AVAILABLE", "Court not bookable");
     const rules = await this.courts.listPricingRules(courtId);
     try {
+      const schedule = await this.courts.getSchedule(courtId);
+      validateScheduledInterval(
+        court,
+        schedule.operatingHours,
+        schedule.closures,
+        input.startsAt,
+        input.endsAt,
+      );
       const quote = quoteCourtBooking(court, rules, input);
       return { ...quote, court };
     } catch (error) {
+      if (error instanceof ScheduleError) throw new BookingError(error.code, error.message);
       if (error instanceof QuoteError) throw new BookingError(error.code, error.message);
       throw error;
     }

@@ -1,5 +1,7 @@
 ﻿import type { Court, CourtPricingRule } from "@courtlink/database";
 
+import type { ClosureWindow, OperatingWindow } from "./availability-policy.js";
+
 export interface CourtSummary {
   id: string;
   venueId: string;
@@ -33,11 +35,45 @@ export interface PricingRule {
   effectiveUntil: Date | null;
 }
 
+export interface OperatingWindowInput {
+  dayOfWeek: number;
+  opensMinute: number;
+  closesMinute: number;
+}
+
+export interface ClosureInput {
+  courtId: string;
+  startsAt: Date;
+  endsAt: Date;
+  reason?: string | null;
+}
+
+export interface BlockingBookingInterval {
+  id: string;
+  startsAt: Date;
+  endsAt: Date;
+}
+
 export interface CourtRepository {
   createCourt(input: CreateCourtInput): Promise<CourtSummary>;
   listCourtsForVenue(venueId: string): Promise<CourtSummary[]>;
   findCourtById(id: string): Promise<CourtSummary | null>;
   listPricingRules(courtId: string): Promise<PricingRule[]>;
+  getSchedule(courtId: string): Promise<{
+    operatingHours: OperatingWindow[];
+    closures: ClosureWindow[];
+  }>;
+  replaceOperatingHours(
+    courtId: string,
+    windows: OperatingWindowInput[],
+  ): Promise<OperatingWindow[]>;
+  createClosure(input: ClosureInput): Promise<ClosureWindow>;
+  deleteClosure(courtId: string, closureId: string): Promise<boolean>;
+  listBlockingBookings(
+    courtId: string,
+    startsAt: Date,
+    endsAt: Date,
+  ): Promise<BlockingBookingInterval[]>;
 }
 
 export class CourtService {
