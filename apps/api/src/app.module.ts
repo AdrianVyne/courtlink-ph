@@ -7,6 +7,7 @@ import { HealthController } from "./health/health.controller.js";
 import { NotificationModule } from "./notifications/notification.module.js";
 import { FavoriteModule } from "./favorites/favorite.module.js";
 import { ModerationModule } from "./moderation/moderation.module.js";
+import { PromotionModule } from "./promotions/promotion.module.js";
 import { ReviewModule } from "./reviews/review.module.js";
 import { StorageModule } from "./storage/storage.module.js";
 import { TenancyModule } from "./tenancy/tenancy.module.js";
@@ -25,6 +26,7 @@ import { VenueModule } from "./venues/venue.module.js";
     ReviewModule,
     ModerationModule,
     FavoriteModule,
+    PromotionModule,
   ],
   controllers: [HealthController],
 })

@@ -2,11 +2,13 @@ import { MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CourtBooking } from "../../../components/court-booking";
 import { FavoriteToggle } from "../../../components/favorite-toggle";
+import { PromotionBanner } from "../../../components/promotion-banner";
 import { RatingBadge } from "../../../components/rating-badge";
 import { ReportButton } from "../../../components/report-button";
 import { SiteHeader } from "../../../components/site-header";
 import {
   type CourtSummary,
+  type Promotion,
   type VenueReviews,
   type VenueSummary,
   apiFetch,
@@ -26,6 +28,14 @@ async function loadVenue(slug: string): Promise<VenueSummary | null> {
 async function loadCourts(venueId: string): Promise<CourtSummary[]> {
   try {
     return await apiFetch<CourtSummary[]>(`/courts/venues/${venueId}/list`);
+  } catch {
+    return [];
+  }
+}
+
+async function loadPromotions(venueId: string): Promise<Promotion[]> {
+  try {
+    return await apiFetch<Promotion[]>(`/promotions/venues/${venueId}/active`);
   } catch {
     return [];
   }
@@ -58,7 +68,11 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   const { slug } = await params;
   const [venue, session] = await Promise.all([loadVenue(slug), getSession()]);
   if (!venue) notFound();
-  const [courts, reviews] = await Promise.all([loadCourts(venue.id), loadReviews(venue.id)]);
+  const [courts, reviews, promotions] = await Promise.all([
+    loadCourts(venue.id),
+    loadReviews(venue.id),
+    loadPromotions(venue.id),
+  ]);
 
   let isFavorite = false;
   if (session) {
@@ -83,6 +97,7 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             {session ? <ReportButton subjectType="VENUE" subjectId={venue.id} /> : null}
           </div>
           {venue.description ? <p className="venue-desc">{venue.description}</p> : null}
+          <PromotionBanner promotions={promotions} />
         </div>
 
         {courts.length === 0 ? (

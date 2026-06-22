@@ -107,6 +107,18 @@ export interface PlayerCoachRequest {
   }>;
   booking: { id: string; status: string } | null;
 }
+export interface Promotion {
+  id: string;
+  venueId: string;
+  title: string;
+  description: string | null;
+  startsAt: string;
+  endsAt: string;
+  discountType: string;
+  discountValue: number;
+  active: boolean;
+}
+
 export interface SessionUser {
   id: string;
   email: string;

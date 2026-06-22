@@ -1,16 +1,22 @@
 import { redirect } from "next/navigation";
+import { PromotionManager } from "../../components/promotion-manager";
 import { SiteHeader } from "../../components/site-header";
 import { VenueQueue } from "../../components/venue-queue";
-import { type BookingListItem, apiFetch } from "../../lib/api";
+import { type BookingListItem, type Promotion, type VenueSummary, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
 
 export const dynamic = "force-dynamic";
 
-async function loadQueue(cookie: string): Promise<BookingListItem[]> {
+interface ManagedVenue {
+  membershipRole: string;
+  venue: VenueSummary;
+}
+
+async function load<T>(path: string, cookie: string, fallback: T): Promise<T> {
   try {
-    return await apiFetch<BookingListItem[]>("/courts/bookings/queue", { cookie });
+    return await apiFetch<T>(path, { cookie });
   } catch {
-    return [];
+    return fallback;
   }
 }
 
@@ -19,7 +25,21 @@ export default async function ManagePage() {
   if (!session) redirect("/login");
   const { cookies } = await import("next/headers");
   const cookie = (await cookies()).toString();
-  const queue = await loadQueue(cookie);
+
+  const [queue, mine] = await Promise.all([
+    load<BookingListItem[]>("/courts/bookings/queue", cookie, []),
+    load<ManagedVenue[]>("/venues/mine", cookie, []),
+  ]);
+
+  const manageable = mine.filter(
+    (m) => m.membershipRole === "OWNER" || m.membershipRole === "MANAGER",
+  );
+  const promosByVenue = await Promise.all(
+    manageable.map(async (m) => ({
+      venue: m.venue,
+      promotions: await load<Promotion[]>(`/promotions/venues/${m.venue.id}`, cookie, []),
+    })),
+  );
 
   return (
     <main>
@@ -31,6 +51,13 @@ export default async function ManagePage() {
           <p className="page-sub">Approve payment proofs and handle refund requests.</p>
         </div>
         <VenueQueue bookings={queue} />
+
+        {promosByVenue.map(({ venue, promotions }) => (
+          <div className="venue-promo-block" key={venue.id}>
+            <h2 className="section-title">{venue.name}</h2>
+            <PromotionManager venueId={venue.id} promotions={promotions} />
+          </div>
+        ))}
       </section>
     </main>
   );

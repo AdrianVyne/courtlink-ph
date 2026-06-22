@@ -64,7 +64,7 @@
 - [x] Build the design system, shared header, and responsive application shell.
 - [x] Build public discovery, venue/court booking pages, and coach directory wired to the live API (per-coach profile pages and richer SEO still pending).
 - [x] Build player bookings, venue review/refund queue, and super-admin approval dashboards (coach workspace still pending).
-- [x] Add in-app notifications, completed-booking reviews with rating aggregation, venue favorites, and a super-admin moderation queue (report, suspend/reinstate, audit events). Promotions and PWA still pending.
+- [x] Add in-app notifications, completed-booking reviews with rating aggregation, venue favorites, promotions, installable PWA support, and a super-admin moderation queue (report, suspend/reinstate, audit events).
 
 ### Task 9: Production operations
 

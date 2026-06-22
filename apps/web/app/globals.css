@@ -996,3 +996,49 @@ h2 {
   color: var(--muted);
   font-size: 0.82rem;
 }
+
+/* Promotions */
+.promo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.promo-item {
+  align-items: center;
+  background: #fff8e6;
+  border: 1px solid #f1d9a0;
+  border-radius: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.6rem 0.85rem;
+}
+
+.promo-tag {
+  align-items: center;
+  background: #8a5a00;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.74rem;
+  font-weight: 700;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+}
+
+.promo-title {
+  font-weight: 700;
+}
+
+.promo-desc {
+  color: #6a5a30;
+  font-size: 0.88rem;
+}
+
+.venue-promo-block {
+  margin-top: 2.5rem;
+}
