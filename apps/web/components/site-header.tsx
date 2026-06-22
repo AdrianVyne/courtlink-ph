@@ -13,7 +13,7 @@ export function SiteHeader({ session }: { session: SessionUser | null }) {
       <nav aria-label="Primary navigation">
         <Link href="/courts">Courts</Link>
         <Link href="/coaches">Coaches</Link>
-        <Link href="/coach-requests">Find players</Link>
+        <Link href="/coach-requests">Coaching</Link>
       </nav>
       <div className="header-actions">
         {session ? (

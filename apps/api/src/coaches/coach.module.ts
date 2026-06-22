@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import type { PrismaClient } from "@courtlink/database";
-import { PRISMA_CLIENT } from "../auth/tokens.js";
+import { OBJECT_STORAGE, PRISMA_CLIENT } from "../auth/tokens.js";
 import { CoachBookingService } from "./coach-booking.service.js";
 import { CoachController } from "./coach.controller.js";
 import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
@@ -9,6 +9,9 @@ import { CoachService } from "./coach.service.js";
 import { PrismaCoachBookingRepository } from "./prisma-coach-booking.repository.js";
 import { PrismaCoachMarketRepository } from "./prisma-coach-market.repository.js";
 import { PrismaCoachRepository } from "./prisma-coach.repository.js";
+import { CoachQueryService } from "./coach-query.service.js";
+import { PrismaCoachQueryRepository } from "./prisma-coach-query.repository.js";
+import type { ObjectStorage } from "../storage/object-storage.js";
 
 @Module({
   controllers: [CoachController],
@@ -44,14 +47,33 @@ import { PrismaCoachRepository } from "./prisma-coach.repository.js";
       inject: [PrismaCoachBookingRepository],
     },
     {
+      provide: PrismaCoachQueryRepository,
+      useFactory: (prisma: PrismaClient) => new PrismaCoachQueryRepository(prisma),
+      inject: [PRISMA_CLIENT],
+    },
+    {
+      provide: CoachQueryService,
+      useFactory: (repo: PrismaCoachQueryRepository) => new CoachQueryService(repo),
+      inject: [PrismaCoachQueryRepository],
+    },
+    {
       provide: CoachController,
       useFactory: (
         coaches: CoachService,
         market: CoachMarketService,
         bookings: CoachBookingService,
+        bookingQuery: CoachQueryService,
         notifier: NotificationDispatcher,
-      ) => new CoachController(coaches, market, bookings, notifier),
-      inject: [CoachService, CoachMarketService, CoachBookingService, NotificationDispatcher],
+        storage: ObjectStorage,
+      ) => new CoachController(coaches, market, bookings, bookingQuery, notifier, storage),
+      inject: [
+        CoachService,
+        CoachMarketService,
+        CoachBookingService,
+        CoachQueryService,
+        NotificationDispatcher,
+        OBJECT_STORAGE,
+      ],
     },
   ],
   exports: [CoachService, CoachMarketService, CoachBookingService],

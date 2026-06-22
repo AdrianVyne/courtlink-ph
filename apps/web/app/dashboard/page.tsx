@@ -37,6 +37,12 @@ export default async function DashboardPage() {
           <Link className="button button-secondary button-small" href="/manage">
             Manage venue
           </Link>
+          <Link className="button button-secondary button-small" href="/coach">
+            Coach workspace
+          </Link>
+          <Link className="button button-secondary button-small" href="/coach-requests">
+            Find a coach
+          </Link>
           {isSuperAdmin ? (
             <Link className="button button-secondary button-small" href="/admin">
               Admin approvals

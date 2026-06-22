@@ -951,3 +951,48 @@ h2 {
   color: var(--muted);
   font-size: 0.85rem;
 }
+
+/* Coach workspace */
+.coach-workspace {
+  display: flex;
+  flex-direction: column;
+}
+
+.stack-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 480px;
+}
+
+.row-form {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.offer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.offer-row {
+  align-items: center;
+  background: var(--soft);
+  border-radius: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.offer-expiry {
+  color: var(--muted);
+  font-size: 0.82rem;
+}

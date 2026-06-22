@@ -52,6 +52,61 @@ export interface CoachProfileSummary {
   active: boolean;
 }
 
+export interface AvailabilitySlot {
+  id: string;
+  coachId: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  active: boolean;
+}
+
+export interface CoachMe {
+  profile: CoachProfileSummary | null;
+  availability: AvailabilitySlot[];
+}
+
+export interface OpenCoachJob {
+  id: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  groupSize: number;
+  skillLevel: string;
+  goals: string | null;
+  notes: string | null;
+}
+
+export interface CoachBookingListItem {
+  id: string;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  amount: number;
+  currency: string;
+  player: { displayName: string };
+  submission: { id: string; status: string; channel: string; transactionRef: string } | null;
+}
+
+export interface PlayerCoachRequest {
+  id: string;
+  status: string;
+  startsAt: string;
+  endsAt: string;
+  location: string;
+  groupSize: number;
+  skillLevel: string;
+  offers: Array<{
+    id: string;
+    coachId: string;
+    amount: number;
+    status: string;
+    expiresAt: string;
+    message: string | null;
+  }>;
+  booking: { id: string; status: string } | null;
+}
 export interface SessionUser {
   id: string;
   email: string;

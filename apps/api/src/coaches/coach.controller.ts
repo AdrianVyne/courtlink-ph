@@ -5,6 +5,7 @@ import {
   ForbiddenException,
   Get,
   HttpCode,
+  Inject,
   Param,
   Post,
   Query,
@@ -20,6 +21,15 @@ import { CoachMarketService } from "./coach-market.service.js";
 import { CoachService } from "./coach.service.js";
 // biome-ignore lint/style/useImportType: NotificationDispatcher is injected at runtime.
 import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
+// biome-ignore lint/style/useImportType: CoachQueryService is injected at runtime.
+import { CoachQueryService } from "./coach-query.service.js";
+import { OBJECT_STORAGE } from "../auth/tokens.js";
+import {
+  type ObjectStorage,
+  assertProofContentType,
+  assertProofSize,
+  buildProofObjectKey,
+} from "../storage/object-storage.js";
 
 const channelEnum = z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]);
 
@@ -62,6 +72,11 @@ const proofSchema = z.object({
   proofObjectKey: z.string().min(2).max(255),
 });
 
+const uploadFieldsSchema = z.object({
+  channel: z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]),
+  transactionRef: z.string().min(2).max(120),
+});
+
 const reviewSchema = z.object({
   submissionId: z.string().uuid(),
   bookingId: z.string().uuid(),
@@ -74,13 +89,38 @@ export class CoachController {
     private readonly coaches: CoachService,
     private readonly market: CoachMarketService,
     private readonly bookings: CoachBookingService,
+    private readonly bookingQuery: CoachQueryService,
     private readonly notifier: NotificationDispatcher,
+    @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
   ) {}
 
   @Public()
   @Get()
   async listPublic(@Query("verifiedOnly") verifiedOnly?: string) {
     return this.coaches.listPublicProfiles({ verifiedOnly: verifiedOnly === "true" });
+  }
+
+  @Get("me")
+  async myCoachProfile(@Req() request: AuthenticatedRequest) {
+    const user = getSessionUser(request);
+    const profile = await this.coaches.findProfileByUserId(user.id);
+    if (!profile) return { profile: null, availability: [] };
+    const availability = await this.coaches.listAvailability(profile.id);
+    return { profile, availability };
+  }
+
+  @Get("me/bookings")
+  async myCoachBookings(@Req() request: AuthenticatedRequest) {
+    const user = getSessionUser(request);
+    const profile = await this.coaches.findProfileByUserId(user.id);
+    if (!profile) return [];
+    return this.bookingQuery.listBookingsForCoach(profile.id);
+  }
+
+  @Get("requests/mine")
+  async myRequests(@Req() request: AuthenticatedRequest) {
+    const user = getSessionUser(request);
+    return this.bookingQuery.listRequestsForPlayer(user.id);
   }
 
   @Public()
@@ -182,6 +222,40 @@ export class CoachController {
       });
     }
     return result;
+  }
+
+  @Post("bookings/:id/proof-upload")
+  @HttpCode(200)
+  async uploadProof(@Req() request: AuthenticatedRequest, @Param("id") bookingId: string) {
+    const user = getSessionUser(request);
+    const multipart = request as unknown as {
+      file(): Promise<
+        | {
+            mimetype: string;
+            toBuffer(): Promise<Buffer>;
+            fields: Record<string, { value?: string } | undefined>;
+          }
+        | undefined
+      >;
+    };
+    const file = await multipart.file();
+    if (!file) throw new BadRequestException({ code: "PROOF_FILE_REQUIRED" });
+    const contentType = assertProofContentType(file.mimetype);
+    const buffer = await file.toBuffer();
+    assertProofSize(buffer.length);
+    const fields = uploadFieldsSchema.parse({
+      channel: file.fields.channel?.value,
+      transactionRef: file.fields.transactionRef?.value,
+    });
+    const objectKey = buildProofObjectKey("coach", bookingId, contentType);
+    await this.storage.putObject({ key: objectKey, body: buffer, contentType });
+    return this.bookings.submitProof({
+      bookingId,
+      playerId: user.id,
+      channel: fields.channel,
+      transactionRef: fields.transactionRef,
+      proofObjectKey: objectKey,
+    });
   }
 
   @Post("bookings/proof")
