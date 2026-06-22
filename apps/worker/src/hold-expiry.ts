@@ -2,6 +2,7 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
+import { SCHEDULED_JOB_OPTIONS } from "./queue-policy.js";
 
 export const HOLD_EXPIRY_QUEUE = "court.holds.expiry";
 
@@ -37,7 +38,7 @@ export async function scheduleHoldExpiry(queue: Queue<ExpiryJobData>): Promise<v
     {
       name: "hold-expiry",
       data: { triggeredAt: new Date().toISOString() },
-      opts: { removeOnComplete: 50, removeOnFail: 50 },
+      opts: SCHEDULED_JOB_OPTIONS,
     },
   );
 }

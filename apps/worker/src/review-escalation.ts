@@ -1,6 +1,7 @@
 import type { Prisma, PrismaClient } from "@courtlink/database";
 import type { Redis } from "ioredis";
 import { Queue, Worker } from "bullmq";
+import { SCHEDULED_JOB_OPTIONS } from "./queue-policy.js";
 
 export const REVIEW_ESCALATION_QUEUE = "court.reviews.escalation";
 
@@ -127,7 +128,7 @@ export async function scheduleReviewEscalation(queue: Queue<EscalationJobData>):
     {
       name: "review-escalation",
       data: { triggeredAt: new Date().toISOString() },
-      opts: { removeOnComplete: 50, removeOnFail: 50 },
+      opts: SCHEDULED_JOB_OPTIONS,
     },
   );
 }

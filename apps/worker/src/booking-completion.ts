@@ -1,6 +1,7 @@
 import type { PrismaClient } from "@courtlink/database";
 import { Queue, Worker } from "bullmq";
 import type { Redis } from "ioredis";
+import { SCHEDULED_JOB_OPTIONS } from "./queue-policy.js";
 
 export const BOOKING_COMPLETION_QUEUE = "bookings.completion";
 
@@ -37,7 +38,7 @@ export async function scheduleBookingCompletion(queue: Queue<CompletionJobData>)
     {
       name: "booking-completion",
       data: { triggeredAt: new Date().toISOString() },
-      opts: { removeOnComplete: 50, removeOnFail: 50 },
+      opts: SCHEDULED_JOB_OPTIONS,
     },
   );
 }

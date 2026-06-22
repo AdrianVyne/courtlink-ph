@@ -15,6 +15,7 @@ import {
   buildBookingCompletionWorker,
   scheduleBookingCompletion,
 } from "./booking-completion.js";
+import { buildFailedJobEvent } from "./queue-policy.js";
 
 function log(message: string, fields: Record<string, unknown> = {}): void {
   process.stdout.write(`${JSON.stringify({ ts: new Date().toISOString(), message, ...fields })}\n`);
@@ -36,7 +37,9 @@ async function main(): Promise<void> {
     log("hold-expiry.completed", { jobId: job.id, expired: result.count });
   });
   holdWorker.on("failed", (job, error) => {
-    log("hold-expiry.failed", { jobId: job?.id, error: error.message });
+    if (!job) return log("hold-expiry.failed", { errorType: error.name });
+    const { event, ...fields } = buildFailedJobEvent(holdQueue.name, job);
+    log(String(event), fields);
   });
 
   const escalationQueue = buildReviewEscalationQueue(connection);
@@ -46,7 +49,9 @@ async function main(): Promise<void> {
     log("review-escalation.completed", { jobId: job.id, ...result });
   });
   escalationWorker.on("failed", (job, error) => {
-    log("review-escalation.failed", { jobId: job?.id, error: error.message });
+    if (!job) return log("review-escalation.failed", { errorType: error.name });
+    const { event, ...fields } = buildFailedJobEvent(escalationQueue.name, job);
+    log(String(event), fields);
   });
 
   const completionQueue = buildBookingCompletionQueue(connection);
@@ -56,7 +61,9 @@ async function main(): Promise<void> {
     log("booking-completion.completed", { jobId: job.id, ...result });
   });
   completionWorker.on("failed", (job, error) => {
-    log("booking-completion.failed", { jobId: job?.id, error: error.message });
+    if (!job) return log("booking-completion.failed", { errorType: error.name });
+    const { event, ...fields } = buildFailedJobEvent(completionQueue.name, job);
+    log(String(event), fields);
   });
 
   log("worker.ready", { queues: [holdQueue.name, escalationQueue.name, completionQueue.name] });

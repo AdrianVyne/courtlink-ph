@@ -15,6 +15,17 @@ const QUEUE_NAMES = [
   "bookings.completion",
 ] as const;
 
+export function sanitizeFailureReason(reason: string): string {
+  const redacted = reason
+    .replace(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/gi, "[REDACTED]")
+    .replace(/https?:\/\/\S+/gi, "[REDACTED]")
+    .replace(
+      /\b(password|secret|token|cookie|authorization|transaction|proof)\b\s*[:=]\s*\S+/gi,
+      "$1=[REDACTED]",
+    );
+  return redacted.length > 200 ? `${redacted.slice(0, 200)}...` : redacted;
+}
+
 export function parseRedisMemoryInfo(info: string): { usedBytes: number; maxBytes: number } {
   const values = new Map(
     info
@@ -62,14 +73,19 @@ export class PrismaOperationsProbe implements OperationsProbe {
   }
 
   async snapshot(): Promise<RawOperationsSnapshot> {
-    const [databaseReady, redisReady, databaseRows, redisInfo, queues] = await Promise.all([
+    const [databaseReady, redisReady, databaseRows, redisInfo, queueResults] = await Promise.all([
       this.checkDatabase(),
       this.checkRedis(),
       this.prisma.$queryRaw<Array<{ usedBytes: bigint }>>`
         SELECT pg_database_size(current_database()) AS "usedBytes"
       `,
       this.redis.info("memory"),
-      Promise.all(this.queues.map((queue) => this.queueSnapshot(queue))),
+      Promise.all(
+        this.queues.map(async (queue) => ({
+          snapshot: await this.queueSnapshot(queue),
+          failedJobs: await this.failedJobSummaries(queue),
+        })),
+      ),
     ]);
     const memory = process.memoryUsage();
     const redis = parseRedisMemoryInfo(redisInfo);
@@ -91,8 +107,8 @@ export class PrismaOperationsProbe implements OperationsProbe {
         budgetBytes: this.databaseBudgetBytes,
       },
       redis,
-      queues,
-      failedJobs: [],
+      queues: queueResults.map((result) => result.snapshot),
+      failedJobs: queueResults.flatMap((result) => result.failedJobs),
       capturedAt: new Date().toISOString(),
     };
   }
@@ -112,5 +128,17 @@ export class PrismaOperationsProbe implements OperationsProbe {
       delayed: counts.delayed ?? 0,
       failed: counts.failed ?? 0,
     };
+  }
+
+  private async failedJobSummaries(queue: Queue) {
+    const jobs = await queue.getFailed(0, 4);
+    return jobs.map((job) => ({
+      queue: queue.name,
+      id: job.id ?? "unknown",
+      name: job.name,
+      attemptsMade: job.attemptsMade,
+      failedAt: job.finishedOn ? new Date(job.finishedOn).toISOString() : null,
+      error: sanitizeFailureReason(job.failedReason || "Background job failed"),
+    }));
   }
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseRedisMemoryInfo } from "./prisma-operations.probe.js";
+import { parseRedisMemoryInfo, sanitizeFailureReason } from "./prisma-operations.probe.js";
 
 describe("parseRedisMemoryInfo", () => {
   it("extracts used and configured maximum bytes", () => {
@@ -14,5 +14,16 @@ describe("parseRedisMemoryInfo", () => {
       usedBytes: 1024,
       maxBytes: 0,
     });
+  });
+});
+
+describe("sanitizeFailureReason", () => {
+  it("redacts personal data and URLs and bounds output", () => {
+    const reason = `Failed for player@example.com at https://private.example/proof ${"x".repeat(300)}`;
+    const sanitized = sanitizeFailureReason(reason);
+
+    expect(sanitized).not.toContain("player@example.com");
+    expect(sanitized).not.toContain("https://private.example/proof");
+    expect(sanitized.length).toBeLessThanOrEqual(203);
   });
 });
