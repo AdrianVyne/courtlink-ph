@@ -36,7 +36,7 @@
     "@biomejs/biome": "2.5.0",
     "@nestjs/cli": "11.0.16",
     "@nestjs/testing": "11.1.27",
-    "@types/node": "24.10.1",
+    "@types/node": "26.0.0",
     "@types/pg": "8.20.0",
     "typescript": "6.0.3",
     "vitest": "4.1.9"
