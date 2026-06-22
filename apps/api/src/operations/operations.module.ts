@@ -3,9 +3,11 @@ import { Inject, Module, type OnApplicationShutdown } from "@nestjs/common";
 import { Redis } from "ioredis";
 import { PRISMA_CLIENT } from "../auth/tokens.js";
 import { OperationsService } from "./operations.service.js";
+import { OperationsController } from "./operations.controller.js";
 import { PrismaOperationsProbe } from "./prisma-operations.probe.js";
 
 @Module({
+  controllers: [OperationsController],
   providers: [
     {
       provide: PrismaOperationsProbe,

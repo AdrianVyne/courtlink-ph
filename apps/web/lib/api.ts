@@ -119,6 +119,43 @@ export interface Promotion {
   active: boolean;
 }
 
+export interface OperationsStatusSnapshot {
+  overall: "ok" | "warning" | "critical";
+  alerts: Array<{ code: string; level: "warning" | "critical"; message: string }>;
+  metrics: {
+    processHeapRatio: number;
+    eventLoopDelayMs: number;
+    databaseRatio: number;
+    redisRatio: number | null;
+    failedJobs: number;
+  };
+  dependencies: { database: boolean; redis: boolean };
+  process: {
+    heapUsedBytes: number;
+    heapLimitBytes: number;
+    eventLoopDelayMs: number;
+    uptimeSeconds: number;
+  };
+  database: { usedBytes: number; budgetBytes: number };
+  redis: { usedBytes: number; maxBytes: number };
+  queues: Array<{
+    name: string;
+    waiting: number;
+    active: number;
+    delayed: number;
+    failed: number;
+  }>;
+  failedJobs: Array<{
+    queue: string;
+    id: string;
+    name: string;
+    attemptsMade: number;
+    failedAt: string | null;
+    error: string;
+  }>;
+  capturedAt: string;
+}
+
 export interface SessionUser {
   id: string;
   email: string;

@@ -36,6 +36,9 @@ export default async function AdminPage() {
           <Link className="button button-secondary button-small" href="/admin/moderation">
             Moderation queue
           </Link>
+          <Link className="button button-secondary button-small" href="/admin/operations">
+            System status
+          </Link>
         </div>
         <AdminVenueQueue venues={pending} />
       </section>
