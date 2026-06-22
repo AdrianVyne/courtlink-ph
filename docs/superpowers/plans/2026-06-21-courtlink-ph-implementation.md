@@ -15,7 +15,7 @@
 - [x] Persist approved specification and this plan.
 - [x] Add AGPL-3.0 license, contribution/security policies, templates, ADR structure, and project memory conventions.
 - [x] Initialize Git, create a clean baseline commit, and create an isolated implementation worktree.
-- [ ] Create the public `courtlink-ph` GitHub repository after GitHub CLI authentication is available.
+- [x] Create the public `courtlink-ph` GitHub repository at https://github.com/AdrianVyne/courtlink-ph (main is the default branch).
 
 ### Task 2: Monorepo and quality gates
 
@@ -79,6 +79,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 
