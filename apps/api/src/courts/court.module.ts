@@ -5,6 +5,8 @@ import type { PrismaClient } from "@courtlink/database";
 import type { ObjectStorage } from "../storage/object-storage.js";
 import { OBJECT_STORAGE, PRISMA_CLIENT } from "../auth/tokens.js";
 import { NotificationDispatcher } from "../notifications/notification.dispatcher.js";
+import { AmenityModule } from "../amenities/amenity.module.js";
+import { AmenityService } from "../amenities/amenity.service.js";
 import { TenancyModule } from "../tenancy/tenancy.module.js";
 import { TenancyService } from "../tenancy/tenancy.service.js";
 import { VenueModule } from "../venues/venue.module.js";
@@ -22,7 +24,7 @@ import { PrismaRefundRepository } from "./prisma-refund.repository.js";
 import { RefundService } from "./refund.service.js";
 
 @Module({
-  imports: [TenancyModule, VenueModule],
+  imports: [TenancyModule, VenueModule, AmenityModule],
   controllers: [CourtController, CourtScheduleController, AvailabilityController],
   providers: [
     {
@@ -87,6 +89,7 @@ import { RefundService } from "./refund.service.js";
         venues: VenueService,
         storage: ObjectStorage,
         notifier: NotificationDispatcher,
+        amenities: AmenityService,
       ) =>
         new CourtController(
           courts,
@@ -97,6 +100,7 @@ import { RefundService } from "./refund.service.js";
           venues,
           storage,
           notifier,
+          amenities,
         ),
       inject: [
         CourtService,
@@ -107,6 +111,7 @@ import { RefundService } from "./refund.service.js";
         VenueService,
         OBJECT_STORAGE,
         NotificationDispatcher,
+        AmenityService,
       ],
     },
     {

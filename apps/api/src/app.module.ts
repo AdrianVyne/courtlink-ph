@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AmenityModule } from "./amenities/amenity.module.js";
 import { AuthModule } from "./auth/auth.module.js";
 import { CoachModule } from "./coaches/coach.module.js";
 import { CourtModule } from "./courts/court.module.js";
@@ -20,6 +21,7 @@ import { VenueModule } from "./venues/venue.module.js";
     DatabaseModule,
     IdempotencyModule,
     StorageModule,
+    AmenityModule,
     AuthModule,
     TenancyModule,
     VenueModule,

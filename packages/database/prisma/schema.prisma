@@ -36,6 +36,12 @@ enum InvitationStatus {
   REVOKED
 }
 
+enum AmenityScope {
+  VENUE
+  COURT
+  BOTH
+}
+
 enum VenueStatus {
   DRAFT
   PENDING_APPROVAL
@@ -261,6 +267,7 @@ model Venue {
   reviews          Review[]
   favorites        FavoriteVenue[]
   promotions       Promotion[]
+  amenities        VenueAmenity[]
 
   @@index([businessId])
   @@index([status, regionCode, cityMunicipality])
@@ -300,6 +307,7 @@ model Court {
   closures           CourtClosure[]
   pricingRules       CourtPricingRule[]
   bookings           CourtBooking[]
+  amenities          CourtAmenity[]
 
   @@unique([venueId, name])
   @@index([venueId, active])
@@ -686,4 +694,38 @@ model IdempotencyRecord {
 enum IdempotencyStatus {
   IN_PROGRESS
   COMPLETED
+}
+
+model Amenity {
+  id        String         @id @default(uuid()) @db.Uuid
+  key       String         @unique
+  name      String
+  scope     AmenityScope   @default(BOTH)
+  createdAt DateTime       @default(now()) @db.Timestamptz(3)
+  venues    VenueAmenity[]
+  courts    CourtAmenity[]
+
+  @@map("amenities")
+}
+
+model VenueAmenity {
+  venueId   String  @db.Uuid
+  amenityId String  @db.Uuid
+  venue     Venue   @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([venueId, amenityId])
+  @@index([amenityId])
+  @@map("venue_amenities")
+}
+
+model CourtAmenity {
+  courtId   String  @db.Uuid
+  amenityId String  @db.Uuid
+  court     Court   @relation(fields: [courtId], references: [id], onDelete: Cascade)
+  amenity   Amenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+
+  @@id([courtId, amenityId])
+  @@index([amenityId])
+  @@map("court_amenities")
 }

@@ -139,6 +139,27 @@ async function main() {
     }),
   ]);
 
+  const venueAmenityKeys = ["PARKING", "SHOWERS", "CAFE"];
+  const courtAmenityKeys = ["INDOOR", "COURT_LIGHTS"];
+  const venueAmenities = await prisma.amenity.findMany({
+    where: { key: { in: venueAmenityKeys } },
+  });
+  const courtAmenities = await prisma.amenity.findMany({
+    where: { key: { in: courtAmenityKeys } },
+  });
+  await prisma.$transaction([
+    prisma.venueAmenity.deleteMany({ where: { venueId: venue.id } }),
+    prisma.venueAmenity.createMany({
+      data: venueAmenities.map((amenity) => ({ venueId: venue.id, amenityId: amenity.id })),
+      skipDuplicates: true,
+    }),
+    prisma.courtAmenity.deleteMany({ where: { courtId: court.id } }),
+    prisma.courtAmenity.createMany({
+      data: courtAmenities.map((amenity) => ({ courtId: court.id, amenityId: amenity.id })),
+      skipDuplicates: true,
+    }),
+  ]);
+
   await prisma.coachProfile.upsert({
     where: { userId: coachUser.id },
     update: { verificationStatus: "VERIFIED", hourlyRate: "800.00", active: true },

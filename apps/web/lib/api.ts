@@ -30,6 +30,18 @@ export interface VenueSummary {
   approvedAt: string | null;
 }
 
+export interface DiscoveryVenue extends VenueSummary {
+  amenities: string[];
+  fromPrice: number | null;
+  availableCourtCount: number;
+}
+
+export interface AmenityCatalogEntry {
+  key: string;
+  name: string;
+  scope: "VENUE" | "COURT" | "BOTH";
+}
+
 export interface CourtSummary {
   id: string;
   venueId: string;

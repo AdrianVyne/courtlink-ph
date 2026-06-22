@@ -46,13 +46,13 @@
 ### Task 5: Court inventory and pricing
 
 - [x] Implement courts, slot increments, duration bounds, and pricing rules.
-- [ ] Implement venue/court amenities.
+- [x] Implement venue/court amenities.
 - [x] Implement operating hours and closures.
 - [x] Test pricing across Asia/Manila time boundaries.
 - [x] Implement and test closure-aware slot availability across Asia/Manila boundaries.
 - [x] Add PostgreSQL overlap protection and a conflicting-booking integration test.
 - [x] Expose public venue/court discovery and price-quote contracts.
-- [ ] Add nationwide time, availability, price, and amenity filters.
+- [x] Add nationwide time, availability, price, and amenity filters.
 - [x] Add public priced slot-availability listing.
 
 ### Task 6: Court booking and manual payment
@@ -93,6 +93,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

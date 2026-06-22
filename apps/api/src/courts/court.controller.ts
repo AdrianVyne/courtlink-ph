@@ -8,11 +8,14 @@ import {
   Inject,
   Param,
   Post,
+  Put,
   Query,
   Req,
 } from "@nestjs/common";
 import { z } from "zod";
 import { Idempotent } from "../idempotency/idempotent.decorator.js";
+// biome-ignore lint/style/useImportType: AmenityService is injected by Nest at runtime.
+import { AmenityService } from "../amenities/amenity.service.js";
 import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/session.guard.js";
 // biome-ignore lint/style/useImportType: TenancyService is injected at runtime.
 import { TenancyService } from "../tenancy/tenancy.service.js";
@@ -35,6 +38,10 @@ import {
   assertProofSize,
   buildProofObjectKey,
 } from "../storage/object-storage.js";
+
+const courtAmenitiesSchema = z.object({
+  amenities: z.array(z.string().min(1).max(60)).max(40),
+});
 
 const createCourtSchema = z.object({
   venueId: z.string().uuid(),
@@ -103,6 +110,7 @@ export class CourtController {
     private readonly venues: VenueService,
     @Inject(OBJECT_STORAGE) private readonly storage: ObjectStorage,
     private readonly notifier: NotificationDispatcher,
+    private readonly amenities: AmenityService,
   ) {}
 
   @Public()
@@ -110,7 +118,27 @@ export class CourtController {
   async detail(@Param("id") id: string) {
     const court = await this.courts.findCourtById(id);
     if (!court) throw new BadRequestException({ code: "COURT_NOT_FOUND" });
-    return court;
+    const amenities = await this.amenities.listCourtAmenities(id);
+    return { ...court, amenities: amenities.map((entry) => entry.key) };
+  }
+
+  @Put(":id/amenities")
+  @HttpCode(200)
+  async setAmenities(
+    @Req() request: AuthenticatedRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    const user = getSessionUser(request);
+    const court = await this.courts.findCourtById(id);
+    if (!court) throw new BadRequestException({ code: "COURT_NOT_FOUND" });
+    const venue = await this.venues.findVenueById(court.venueId);
+    if (!venue) throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
+    await this.tenancy.assertRole(user.id, venue.businessId, ["OWNER", "MANAGER"]);
+    const input = courtAmenitiesSchema.parse(body);
+    await this.amenities.setCourtAmenities(id, input.amenities);
+    const updated = await this.amenities.listCourtAmenities(id);
+    return { amenities: updated.map((entry) => entry.key) };
   }
 
   @Public()

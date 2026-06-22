@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { CourtScheduleManager } from "../../components/court-schedule-manager";
 import { PromotionManager } from "../../components/promotion-manager";
+import { VenueAmenityManager } from "../../components/venue-amenity-manager";
 import { SiteHeader } from "../../components/site-header";
 import { VenueQueue } from "../../components/venue-queue";
 import {
+  type AmenityCatalogEntry,
   type BookingListItem,
   type CourtSchedule,
   type CourtSummary,
@@ -34,9 +36,10 @@ export default async function ManagePage() {
   const { cookies } = await import("next/headers");
   const cookie = (await cookies()).toString();
 
-  const [queue, mine] = await Promise.all([
+  const [queue, mine, amenityCatalog] = await Promise.all([
     load<BookingListItem[]>("/courts/bookings/queue", cookie, []),
     load<ManagedVenue[]>("/venues/mine", cookie, []),
+    load<AmenityCatalogEntry[]>("/amenities", cookie, []),
   ]);
 
   const manageable = mine.filter(
@@ -44,9 +47,12 @@ export default async function ManagePage() {
   );
   const workspaces = await Promise.all(
     manageable.map(async (membership) => {
-      const [promotions, courts] = await Promise.all([
+      const [promotions, courts, venueAmenities] = await Promise.all([
         load<Promotion[]>(`/promotions/venues/${membership.venue.id}`, cookie, []),
         load<CourtSummary[]>(`/courts/venues/${membership.venue.id}/list`, cookie, []),
+        load<{ amenities: string[] }>(`/venues/${membership.venue.id}/amenities`, cookie, {
+          amenities: [],
+        }),
       ]);
       const schedules = await Promise.all(
         courts.map(async (court) => ({
@@ -54,7 +60,7 @@ export default async function ManagePage() {
           schedule: await load<CourtSchedule | null>(`/courts/${court.id}/schedule`, cookie, null),
         })),
       );
-      return { membership, promotions, schedules };
+      return { membership, promotions, schedules, venueAmenities };
     }),
   );
 
@@ -69,7 +75,7 @@ export default async function ManagePage() {
         </div>
         <VenueQueue bookings={queue} />
 
-        {workspaces.map(({ membership, promotions, schedules }) => (
+        {workspaces.map(({ membership, promotions, schedules, venueAmenities }) => (
           <div className="venue-workspace" key={membership.venue.id}>
             <h2 className="section-title">{membership.venue.name}</h2>
             <section aria-labelledby={`schedule-${membership.venue.id}`}>
@@ -101,6 +107,11 @@ export default async function ManagePage() {
                 </div>
               )}
             </section>
+            <VenueAmenityManager
+              venueId={membership.venue.id}
+              catalog={amenityCatalog}
+              selected={venueAmenities.amenities}
+            />
             <PromotionManager venueId={membership.venue.id} promotions={promotions} />
           </div>
         ))}

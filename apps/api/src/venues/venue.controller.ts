@@ -7,6 +7,7 @@ import {
   HttpCode,
   Param,
   Post,
+  Put,
   Query,
   Req,
 } from "@nestjs/common";
@@ -16,6 +17,10 @@ import { type AuthenticatedRequest, Public, getSessionUser } from "../auth/sessi
 import { TenancyService } from "../tenancy/tenancy.service.js";
 // biome-ignore lint/style/useImportType: VenueService is injected by Nest at runtime.
 import { VenueService } from "./venue.service.js";
+// biome-ignore lint/style/useImportType: DiscoveryService is injected by Nest at runtime.
+import { DiscoveryService } from "./discovery.service.js";
+// biome-ignore lint/style/useImportType: AmenityService is injected by Nest at runtime.
+import { AmenityService } from "../amenities/amenity.service.js";
 
 const slugSchema = z
   .string()
@@ -35,11 +40,33 @@ const createVenueSchema = z.object({
   streetAddress: z.string().min(2).max(200),
 });
 
-const listVenuesSchema = z.object({
+const csvToList = (value: string | string[] | undefined): string[] | undefined => {
+  if (value === undefined) return undefined;
+  const list = Array.isArray(value) ? value : value.split(",");
+  const cleaned = list.map((item) => item.trim()).filter(Boolean);
+  return cleaned.length > 0 ? cleaned : undefined;
+};
+
+const discoverySchema = z.object({
   regionCode: z.string().min(2).max(10).optional(),
+  provinceCode: z.string().max(10).optional(),
   cityMunicipality: z.string().max(120).optional(),
   query: z.string().max(120).optional(),
+  amenities: z.union([z.string().max(400), z.array(z.string().max(60)).max(40)]).optional(),
+  minPrice: z.coerce.number().min(0).max(1_000_000).optional(),
+  maxPrice: z.coerce.number().min(0).max(1_000_000).optional(),
+  availableDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  durationMin: z.coerce.number().int().min(30).max(720).optional(),
+  earliestMinute: z.coerce.number().int().min(0).max(1440).optional(),
+  latestMinute: z.coerce.number().int().min(0).max(1440).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
+});
+
+const amenitiesBodySchema = z.object({
+  amenities: z.array(z.string().min(1).max(60)).max(40),
 });
 
 @Controller({ path: "venues", version: "1" })
@@ -47,13 +74,34 @@ export class VenueController {
   constructor(
     private readonly venueService: VenueService,
     private readonly tenancyService: TenancyService,
+    private readonly discovery: DiscoveryService,
+    private readonly amenities: AmenityService,
   ) {}
 
   @Public()
   @Get()
   async listPublic(@Query() query: Record<string, string>) {
-    const filters = listVenuesSchema.parse(query);
-    return this.venueService.listPublicVenues(filters);
+    const input = discoverySchema.parse(query);
+    const results = await this.discovery.search({
+      regionCode: input.regionCode,
+      provinceCode: input.provinceCode,
+      cityMunicipality: input.cityMunicipality,
+      query: input.query,
+      amenities: csvToList(input.amenities),
+      minPrice: input.minPrice,
+      maxPrice: input.maxPrice,
+      availableDate: input.availableDate,
+      durationMin: input.durationMin,
+      earliestMinute: input.earliestMinute,
+      latestMinute: input.latestMinute,
+      limit: input.limit,
+    });
+    return results.map((result) => ({
+      ...result.venue,
+      amenities: result.amenities,
+      fromPrice: result.fromPrice,
+      availableCourtCount: result.availableCourtCount,
+    }));
   }
 
   @Public()
@@ -63,7 +111,31 @@ export class VenueController {
     if (venue?.status !== "APPROVED") {
       throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
     }
-    return venue;
+    const amenities = await this.amenities.listVenueAmenities(venue.id);
+    return { ...venue, amenities: amenities.map((entry) => entry.key) };
+  }
+
+  @Get(":id/amenities")
+  async getAmenities(@Req() request: AuthenticatedRequest, @Param("id") id: string) {
+    const user = getSessionUser(request);
+    const venue = await this.requireOwnedVenue(user.id, id);
+    const list = await this.amenities.listVenueAmenities(venue.id);
+    return { amenities: list.map((entry) => entry.key) };
+  }
+
+  @Put(":id/amenities")
+  @HttpCode(200)
+  async setAmenities(
+    @Req() request: AuthenticatedRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    const user = getSessionUser(request);
+    const venue = await this.requireOwnedVenue(user.id, id);
+    const input = amenitiesBodySchema.parse(body);
+    await this.amenities.setVenueAmenities(venue.id, input.amenities);
+    const updated = await this.amenities.listVenueAmenities(venue.id);
+    return { amenities: updated.map((entry) => entry.key) };
   }
 
   @Get("mine")
