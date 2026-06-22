@@ -1,7 +1,9 @@
 import { MapPin } from "lucide-react";
 import { notFound } from "next/navigation";
 import { CourtBooking } from "../../../components/court-booking";
+import { FavoriteToggle } from "../../../components/favorite-toggle";
 import { RatingBadge } from "../../../components/rating-badge";
+import { ReportButton } from "../../../components/report-button";
 import { SiteHeader } from "../../../components/site-header";
 import {
   type CourtSummary,
@@ -37,6 +39,17 @@ async function loadReviews(venueId: string): Promise<VenueReviews> {
   }
 }
 
+async function loadFavorite(venueId: string, cookie: string): Promise<boolean> {
+  try {
+    const result = await apiFetch<{ favorite: boolean }>(`/favorites/venues/${venueId}`, {
+      cookie,
+    });
+    return result.favorite;
+  } catch {
+    return false;
+  }
+}
+
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleDateString("en-PH", { dateStyle: "medium" });
 }
@@ -46,6 +59,12 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   const [venue, session] = await Promise.all([loadVenue(slug), getSession()]);
   if (!venue) notFound();
   const [courts, reviews] = await Promise.all([loadCourts(venue.id), loadReviews(venue.id)]);
+
+  let isFavorite = false;
+  if (session) {
+    const { cookies } = await import("next/headers");
+    isFavorite = await loadFavorite(venue.id, (await cookies()).toString());
+  }
 
   return (
     <main>
@@ -58,7 +77,11 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
             <MapPin size={16} aria-hidden="true" />
             {venue.streetAddress}, {venue.cityMunicipality}
           </p>
-          <RatingBadge average={reviews.rating.average} count={reviews.rating.count} />
+          <div className="venue-toolbar">
+            <RatingBadge average={reviews.rating.average} count={reviews.rating.count} />
+            {session ? <FavoriteToggle venueId={venue.id} initial={isFavorite} /> : null}
+            {session ? <ReportButton subjectType="VENUE" subjectId={venue.id} /> : null}
+          </div>
           {venue.description ? <p className="venue-desc">{venue.description}</p> : null}
         </div>
 

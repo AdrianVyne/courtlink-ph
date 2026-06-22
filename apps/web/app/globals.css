@@ -901,3 +901,53 @@ h2 {
   gap: 0.5rem;
   margin-top: 0.6rem;
 }
+
+/* Favorites + reporting */
+.venue-toolbar {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.favorite-toggle {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.85rem;
+  font-weight: 600;
+  gap: 0.35rem;
+  padding: 0.35rem 0.85rem;
+}
+
+.favorite-toggle:hover {
+  border-color: var(--green);
+}
+
+.favorite-toggle.is-favorite {
+  background: #eaf6ee;
+  border-color: var(--green);
+  color: var(--green-dark);
+}
+
+.report-wrap {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.5rem;
+}
+
+.report-button {
+  align-items: center;
+  color: #9a2a22;
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.report-done {
+  color: var(--muted);
+  font-size: 0.85rem;
+}

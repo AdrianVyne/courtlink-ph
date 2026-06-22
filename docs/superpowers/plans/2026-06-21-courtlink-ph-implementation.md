@@ -64,7 +64,7 @@
 - [x] Build the design system, shared header, and responsive application shell.
 - [x] Build public discovery, venue/court booking pages, and coach directory wired to the live API (per-coach profile pages and richer SEO still pending).
 - [x] Build player bookings, venue review/refund queue, and super-admin approval dashboards (coach workspace still pending).
-- [x] Add in-app notifications with a replaceable email adapter, plus completed-booking reviews with venue/coach rating aggregation (favorites, promotions, moderation, and PWA still pending).
+- [x] Add in-app notifications, completed-booking reviews with rating aggregation, venue favorites, and a super-admin moderation queue (report, suspend/reinstate, audit events). Promotions and PWA still pending.
 
 ### Task 9: Production operations
 
@@ -79,6 +79,7 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

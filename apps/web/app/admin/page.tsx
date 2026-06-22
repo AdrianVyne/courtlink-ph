@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminVenueQueue } from "../../components/admin-venue-queue";
 import { SiteHeader } from "../../components/site-header";
@@ -30,6 +31,11 @@ export default async function AdminPage() {
           <span className="kicker">Marketplace administration</span>
           <h1>Pending venue approvals</h1>
           <p className="page-sub">Review and approve venues before they go public.</p>
+        </div>
+        <div className="dashboard-links">
+          <Link className="button button-secondary button-small" href="/admin/moderation">
+            Moderation queue
+          </Link>
         </div>
         <AdminVenueQueue venues={pending} />
       </section>

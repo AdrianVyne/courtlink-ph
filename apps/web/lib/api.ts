@@ -97,6 +97,25 @@ export interface VenueReviews {
   items: ReviewItem[];
 }
 
+export interface ModerationCase {
+  id: string;
+  reporterId: string;
+  subjectType: string;
+  subjectId: string;
+  reason: string;
+  status: string;
+  resolution: string | null;
+  createdAt: string;
+}
+
+export interface FavoriteVenueSummary {
+  id: string;
+  name: string;
+  slug: string;
+  cityMunicipality: string;
+  createdAt: string;
+}
+
 export interface NotificationItem {
   id: string;
   type: string;
@@ -142,7 +161,7 @@ function buildQuery(query?: Query): string {
 }
 
 export interface RequestOptions {
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "DELETE";
   body?: unknown;
   query?: Query;
   cookie?: string;
