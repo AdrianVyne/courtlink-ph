@@ -59,9 +59,15 @@ importers:
       argon2:
         specifier: 0.44.0
         version: 0.44.0
+      bullmq:
+        specifier: 5.66.4
+        version: 5.66.4
       fastify:
         specifier: 5.7.0
         version: 5.7.0
+      ioredis:
+        specifier: 5.8.2
+        version: 5.8.2
       pg:
         specifier: 8.22.0
         version: 8.22.0
