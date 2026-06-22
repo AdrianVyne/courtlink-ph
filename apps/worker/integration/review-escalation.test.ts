@@ -106,9 +106,13 @@ describe("escalateOverdueReviews", () => {
     const refreshed = await prisma.courtBooking.findUniqueOrThrow({ where: { id: booking.id } });
     expect(refreshed.reviewEscalatedAt).not.toBeNull();
 
-    // Second run must not re-escalate this booking (idempotent).
-    const second = await escalateOverdueReviews(prisma, now);
-    expect(second.courts).toBe(0);
+    // Second run must not re-escalate THIS booking (idempotent). The function
+    // scans all overdue proofs platform-wide, so assert idempotency against this
+    // booking rather than a global count that concurrent suites can perturb.
+    const escalatedAt = refreshed.reviewEscalatedAt;
+    await escalateOverdueReviews(prisma, now);
+    const reRun = await prisma.courtBooking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(reRun.reviewEscalatedAt).toEqual(escalatedAt);
     const ownerNotesAfter = await prisma.notification.count({
       where: { userId: owner.id, type: "COURT_REVIEW_OVERDUE", data: forBooking },
     });
@@ -137,7 +141,7 @@ describe("escalateOverdueReviews", () => {
       },
     });
     const court = await prisma.court.create({ data: { venueId: venue.id, name: "ESC Court" } });
-    await prisma.courtBooking.create({
+    const booking = await prisma.courtBooking.create({
       data: {
         courtId: court.id,
         playerId: player.id,
@@ -150,7 +154,11 @@ describe("escalateOverdueReviews", () => {
       },
     });
 
-    const result = await escalateOverdueReviews(prisma, new Date("2026-08-31T05:00:00.000Z"));
-    expect(result.courts).toBe(0);
+    // This booking's review window has not lapsed at this instant, so it must not
+    // be escalated. Assert against this booking, not a global count concurrent
+    // suites can perturb.
+    await escalateOverdueReviews(prisma, new Date("2026-08-31T05:00:00.000Z"));
+    const refreshed = await prisma.courtBooking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(refreshed.reviewEscalatedAt).toBeNull();
   });
 });
