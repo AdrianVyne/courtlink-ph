@@ -42,7 +42,7 @@ jobs:
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           version: 11.8.0
           run_install: false
