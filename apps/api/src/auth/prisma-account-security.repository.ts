@@ -76,9 +76,10 @@ export class PrismaAccountSecurityRepository implements AccountSecurityRepositor
   }
 
   async updatePassword(userId: string, passwordHash: string): Promise<void> {
-    await this.prisma.passwordCredential.update({
+    await this.prisma.passwordCredential.upsert({
       where: { userId },
-      data: { passwordHash },
+      update: { passwordHash },
+      create: { userId, passwordHash },
     });
   }
 

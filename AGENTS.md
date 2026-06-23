@@ -4,6 +4,8 @@
 
 CourtLink PH is a nationwide, pickleball-only marketplace for court and coach bookings in the Philippines. Read `docs/superpowers/specs/2026-06-21-courtlink-ph-design.md` before changing product behavior and record architecture changes as ADRs.
 
+For session continuation, read `PAUSE.md` before relying on chat history. Verify its checkpoint against current Git state and update it before pausing again.
+
 ## Engineering rules
 
 - Use TypeScript in strict mode and keep domain logic independent of web frameworks.

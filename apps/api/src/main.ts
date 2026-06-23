@@ -6,8 +6,10 @@ import { DomainExceptionFilter } from "./common/domain-exception.filter.js";
 import { registerRequestObservability } from "./observability/request-observability.js";
 import { StructuredLogger } from "./observability/structured-logger.js";
 import { MAX_PROOF_BYTES } from "./storage/object-storage.js";
+import { parseEnvironment } from "./config/environment.js";
 
 async function bootstrap(): Promise<void> {
+  const environment = parseEnvironment(process.env);
   const logger = new StructuredLogger();
   const adapter = new FastifyAdapter({ logger: false });
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, adapter, { logger });
@@ -27,7 +29,7 @@ async function bootstrap(): Promise<void> {
   );
   SwaggerModule.setup("api/docs", app, document);
 
-  const port = Number(process.env.PORT ?? 3001);
+  const port = Number(process.env.PORT ?? environment.API_PORT);
   await app.listen(port, "0.0.0.0");
   logger.log({ event: "api.ready", port }, "Bootstrap");
 }

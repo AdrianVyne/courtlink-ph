@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import { AuthService, type CreateAuthUserInput, type UserAuthRepository } from "./auth.service.js";
 import { PasswordHasher } from "./password-hasher.js";
-import { AccountSecurityService } from "./account-security.service.js";
+import type { AccountSecurityService } from "./account-security.service.js";
 import { AuthController, type CookieReply } from "./auth.controller.js";
+import { GoogleOAuthError, type GoogleOAuthService } from "./google-oauth.service.js";
 
-function createController(): AuthController {
+function createController(googleOAuth?: GoogleOAuthService): AuthController {
   const users = new Map<string, Awaited<ReturnType<UserAuthRepository["createPlayer"]>>>();
   const repository: UserAuthRepository = {
     findByEmail: async (email) => users.get(email) ?? null,
@@ -27,8 +28,37 @@ function createController(): AuthController {
   return new AuthController(
     new AuthService(repository, new PasswordHasher()),
     accountSecurity,
+    googleOAuth ??
+      ({
+        start: async () => ({ url: "https://accounts.google.com/o/oauth2/v2/auth" }),
+        complete: async () => ({
+          session: {
+            token: "google-courtlink-session",
+            expiresAt: new Date("2026-07-23T00:00:00.000Z"),
+          },
+          returnTo: "/dashboard",
+        }),
+        abandon: async () => undefined,
+      } as unknown as GoogleOAuthService),
     false,
+    "http://localhost:3000",
   );
+}
+
+function redirectReply() {
+  const headers = new Map<string, string>();
+  const redirects: Array<{ url: string; statusCode: number | undefined }> = [];
+  return {
+    headers,
+    redirects,
+    reply: {
+      header: (name: string, value: string) => headers.set(name, value),
+      redirect: (url: string, statusCode?: number) => {
+        redirects.push({ url, statusCode });
+        return url;
+      },
+    },
+  };
 }
 
 describe("AuthController", () => {
@@ -72,5 +102,77 @@ describe("AuthController", () => {
       /^courtlink_session=[A-Za-z0-9_-]{43}; Path=\/; HttpOnly; SameSite=Lax; Expires=/,
     );
     vi.useRealTimers();
+  });
+
+  it("redirects Google start and successful callback without exposing tokens", async () => {
+    const start = vi.fn(async () => ({
+      url: "https://accounts.google.com/o/oauth2/v2/auth?state=opaque",
+    }));
+    const complete = vi.fn(async () => ({
+      session: {
+        token: "google-courtlink-session",
+        expiresAt: new Date("2026-07-23T00:00:00.000Z"),
+      },
+      returnTo: "/coach",
+    }));
+    const google = { start, complete, abandon: vi.fn() } as unknown as GoogleOAuthService;
+    const controller = createController(google);
+    const started = redirectReply();
+    const completed = redirectReply();
+
+    await controller.googleStart({ returnTo: "/coach" }, started.reply);
+    await controller.googleCallback(
+      { code: "authorization-code", state: "state-token" },
+      completed.reply,
+    );
+
+    expect(start).toHaveBeenCalledWith("/coach");
+    expect(started.redirects).toEqual([
+      {
+        url: "https://accounts.google.com/o/oauth2/v2/auth?state=opaque",
+        statusCode: 302,
+      },
+    ]);
+    expect(complete).toHaveBeenCalledWith("authorization-code", "state-token");
+    expect(completed.redirects).toEqual([{ url: "http://localhost:3000/coach", statusCode: 302 }]);
+    expect(completed.headers.get("Set-Cookie")).toContain("HttpOnly");
+    expect(JSON.stringify(completed.redirects)).not.toContain("google-courtlink-session");
+  });
+
+  it("consumes cancellation state and redirects known failures to safe login errors", async () => {
+    const abandon = vi.fn(async () => undefined);
+    const complete = vi.fn(async () => {
+      throw new GoogleOAuthError(
+        "GOOGLE_OAUTH_STATE_INVALID",
+        "Google sign-in request is invalid or expired",
+      );
+    });
+    const google = { start: vi.fn(), complete, abandon } as unknown as GoogleOAuthService;
+    const controller = createController(google);
+    const cancelled = redirectReply();
+    const invalid = redirectReply();
+
+    await controller.googleCallback(
+      { error: "access_denied", state: "cancelled-state" },
+      cancelled.reply,
+    );
+    await controller.googleCallback(
+      { code: "authorization-code", state: "invalid-state" },
+      invalid.reply,
+    );
+
+    expect(abandon).toHaveBeenCalledWith("cancelled-state");
+    expect(cancelled.redirects).toEqual([
+      {
+        url: "http://localhost:3000/login?oauthError=access_denied",
+        statusCode: 302,
+      },
+    ]);
+    expect(invalid.redirects).toEqual([
+      {
+        url: "http://localhost:3000/login?oauthError=GOOGLE_OAUTH_STATE_INVALID",
+        statusCode: 302,
+      },
+    ]);
   });
 });

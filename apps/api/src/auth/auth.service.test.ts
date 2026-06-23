@@ -88,6 +88,22 @@ describe("AuthService", () => {
     expect(repository.sessions[0]?.tokenHash).not.toBe(session.token);
   });
 
+  it("issues the same opaque session type for a previously authenticated user id", async () => {
+    const repository = new InMemoryAuthRepository();
+    const service = new AuthService(repository, new PasswordHasher());
+    const user = await service.register({
+      email: "player@example.com",
+      displayName: "Alex Player",
+      password: "a-long-player-password",
+    });
+
+    const session = await service.issueSession(user.id, new Date("2026-06-23T00:00:00.000Z"));
+
+    expect(session.token).toMatch(/^[A-Za-z0-9_-]{43}$/);
+    expect(session.expiresAt).toEqual(new Date("2026-07-23T00:00:00.000Z"));
+    expect(repository.sessions[0]?.userId).toBe(user.id);
+  });
+
   it("uses the same error for an unknown email and a wrong password", async () => {
     const repository = new InMemoryAuthRepository();
     const service = new AuthService(repository, new PasswordHasher());

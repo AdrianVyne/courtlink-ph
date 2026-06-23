@@ -107,10 +107,14 @@ export class AuthService {
       throw new AuthenticationError();
     }
 
+    return this.issueSession(user.id, input.now);
+  }
+
+  async issueSession(userId: string, now: Date = new Date()): Promise<IssuedSession> {
     const token = randomBytes(32).toString("base64url");
-    const expiresAt = new Date(input.now.getTime() + sessionLifetimeMilliseconds);
+    const expiresAt = new Date(now.getTime() + sessionLifetimeMilliseconds);
     await this.repository.createSession({
-      userId: user.id,
+      userId,
       tokenHash: hashSessionToken(token),
       expiresAt,
     });

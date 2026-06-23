@@ -1,9 +1,12 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, Inject, Post, Query, Req, Res } from "@nestjs/common";
 import type { FastifyReply } from "fastify";
 import { z } from "zod";
-// biome-ignore lint/style/useImportType: AuthService is required as a runtime value for Nest DI.
+// biome-ignore lint/style/useImportType: AccountSecurityService is injected by Nest at runtime.
 import { AccountSecurityService } from "./account-security.service.js";
+// biome-ignore lint/style/useImportType: AuthService is injected by Nest at runtime.
 import { AuthService, type SessionUser } from "./auth.service.js";
+// biome-ignore lint/style/useImportType: GoogleOAuthService is injected by Nest at runtime.
+import { GoogleOAuthError, GoogleOAuthService } from "./google-oauth.service.js";
 import {
   type AuthenticatedRequest,
   Public,
@@ -11,7 +14,7 @@ import {
   extractSessionCookie,
   getSessionUser,
 } from "./session.guard.js";
-import { SECURE_COOKIES } from "./tokens.js";
+import { APP_BASE_URL, SECURE_COOKIES } from "./tokens.js";
 
 const registerSchema = z.object({
   email: z.string().email().max(254),
@@ -31,6 +34,14 @@ const resetPasswordSchema = z.object({
   token: z.string().min(10).max(256),
   password: z.string().min(12).max(256),
 });
+const googleStartSchema = z.object({ returnTo: z.string().max(500).optional() });
+const googleCallbackSchema = z
+  .object({
+    code: z.string().min(1).max(4_096).optional(),
+    state: z.string().min(1).max(512),
+    error: z.string().min(1).max(200).optional(),
+  })
+  .refine((input) => Boolean(input.code || input.error), { message: "code or error is required" });
 
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
@@ -39,13 +50,56 @@ export interface CookieReply {
   header(name: string, value: string): void;
 }
 
+export interface RedirectReply extends CookieReply {
+  redirect(url: string, statusCode?: number): unknown;
+}
+
 @Controller({ path: "auth", version: "1" })
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly accountSecurity: AccountSecurityService,
+    private readonly googleOAuth: GoogleOAuthService,
     @Inject(SECURE_COOKIES) private readonly secureCookies: boolean,
+    @Inject(APP_BASE_URL) private readonly appBaseUrl: string,
   ) {}
+
+  @Public()
+  @Get("google/start")
+  async googleStart(@Query() query: unknown, @Res() reply: FastifyReply | RedirectReply) {
+    const input = googleStartSchema.parse(query);
+    const { url } = await this.googleOAuth.start(input.returnTo);
+    return reply.redirect(url, 302);
+  }
+
+  @Public()
+  @Get("google/callback")
+  async googleCallback(@Query() query: unknown, @Res() reply: FastifyReply | RedirectReply) {
+    const input = googleCallbackSchema.parse(query);
+    if (input.error) {
+      await this.googleOAuth.abandon(input.state);
+      return reply.redirect(
+        this.webUrl(`/login?oauthError=${encodeURIComponent(input.error)}`),
+        302,
+      );
+    }
+    try {
+      const result = await this.googleOAuth.complete(input.code ?? "", input.state);
+      reply.header(
+        "Set-Cookie",
+        this.formatSessionCookie(result.session.token, result.session.expiresAt),
+      );
+      return reply.redirect(this.webUrl(result.returnTo), 302);
+    } catch (error) {
+      if (error instanceof GoogleOAuthError) {
+        return reply.redirect(
+          this.webUrl(`/login?oauthError=${encodeURIComponent(error.code)}`),
+          302,
+        );
+      }
+      throw error;
+    }
+  }
 
   @Public()
   @Post("register")
@@ -138,5 +192,9 @@ export class AuthController {
     const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
     if (this.secureCookies) parts.push("Secure");
     return parts.join("; ");
+  }
+
+  private webUrl(path: string): string {
+    return `${this.appBaseUrl.replace(/\/$/, "")}${path}`;
   }
 }

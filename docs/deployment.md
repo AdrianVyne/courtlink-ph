@@ -25,6 +25,7 @@ All three application services come from a single multi-stage `Dockerfile`
    - `DATABASE_URL=postgresql://courtlink:POSTGRES_PASSWORD@postgres:5432/courtlink?schema=public`
    - `REDIS_URL=redis://redis:6379`
    - `SESSION_SECRET` and `ENCRYPTION_KEY` (32+ bytes each)
+   - `APP_BASE_URL` (the public origin, such as `https://courtlink-ph.duckdns.org`)
    - `SITE_ADDRESS` (`:80` for HTTP, or your DuckDNS hostname for automatic TLS)
 3. Open VM firewall/security-list ingress for ports 80 and 443.
 4. Build and start:
@@ -40,6 +41,17 @@ All three application services come from a single multi-stage `Dockerfile`
    curl -fsS http://localhost/api/v1/health/live
    curl -fsS http://localhost/api/v1/health/ready
    ```
+
+### Google sign-in
+
+Google OAuth is optional and disabled by default. To enable it:
+
+1. Create a Web application OAuth client in Google Cloud Console.
+2. Add the exact authorized redirect URI `${APP_BASE_URL}/api/v1/auth/google/callback`. The scheme, host, port, path, and trailing slash behavior must match exactly.
+3. Set `GOOGLE_OAUTH_ENABLED=true`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `GOOGLE_REDIRECT_URI` in the host `.env`.
+4. Rebuild/restart `api` and `web`, then complete a real sign-in and confirm the browser returns to `/dashboard` with only the `courtlink_session` HttpOnly cookie.
+
+Keep the client secret outside Git. Rotate it in Google Cloud Console and the host `.env`, then restart the API. Disabling `GOOGLE_OAUTH_ENABLED` hides the web button and makes the API start endpoint unavailable without affecting existing CourtLink sessions or password login.
 
 ## Updates
 

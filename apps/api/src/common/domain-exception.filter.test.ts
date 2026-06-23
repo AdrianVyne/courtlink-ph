@@ -25,6 +25,19 @@ describe("DomainExceptionFilter", () => {
     expect(send).toHaveBeenCalledWith({ code: "AUTH_INVALID_CREDENTIALS", message: "bad" });
   });
 
+  it("maps disabled Google OAuth to service unavailable", () => {
+    const filter = new DomainExceptionFilter();
+    const { host, status, send } = makeHost();
+
+    filter.catch({ code: "GOOGLE_OAUTH_DISABLED", message: "not configured" }, host);
+
+    expect(status).toHaveBeenCalledWith(503);
+    expect(send).toHaveBeenCalledWith({
+      code: "GOOGLE_OAUTH_DISABLED",
+      message: "not configured",
+    });
+  });
+
   it("defaults unknown coded errors to 400", () => {
     const filter = new DomainExceptionFilter();
     const { host, status } = makeHost();
