@@ -129,14 +129,6 @@ export class CoachController {
     return this.coaches.listPublicProfiles({ verifiedOnly: verifiedOnly === "true" });
   }
 
-  @Public()
-  @Get(":id")
-  async publicProfile(@Param("id") id: string) {
-    const detail = await this.coaches.findPublicDetail(id);
-    if (!detail) throw new NotFoundException({ code: "COACH_NOT_FOUND" });
-    return detail;
-  }
-
   @Get("me")
   async myCoachProfile(@Req() request: AuthenticatedRequest) {
     const user = getSessionUser(request);
@@ -164,15 +156,6 @@ export class CoachController {
   async myDirectedRequests(@Req() request: AuthenticatedRequest) {
     const profile = await this.requireCoachProfile(request);
     return this.bookingQuery.listDirectedPendingForCoach(profile.id);
-  }
-
-  @Public()
-  @Get(":id")
-  async detail(@Param("id") id: string) {
-    const profile = await this.coaches.findProfileById(id);
-    if (!profile) throw new BadRequestException({ code: "COACH_NOT_FOUND" });
-    const availability = await this.coaches.listAvailability(id);
-    return { profile, availability };
   }
 
   @Post("profile")
@@ -497,6 +480,14 @@ export class CoachController {
       });
     }
     return refund;
+  }
+
+  @Public()
+  @Get(":id")
+  async publicProfile(@Param("id") id: string) {
+    const detail = await this.coaches.findPublicDetail(id);
+    if (!detail) throw new NotFoundException({ code: "COACH_NOT_FOUND" });
+    return detail;
   }
 
   private async requireCoachProfile(
