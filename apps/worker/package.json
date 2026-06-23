@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node -e \"require(\u0027node:fs\u0027).rmSync(\u0027dist\u0027,{recursive:true,force:true})\" \u0026\u0026 tsc -p tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\" && tsc -p tsconfig.build.json",
     "dev": "tsx watch src/main.ts",
     "lint": "biome lint src",
     "start": "node dist/main.js",
@@ -18,6 +18,7 @@
     "@courtlink/domain": "workspace:*",
     "@prisma/adapter-pg": "7.8.0",
     "bullmq": "5.66.4",
+    "dotenv": "17.2.3",
     "ioredis": "5.8.2",
     "pg": "8.22.0",
     "zod": "4.4.3"
