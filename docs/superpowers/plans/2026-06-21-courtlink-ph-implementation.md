@@ -37,7 +37,7 @@
 
 - [x] Implement email/password registration, login/logout, and secure HTTP-only sessions.
 - [x] Implement email verification and password reset.
-- [ ] Implement Google OAuth sign-in.
+- [x] Implement Google OAuth sign-in.
 - [x] Implement platform roles and organization memberships.
 - [x] Enforce tenant authorization in services and prove cross-tenant denial with integration tests.
 - [x] Add venue onboarding and super-admin approval/rejection.
@@ -75,10 +75,10 @@
 
 - [x] Build the design system, shared header, and responsive application shell.
 - [x] Build public discovery, venue/court booking pages, and coach directory wired to the live API.
-- [ ] Add per-coach profile pages, structured metadata, and richer public SEO.
+- [x] Add per-coach profile pages, structured metadata, and richer public SEO.
 - [x] Build player bookings, venue review/refund queue, coach workspace, and super-admin approval dashboards.
 - [x] Add in-app notifications, completed-booking reviews with rating aggregation, venue favorites, promotions, installable PWA support, and a super-admin moderation queue (report, suspend/reinstate, audit events).
-- [ ] Replace the development email logger with configured transactional SMTP delivery and retry handling.
+- [x] Replace the development email logger with configured transactional SMTP delivery and retry handling.
 
 ### Task 9: Production operations
 
@@ -93,6 +93,8 @@
 - [ ] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios.
 - [ ] Review specification coverage and resolve every gap before release.
 - [ ] Complete branch integration using the finishing-a-development-branch workflow.
+
+
 
 
 

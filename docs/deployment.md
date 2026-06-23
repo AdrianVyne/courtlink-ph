@@ -118,3 +118,11 @@ Follow `docs/runbooks/restore-drill.md`. Restore the latest backup into a
 throwaway database and confirm migrations, representative aggregate row counts,
 and key constraints. A wrong key or a truncated or tampered archive fails the
 restore instead of loading corrupt data.
+
+## Transactional email (SMTP)
+
+Set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, and `SMTP_FROM` to enable transactional email delivery via SMTP. When these variables are unset, the API logs email content instead of sending. The default port is `587` (STARTTLS); set `SMTP_PORT=465` for implicit TLS.
+
+Brevo (formerly Sendinblue) offers a free SMTP tier suitable for the initial volume. Create an account at brevo.com, generate SMTP credentials under Settings > SMTP & API, and set the variables accordingly.
+
+Email is best-effort ? delivery failures never block bookings or payment decisions. The in-app notification system is authoritative.

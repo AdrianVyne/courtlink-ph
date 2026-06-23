@@ -1408,3 +1408,100 @@ h2 {
   color: var(--green-dark);
   font-size: 0.85rem;
 }
+
+/* Coach profile detail */
+.breadcrumb {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.breadcrumb a {
+  color: var(--accent);
+  text-decoration: none;
+}
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+.coach-profile-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.coach-profile-header h1 {
+  margin: 0;
+}
+.coach-rate-large {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--accent);
+  margin: 0.5rem 0;
+}
+.coach-rating-summary {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.9375rem;
+  color: var(--muted);
+  margin-bottom: 1rem;
+}
+.coach-section {
+  margin-top: 1.5rem;
+}
+.coach-section h2 {
+  font-size: 1.125rem;
+  margin-bottom: 0.5rem;
+}
+.availability-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.availability-slot {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  flex-wrap: wrap;
+}
+.slot-location {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--muted);
+}
+.coach-actions {
+  margin-top: 1.5rem;
+}
+.review-list {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.review-item {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+.review-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  margin-bottom: 0.25rem;
+}
+.review-stars {
+  color: #f59e0b;
+  letter-spacing: 0.05em;
+}
+.coach-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.coach-card-link:hover .coach-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}

@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   ForbiddenException,
+  NotFoundException,
   Get,
   HttpCode,
   Inject,
@@ -125,6 +126,14 @@ export class CoachController {
   @Get()
   async listPublic(@Query("verifiedOnly") verifiedOnly?: string) {
     return this.coaches.listPublicProfiles({ verifiedOnly: verifiedOnly === "true" });
+  }
+
+  @Public()
+  @Get(":id")
+  async publicProfile(@Param("id") id: string) {
+    const detail = await this.coaches.findPublicDetail(id);
+    if (!detail) throw new NotFoundException({ code: "COACH_NOT_FOUND" });
+    return detail;
   }
 
   @Get("me")

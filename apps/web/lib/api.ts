@@ -73,6 +73,15 @@ export interface AvailabilitySlot {
   active: boolean;
 }
 
+export interface PublicCoachDetail {
+  id: string;
+  displayName: string;
+  bio: string | null;
+  experience: string | null;
+  hourlyRate: number;
+  verificationStatus: string;
+  availability: AvailabilitySlot[];
+}
 export interface CoachMe {
   profile: CoachProfileSummary | null;
   availability: AvailabilitySlot[];

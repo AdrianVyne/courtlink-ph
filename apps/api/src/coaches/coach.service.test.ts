@@ -1,10 +1,11 @@
-﻿import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   type AddAvailabilityInput,
   type AvailabilitySummary,
   CoachError,
   type CoachProfileFilters,
   type CoachProfileSummary,
+  type PublicCoachDetail,
   type CoachRepository,
   CoachService,
   type UpsertProfileInput,
@@ -41,6 +42,16 @@ class InMemoryCoachRepo implements CoachRepository {
 
   async findProfileById(id: string): Promise<CoachProfileSummary | null> {
     return this.profiles.find((p) => p.id === id) ?? null;
+  }
+
+  async findPublicDetail(id: string): Promise<PublicCoachDetail | null> {
+    const profile = this.profiles.find((p) => p.id === id && p.active);
+    if (!profile) return null;
+    return {
+      ...profile,
+      displayName: "Test Coach",
+      availability: this.availability.filter((a) => a.coachId === id),
+    };
   }
 
   async listPublicProfiles(filters: CoachProfileFilters): Promise<CoachProfileSummary[]> {

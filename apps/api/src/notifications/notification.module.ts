@@ -8,6 +8,25 @@ import { NotificationDispatcher } from "./notification.dispatcher.js";
 import { NotificationService } from "./notification.service.js";
 import { PrismaNotificationRepository } from "./prisma-notification.repository.js";
 import { PrismaUserDirectory } from "./prisma-user-directory.js";
+import { SmtpEmailSender } from "./smtp-email-sender.js";
+import type { EmailSender } from "./notification.service.js";
+
+function createEmailSender(): EmailSender {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const password = process.env.SMTP_PASSWORD;
+  const from = process.env.SMTP_FROM;
+  if (host && user && password && from) {
+    return new SmtpEmailSender({
+      host,
+      port: Number(process.env.SMTP_PORT) || 587,
+      user,
+      password,
+      from,
+    });
+  }
+  return new LoggingEmailSender();
+}
 
 @Global()
 @Module({
@@ -15,7 +34,7 @@ import { PrismaUserDirectory } from "./prisma-user-directory.js";
   providers: [
     {
       provide: EMAIL_SENDER,
-      useFactory: () => new LoggingEmailSender(),
+      useFactory: createEmailSender,
     },
     {
       provide: PrismaNotificationRepository,
@@ -36,7 +55,7 @@ import { PrismaUserDirectory } from "./prisma-user-directory.js";
       provide: NotificationDispatcher,
       useFactory: (
         service: NotificationService,
-        email: LoggingEmailSender,
+        email: EmailSender,
         directory: PrismaUserDirectory,
       ) => new NotificationDispatcher(service, email, directory),
       inject: [NotificationService, EMAIL_SENDER, PrismaUserDirectory],

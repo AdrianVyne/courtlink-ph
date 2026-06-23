@@ -1,7 +1,8 @@
-﻿import type { CoachVerificationStatus, Prisma, PrismaClient } from "@courtlink/database";
+import type { CoachVerificationStatus, Prisma, PrismaClient } from "@courtlink/database";
 import {
   type AddAvailabilityInput,
   type AvailabilitySummary,
+  type PublicCoachDetail,
   type CoachProfileFilters,
   type CoachProfileSummary,
   type CoachRepository,
@@ -39,6 +40,26 @@ export class PrismaCoachRepository implements CoachRepository {
   async findProfileById(id: string): Promise<CoachProfileSummary | null> {
     const profile = await this.prisma.coachProfile.findUnique({ where: { id } });
     return profile ? toCoachProfileSummary(profile) : null;
+  }
+
+  async findPublicDetail(id: string): Promise<PublicCoachDetail | null> {
+    const profile = await this.prisma.coachProfile.findUnique({
+      where: { id, active: true },
+      include: {
+        user: { select: { displayName: true } },
+        availability: { where: { active: true }, orderBy: { startsAt: "asc" } },
+      },
+    });
+    if (!profile) return null;
+    return {
+      id: profile.id,
+      displayName: profile.user.displayName,
+      bio: profile.bio,
+      experience: profile.experience,
+      hourlyRate: Number(profile.hourlyRate),
+      verificationStatus: profile.verificationStatus,
+      availability: profile.availability.map(toAvailabilitySummary),
+    };
   }
 
   async listPublicProfiles(filters: CoachProfileFilters): Promise<CoachProfileSummary[]> {

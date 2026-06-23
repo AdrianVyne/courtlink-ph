@@ -1,4 +1,4 @@
-﻿import type { CoachAvailability, CoachProfile, CoachVerificationStatus } from "@courtlink/database";
+import type { CoachAvailability, CoachProfile, CoachVerificationStatus } from "@courtlink/database";
 
 export interface CoachProfileSummary {
   id: string;
@@ -38,10 +38,21 @@ export interface CoachProfileFilters {
   limit?: number | undefined;
 }
 
+export interface PublicCoachDetail {
+  id: string;
+  displayName: string;
+  bio: string | null;
+  experience: string | null;
+  hourlyRate: number;
+  verificationStatus: CoachVerificationStatus;
+  availability: AvailabilitySummary[];
+}
+
 export interface CoachRepository {
   upsertProfile(input: UpsertProfileInput): Promise<CoachProfileSummary>;
   findProfileByUserId(userId: string): Promise<CoachProfileSummary | null>;
   findProfileById(id: string): Promise<CoachProfileSummary | null>;
+  findPublicDetail(coachId: string): Promise<PublicCoachDetail | null>;
   listPublicProfiles(filters: CoachProfileFilters): Promise<CoachProfileSummary[]>;
   setVerification(coachId: string, status: CoachVerificationStatus): Promise<CoachProfileSummary>;
   addAvailability(input: AddAvailabilityInput): Promise<AvailabilitySummary>;
@@ -76,6 +87,10 @@ export class CoachService {
 
   findProfileById(id: string): Promise<CoachProfileSummary | null> {
     return this.repository.findProfileById(id);
+  }
+
+  findPublicDetail(coachId: string): Promise<PublicCoachDetail | null> {
+    return this.repository.findPublicDetail(coachId);
   }
 
   listPublicProfiles(filters: CoachProfileFilters): Promise<CoachProfileSummary[]> {

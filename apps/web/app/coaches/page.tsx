@@ -1,4 +1,5 @@
-﻿import { BadgeCheck } from "lucide-react";
+import { BadgeCheck } from "lucide-react";
+import Link from "next/link";
 import { SiteHeader } from "../../components/site-header";
 import { type CoachProfileSummary, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
@@ -31,19 +32,23 @@ export default async function CoachesPage() {
         ) : (
           <ul className="coach-grid">
             {coaches.map((coach) => (
-              <li className="coach-card" key={coach.id}>
-                <div className="coach-card-head">
-                  <h2>Coach</h2>
-                  {coach.verificationStatus === "VERIFIED" ? (
-                    <span className="verified-tag">
-                      <BadgeCheck size={15} aria-hidden="true" /> Verified
-                    </span>
-                  ) : (
-                    <span className="unverified-tag">Unverified</span>
-                  )}
-                </div>
-                {coach.bio ? <p className="coach-bio">{coach.bio}</p> : null}
-                <p className="coach-rate">PHP {coach.hourlyRate.toFixed(2)} / hour</p>
+              <li key={coach.id}>
+                <Link className="coach-card-link" href={`/coaches/${coach.id}`}>
+                  <div className="coach-card">
+                    <div className="coach-card-head">
+                      <h2>Coach</h2>
+                      {coach.verificationStatus === "VERIFIED" ? (
+                        <span className="verified-tag">
+                          <BadgeCheck size={15} aria-hidden="true" /> Verified
+                        </span>
+                      ) : (
+                        <span className="unverified-tag">Unverified</span>
+                      )}
+                    </div>
+                    {coach.bio ? <p className="coach-bio">{coach.bio}</p> : null}
+                    <p className="coach-rate">PHP {coach.hourlyRate.toFixed(2)} / hour</p>
+                  </div>
+                </Link>
               </li>
             ))}
           </ul>
