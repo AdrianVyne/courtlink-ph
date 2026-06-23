@@ -34,6 +34,7 @@ import {
   assertProofSize,
   buildProofObjectKey,
 } from "../storage/object-storage.js";
+import { reencodeProofImage } from "../storage/reencode-proof.js";
 
 const channelEnum = z.enum(["GCASH", "MAYA", "QR_PH", "BANK_TRANSFER", "OTHER"]);
 
@@ -337,12 +338,17 @@ export class CoachController {
     const contentType = assertProofContentType(file.mimetype);
     const buffer = await file.toBuffer();
     assertProofSize(buffer.length);
+    const reencoded = await reencodeProofImage(buffer, contentType);
     const fields = uploadFieldsSchema.parse({
       channel: file.fields.channel?.value,
       transactionRef: file.fields.transactionRef?.value,
     });
-    const objectKey = buildProofObjectKey("coach", bookingId, contentType);
-    await this.storage.putObject({ key: objectKey, body: buffer, contentType });
+    const objectKey = buildProofObjectKey("coach", bookingId, reencoded.contentType);
+    await this.storage.putObject({
+      key: objectKey,
+      body: reencoded.data,
+      contentType: reencoded.contentType,
+    });
     return this.bookings.submitProof({
       bookingId,
       playerId: user.id,

@@ -38,6 +38,7 @@ import {
   assertProofSize,
   buildProofObjectKey,
 } from "../storage/object-storage.js";
+import { reencodeProofImage } from "../storage/reencode-proof.js";
 
 const courtAmenitiesSchema = z.object({
   amenities: z.array(z.string().min(1).max(60)).max(40),
@@ -198,12 +199,17 @@ export class CourtController {
     const contentType = assertProofContentType(file.mimetype);
     const buffer = await file.toBuffer();
     assertProofSize(buffer.length);
+    const reencoded = await reencodeProofImage(buffer, contentType);
     const channel = uploadFieldsSchema.parse({
       channel: file.fields.channel?.value,
       transactionRef: file.fields.transactionRef?.value,
     });
-    const objectKey = buildProofObjectKey("court", bookingId, contentType);
-    await this.storage.putObject({ key: objectKey, body: buffer, contentType });
+    const objectKey = buildProofObjectKey("court", bookingId, reencoded.contentType);
+    await this.storage.putObject({
+      key: objectKey,
+      body: reencoded.data,
+      contentType: reencoded.contentType,
+    });
     return this.bookings.submitProof({
       bookingId,
       playerId: user.id,

@@ -56,9 +56,9 @@ This audit compares the approved product design (docs/superpowers/specs/2026-06-
 
 | Gap | Status |
 | --- | --- |
-| Safe proof image re-encoding | MIME/size checks exist; decoded bitmap re-encoding not implemented |
-| Playwright browser e2e tests | No e2e test infrastructure; all scenarios verified by integration tests |
-| Automated WCAG 2.2 AA checks | Semantic HTML, aria attributes, role attributes in source; no automated a11y runner |
+| Safe proof image re-encoding | Implemented via sharp: EXIF rotation, dimension capping (4096px), format-preserving re-encode, unit tested |
+| Playwright browser e2e tests | Scaffold with config, axe a11y checks, and public page smoke tests added |
+| Automated WCAG 2.2 AA checks | axe-core/playwright e2e tests targeting wcag2a, wcag2aa, wcag22aa tags |
 | CI dependency/container scans | Lockfile supply-chain policy runs at install; no formal CI audit step |
 | Live Google OAuth verification | Code/tests complete; live provider credentials required for external verification |
 | Clean Oracle VM deployment | Docker build proven locally; external cloud deployment requires infrastructure setup |
@@ -66,3 +66,4 @@ This audit compares the approved product design (docs/superpowers/specs/2026-06-
 ## Conclusion
 
 All approved product features from the design specification are implemented and covered by automated tests. The remaining gaps are operational verification items (e2e testing infrastructure, a11y automation, CI security scans, cloud deployment) and one minor item (proof image re-encoding). The marketplace is feature-complete for the approved design.
+

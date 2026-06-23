@@ -92,7 +92,8 @@
 - [x] Run formatting, linting, type checks, unit/integration tests, and production builds (pnpm check 18/18, test:integration 8/8, Docker build OK).
 - [x] Verify all approved role, booking, payment, refund, coach-offer, moderation, privacy, and operations scenarios (310 automated tests across unit/integration/domain).
 - [x] Review specification coverage and resolve every gap before release (audit at docs/verification/2026-06-23-release-coverage-audit.md).
-- [ ] Complete branch integration using the finishing-a-development-branch workflow.
+- [x] Complete branch integration using the finishing-a-development-branch workflow.
+
 
 
 

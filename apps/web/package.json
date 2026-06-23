@@ -10,7 +10,8 @@
     "test": "vitest run --passWithNoTests",
     "test:integration": "vitest run --passWithNoTests",
     "test:coverage": "vitest run --coverage --passWithNoTests",
-    "typecheck": "next typegen \u0026\u0026 tsc --noEmit"
+    "typecheck": "next typegen && tsc --noEmit",
+    "test:e2e": "playwright test --config=playwright.config.ts"
   },
   "dependencies": {
     "@courtlink/domain": "workspace:*",
@@ -20,7 +21,9 @@
     "react-dom": "19.2.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.11.3",
     "@biomejs/biome": "2.5.0",
+    "@playwright/test": "^1.61.0",
     "@tailwindcss/postcss": "4.3.1",
     "@testing-library/react": "16.3.2",
     "@types/node": "24.10.1",
