@@ -17,16 +17,16 @@
     "@courtlink/database": "workspace:*",
     "@courtlink/domain": "workspace:*",
     "@prisma/adapter-pg": "7.8.0",
-    "bullmq": "5.66.4",
-    "dotenv": "17.2.3",
-    "ioredis": "5.8.2",
+    "bullmq": "5.79.2",
+    "dotenv": "17.4.2",
+    "ioredis": "5.11.1",
     "pg": "8.22.0",
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.0",
+    "@biomejs/biome": "2.5.1",
     "@types/node": "24.10.1",
-    "tsx": "4.20.6",
+    "tsx": "4.22.4",
     "typescript": "6.0.3",
     "vitest": "4.1.9"
   }
