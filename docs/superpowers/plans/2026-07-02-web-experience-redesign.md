@@ -153,10 +153,10 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 - Test: `apps/web/components/discovery/filter-bar.test.tsx`
 - Modify: `apps/web/e2e/public-pages.spec.ts`, visual snapshots
 
-- [ ] **Step 1:** failing unit test for `FilterBar` (renders chip per active filter from `searchParams`-shaped props; chip remove produces URL without that key — assert via `buildFilterHref` pure helper it exports).
-- [ ] **Step 2:** implement FilterBar + cards; results header shows count ("N venues"); EmptyState replaces bare paragraph; venue cards use `CoverPlaceholder` (photo slot API arrives Phase 8), price bottom-left, `RatingBadge` top-right, amenity pills with "+n more". Migrate both list pages and both detail pages to primitives; venue detail gets hero block + sticky desktop booking summary (pure layout — booking logic untouched); delete now-unused legacy CSS blocks (`/* Discovery */`, `/* Courts */` card styles, `/* Coaches */`, coach profile block).
-- [ ] **Step 3:** e2e: applying a city filter shows a removable chip and filtered results; removing the chip restores; venue detail axe check added (seeded venue slug from demo seed — read seed for a stable slug); coaches detail axe check.
-- [ ] **Step 4:** regenerate courts/coaches snapshots, gate, commit `"feat(web): redesign discovery and detail pages with filter bar and card system"`, push, update `PAUSE.md`.
+- [x] **Step 1:** failing unit test for `FilterBar` (renders chip per active filter from `searchParams`-shaped props; chip remove produces URL without that key — assert via `buildFilterHref` pure helper it exports).
+- [x] **Step 2:** implement FilterBar + cards; results header shows count ("N venues"); EmptyState replaces bare paragraph; venue cards use `CoverPlaceholder` (photo slot API arrives Phase 8), price bottom-left, `RatingBadge` top-right, amenity pills with "+n more". Migrate both list pages and both detail pages to primitives; venue detail gets hero block + sticky desktop booking summary (pure layout — booking logic untouched); delete now-unused legacy CSS blocks (`/* Discovery */`, `/* Courts */` card styles, `/* Coaches */`, coach profile block).
+- [x] **Step 3:** e2e: applying a city filter shows a removable chip and filtered results; removing the chip restores; venue detail axe check added (seeded venue slug from demo seed — read seed for a stable slug); coaches detail axe check.
+- [x] **Step 4:** regenerate courts/coaches snapshots, gate, commit `"feat(web): redesign discovery and detail pages with filter bar and card system"`, push, update `PAUSE.md`.
 
 ### Phase 5: Booking flows and workspaces
 

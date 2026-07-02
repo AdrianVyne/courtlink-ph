@@ -62,6 +62,65 @@ test.describe("public pages", () => {
   });
 });
 
+test.describe("discovery filters", () => {
+  test("an active city filter renders as a removable chip", async ({ page }) => {
+    await page.goto("/courts?city=Cebu+City&maxPrice=500");
+    const chip = page.getByRole("link", { name: "Remove filter: Cebu City" });
+    await expect(chip).toBeVisible();
+    await expect(page.getByRole("link", { name: "Remove filter: ≤ ₱500/hr" })).toBeVisible();
+
+    await chip.click();
+    await expect(page).toHaveURL(/\/courts\?maxPrice=500$/);
+    await expect(page.getByRole("link", { name: "Remove filter: Cebu City" })).toHaveCount(0);
+  });
+
+  test("the mobile filter sheet opens and closes", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto("/courts");
+    const trigger = page.getByRole("button", { name: /Filters/ });
+    await expect(async () => {
+      await trigger.click();
+      await expect(page.getByRole("dialog", { name: "Search filters" })).toBeVisible({
+        timeout: 1000,
+      });
+    }).toPass();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "Search filters" })).not.toBeVisible();
+  });
+});
+
+test.describe("detail pages (need a seeded API)", () => {
+  test("venue detail renders and passes axe", async ({ page, request }) => {
+    const response = await request.get("/api/v1/venues").catch(() => null);
+    test.skip(!response || !response.ok(), "API is not running");
+    const venues = (await response?.json()) as Array<{ slug: string }>;
+    test.skip(!Array.isArray(venues) || venues.length === 0, "no venues seeded");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/courts/${venues[0]?.slug}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+
+  test("coach detail renders and passes axe", async ({ page, request }) => {
+    const response = await request.get("/api/v1/coaches").catch(() => null);
+    test.skip(!response || !response.ok(), "API is not running");
+    const coaches = (await response?.json()) as Array<{ id: string }>;
+    test.skip(!Array.isArray(coaches) || coaches.length === 0, "no coaches seeded");
+
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto(`/coaches/${coaches[0]?.id}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const results = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
+      .analyze();
+    expect(results.violations).toEqual([]);
+  });
+});
+
 test.describe("accessibility (WCAG 2.2 AA)", () => {
   const pages = ["/", "/courts", "/coaches", "/login", "/register"];
 
