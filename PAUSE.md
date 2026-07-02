@@ -1,46 +1,45 @@
 # CourtLink PH Pause / Resume Handoff
 
-Last updated: 2026-06-23 (Asia/Manila)
+Last updated: 2026-07-02 (Asia/Manila)
 
 ## Resume prompt
 
-> Resume CourtLink PH from `PAUSE.md`. Read `AGENTS.md`, the design spec, and the implementation plan. Inspect the current Git/worktree state. Work in `.worktrees/foundation` on `feat/foundation`. Update `PAUSE.md` before stopping.
+> Resume CourtLink PH from `PAUSE.md`. Current effort: the web experience redesign. Read
+> `docs/superpowers/specs/2026-07-02-web-experience-redesign-design.md` and execute
+> `docs/superpowers/plans/2026-07-02-web-experience-redesign.md` phase by phase from the first
+> unchecked phase. Work on `main`; run the phase gate (`pnpm check` +
+> `pnpm --filter @courtlink/web test:e2e`) before each commit; push after each phase; plain
+> commit messages without co-author trailers; update `PAUSE.md` before stopping.
 
 ## Current checkpoint
 
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
-- All branches (`main`, `feat/foundation`) are aligned and pushed.
-- Implementation worktree: `C:\Users\Admin\Documents\Github\pickelball-website\.worktrees\foundation`
-- Root checkout has unrelated untracked `config.yaml` and `static/` ? do not touch.
+- Branch: `main` (marketplace feature-complete; see previous checkpoint below).
+- Active effort: **web experience redesign** — spec and 10-phase plan committed 2026-07-02.
+- Phase status: no phases executed yet. Start at Phase 1 (design system foundation).
+- Root checkout has unrelated untracked `config.yaml` and `static/` — do not touch.
+- The `.worktrees/foundation` worktree is from the completed foundation effort; redesign work
+  happens directly on `main` in the root checkout.
 
-## Implementation status
+## Prior effort (complete)
 
-All items in the implementation plan are checked complete. The marketplace is feature-complete:
+The marketplace is feature-complete: auth (email + Google OAuth), courts (inventory, discovery,
+holds, proof review, refunds), coaches (profiles, offers, atomic winner), web workspaces,
+notifications, email, operations, Docker/Caddy production stack, 240+ unit tests, 83 integration
+tests, Playwright + axe e2e scaffold.
 
-- Auth: email/password, verification/reset, Google OAuth (PKCE+nonce+state)
-- Courts: inventory, amenities, hours/closures, nationwide discovery, priced availability, transactional holds, overlap protection, proof upload with safe re-encoding, review/escalation, refunds
-- Coaches: profiles, directed approval, open offers, atomic winner, proof review, cancellation, refunds, public profile pages with SEO
-- Web: responsive workspaces, notifications, reviews, favorites, promotions, PWA, moderation, Google sign-in
-- Email: SMTP transactional delivery with conditional binding
-- Operations: encrypted backups, structured logs, metrics, queue visibility, alerts
-- Production: Docker multi-stage, Caddy, compose.prod
-- Quality: Playwright e2e scaffold with axe a11y checks, 240+ automated tests
-
-## Known operational items (not blockers)
-
-- CI dependency/container/security scans (lockfile policy runs at install)
-- Live Google OAuth verification (needs provider credentials)
-- Clean Oracle VM deployment (Docker build proven locally)
+Known operational items (not blockers): CI dependency/container scans, live Google OAuth
+verification, clean Oracle VM deployment.
 
 ## Local commands
 
 ```powershell
-Set-Location C:\Users\Admin\Documents\Github\pickelball-website\.worktrees\foundation
+Set-Location C:\Users\Admin\Documents\Github\pickelball-website
 pnpm install
-docker compose -f compose.yaml up -d
-pnpm check
+docker compose up -d
 $env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'
 $env:REDIS_URL='redis://localhost:6379'
+pnpm check
 pnpm test:integration
-pnpm --filter @courtlink/web test:e2e   # requires running dev server or E2E_BASE_URL
+pnpm --filter @courtlink/web test:e2e   # dev server auto-starts; API must be running for data tests
 ```
