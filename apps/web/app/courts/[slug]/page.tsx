@@ -1,5 +1,6 @@
 import { MapPin, Star } from "lucide-react";
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CourtBooking } from "../../../components/court-booking";
 import { CoverPlaceholder } from "../../../components/discovery/cover-placeholder";
@@ -108,6 +109,10 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
     const { cookies } = await import("next/headers");
     isFavorite = await loadFavorite(venue.id, (await cookies()).toString());
   }
+  const photos = venue.photos ?? [];
+  const heroPhoto = photos[0];
+  const secondaryPhotos = photos.slice(1, 3);
+  const galleryClassName = secondaryPhotos.length > 0 ? "grid gap-3 md:grid-cols-[2fr_1fr]" : "";
 
   return (
     <>
@@ -118,8 +123,42 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
         type="application/ld+json"
       />
       <main className="mx-auto w-full max-w-6xl px-[5vw] py-8">
-        {/* Gallery slot: real photos arrive in Phase 8 of the redesign plan. */}
-        <CoverPlaceholder className="h-44 rounded-(--radius-card) sm:h-56" seed={venue.slug} />
+        {heroPhoto ? (
+          <section aria-label={`${venue.name} photos`} className={galleryClassName}>
+            <div className="relative h-44 overflow-hidden rounded-(--radius-card) bg-sand-100 sm:h-56">
+              <Image
+                alt={heroPhoto.altText}
+                className="object-cover"
+                fill
+                priority
+                sizes={secondaryPhotos.length > 0 ? "(min-width: 768px) 66vw, 100vw" : "100vw"}
+                src={heroPhoto.url}
+                unoptimized
+              />
+            </div>
+            {secondaryPhotos.length > 0 ? (
+              <div className="grid grid-cols-2 gap-3 md:grid-cols-1">
+                {secondaryPhotos.map((photo) => (
+                  <div
+                    className="relative min-h-24 overflow-hidden rounded-(--radius-card) bg-sand-100"
+                    key={photo.id}
+                  >
+                    <Image
+                      alt={photo.altText}
+                      className="object-cover"
+                      fill
+                      sizes="(min-width: 768px) 25vw, 50vw"
+                      src={photo.url}
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
+          </section>
+        ) : (
+          <CoverPlaceholder className="h-44 rounded-(--radius-card) sm:h-56" seed={venue.slug} />
+        )}
 
         <div className="mt-6 flex flex-wrap items-start justify-between gap-4">
           <div className="max-w-2xl">

@@ -37,9 +37,26 @@ interface MultipartRequest {
   >;
 }
 
+function photoResponse(photo: { id: string; altText: string; position: number; createdAt: Date }) {
+  return {
+    id: photo.id,
+    altText: photo.altText,
+    position: photo.position,
+    createdAt: photo.createdAt.toISOString(),
+    url: `/api/v1/venue-photos/${photo.id}`,
+  };
+}
+
 @Controller({ version: "1" })
 export class VenuePhotosController {
   constructor(private readonly photos: VenuePhotoService) {}
+
+  @Get("venues/:venueId/photos")
+  async list(@Req() request: AuthenticatedRequest, @Param("venueId") venueId: string) {
+    const user = getSessionUser(request);
+    const photos = await this.photos.listManagedPhotos(user.id, venueId);
+    return photos.map(photoResponse);
+  }
 
   @Idempotent()
   @Post("venues/:venueId/photos")
@@ -49,12 +66,13 @@ export class VenuePhotosController {
     const file = await (request as unknown as MultipartRequest).file();
     if (!file) throw new BadRequestException({ code: "PHOTO_FILE_REQUIRED" });
     const buffer = await file.toBuffer();
-    return this.photos.addPhoto({
+    const photo = await this.photos.addPhoto({
       userId: user.id,
       venueId,
       altText: String(file.fields.altText?.value ?? ""),
       file: { buffer, contentType: file.mimetype, sizeBytes: buffer.length },
     });
+    return photoResponse(photo);
   }
 
   @Patch("venues/:venueId/photos/:photoId")
@@ -66,7 +84,8 @@ export class VenuePhotosController {
   ) {
     const user = getSessionUser(request);
     const patch = patchSchema.parse(body);
-    return this.photos.updatePhoto({ userId: user.id, venueId, photoId, ...patch });
+    const photo = await this.photos.updatePhoto({ userId: user.id, venueId, photoId, ...patch });
+    return photoResponse(photo);
   }
 
   @Delete("venues/:venueId/photos/:photoId")
@@ -84,10 +103,14 @@ export class VenuePhotosController {
   @Get("venue-photos/:photoId")
   async publicPhoto(
     @Param("photoId") photoId: string,
-    @Res() reply: { header(name: string, value: string): unknown; redirect(url: string): unknown },
+    @Res()
+    reply: {
+      header(name: string, value: string): unknown;
+      redirect(url: string, statusCode?: number): unknown;
+    },
   ) {
     const url = await this.photos.publicPhotoUrl(photoId);
     reply.header("Cache-Control", "public, max-age=86400");
-    reply.redirect(url);
+    reply.redirect(url, 302);
   }
 }

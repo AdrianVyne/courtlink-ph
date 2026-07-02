@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DiscoveryService,
   type DiscoveryCourtCandidate,
   type DiscoveryFilters,
   type DiscoveryVenueCandidate,
@@ -157,5 +158,25 @@ describe("evaluateVenue availability (date provided)", () => {
       durationMin: 120,
     } as DiscoveryFilters);
     expect(result.matches).toBe(false);
+  });
+});
+
+describe("DiscoveryService.search", () => {
+  it("returns cover photo URL and alt text when a venue has a position-zero photo", async () => {
+    const candidateWithPhoto = {
+      ...candidate([court("c1", 250)]),
+      coverPhotoId: "photo-1",
+      coverPhotoAltText: "Covered court baseline",
+    };
+    const service = new DiscoveryService({
+      search: async () => [candidateWithPhoto],
+    });
+
+    await expect(service.search({})).resolves.toMatchObject([
+      {
+        coverPhotoUrl: "/api/v1/venue-photos/photo-1",
+        coverPhotoAltText: "Covered court baseline",
+      },
+    ]);
   });
 });

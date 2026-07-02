@@ -74,7 +74,7 @@ export class PrismaDiscoveryRepository implements DiscoveryRepository {
       take: CANDIDATE_CAP,
       include: {
         amenities: { include: { amenity: true } },
-        photos: { orderBy: { position: "asc" }, take: 1, select: { id: true } },
+        photos: { orderBy: { position: "asc" }, take: 1, select: { id: true, altText: true } },
         courts: {
           where: { active: true },
           include: {
@@ -115,6 +115,7 @@ export class PrismaDiscoveryRepository implements DiscoveryRepository {
         amenityKeys: venue.amenities.map((entry) => entry.amenity.key),
         courts,
         coverPhotoId: venue.photos[0]?.id ?? null,
+        coverPhotoAltText: venue.photos[0]?.altText ?? null,
       };
       return candidate;
     });

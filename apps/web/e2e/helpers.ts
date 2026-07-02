@@ -1,6 +1,20 @@
-import type { Page } from "@playwright/test";
+import { randomUUID } from "node:crypto";
+import { expect, type Page } from "@playwright/test";
 
 export const DEMO_PASSWORD = "courtlink-demo-2026";
+export const E2E_PHOTO_ALT_PREFIX = "E2E uploaded venue cover";
+
+interface VenuePhotoResponse {
+  id: string;
+  altText: string;
+  position: number;
+  url: string;
+}
+
+const E2E_COVER_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAIAAAAmkwkpAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEElEQVQImWPQn+cCRwzEcQC6kxER6dq7ngAAAABJRU5ErkJggg==",
+  "base64",
+);
 
 /**
  * Logs in through the UI with a demo-seed account. Returns false when the
@@ -33,4 +47,44 @@ export async function loginAs(page: Page, email: string): Promise<boolean> {
     }
   }
   return false;
+}
+
+export async function deleteE2EVenuePhotos(page: Page, venueId: string): Promise<void> {
+  const list = await page.context().request.get(`/api/v1/venues/${venueId}/photos`);
+  if (!list.ok()) return;
+  const photos = (await list.json()) as VenuePhotoResponse[];
+  for (const photo of photos) {
+    if (!photo.altText.startsWith(E2E_PHOTO_ALT_PREFIX)) continue;
+    await page.context().request.delete(`/api/v1/venues/${venueId}/photos/${photo.id}`);
+  }
+}
+
+export async function uploadE2EVenueCoverPhoto(
+  page: Page,
+  venueId: string,
+  altText: string,
+): Promise<VenuePhotoResponse> {
+  await deleteE2EVenuePhotos(page, venueId);
+
+  const upload = await page.context().request.post(`/api/v1/venues/${venueId}/photos`, {
+    headers: { "Idempotency-Key": randomUUID() },
+    multipart: {
+      altText,
+      file: {
+        name: "courtlink-e2e-cover.png",
+        mimeType: "image/png",
+        buffer: E2E_COVER_PNG,
+      },
+    },
+  });
+  expect(upload.ok(), await upload.text()).toBe(true);
+  const photo = (await upload.json()) as VenuePhotoResponse;
+
+  const promote = await page
+    .context()
+    .request.patch(`/api/v1/venues/${venueId}/photos/${photo.id}`, {
+      data: { position: 0 },
+    });
+  expect(promote.ok(), await promote.text()).toBe(true);
+  return (await promote.json()) as VenuePhotoResponse;
 }

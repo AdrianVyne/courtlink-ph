@@ -1,5 +1,9 @@
 import { redirect } from "next/navigation";
 import { CourtScheduleManager } from "../../components/court-schedule-manager";
+import {
+  type ManagedVenuePhoto,
+  VenuePhotoManager,
+} from "../../components/manage/venue-photo-manager";
 import { PromotionManager } from "../../components/promotion-manager";
 import { VenueAmenityManager } from "../../components/venue-amenity-manager";
 import { VenueQueue } from "../../components/venue-queue";
@@ -54,13 +58,18 @@ export default async function ManagePage() {
           amenities: [],
         }),
       ]);
+      const photos = await load<ManagedVenuePhoto[]>(
+        `/venues/${membership.venue.id}/photos`,
+        cookie,
+        [],
+      );
       const schedules = await Promise.all(
         courts.map(async (court) => ({
           court,
           schedule: await load<CourtSchedule | null>(`/courts/${court.id}/schedule`, cookie, null),
         })),
       );
-      return { membership, promotions, schedules, venueAmenities };
+      return { membership, photos, promotions, schedules, venueAmenities };
     }),
   );
 
@@ -73,7 +82,7 @@ export default async function ManagePage() {
     >
       <VenueQueue bookings={queue} />
 
-      {workspaces.map(({ membership, promotions, schedules, venueAmenities }) => (
+      {workspaces.map(({ membership, photos, promotions, schedules, venueAmenities }) => (
         <div className="mt-10 border-t border-sand-200 pt-6" key={membership.venue.id}>
           <h2 className="m-0 mb-4 font-display text-2xl font-bold tracking-tight text-ink-900">
             {membership.venue.name}
@@ -120,6 +129,7 @@ export default async function ManagePage() {
             catalog={amenityCatalog}
             selected={venueAmenities.amenities}
           />
+          <VenuePhotoManager venueId={membership.venue.id} photos={photos} />
           <PromotionManager venueId={membership.venue.id} promotions={promotions} />
         </div>
       ))}

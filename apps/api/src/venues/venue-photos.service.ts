@@ -188,6 +188,11 @@ export class VenuePhotoService {
     return this.deps.photos.listForVenue(venueId);
   }
 
+  async listManagedPhotos(userId: string, venueId: string): Promise<VenuePhotoRecord[]> {
+    await this.requireManagedVenue(userId, venueId);
+    return this.deps.photos.listForVenue(venueId);
+  }
+
   /** Signed URL for public consumption; only approved venues' photos are visible. */
   async publicPhotoUrl(photoId: string): Promise<string> {
     const photo = await this.deps.photos.findById(photoId);

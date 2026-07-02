@@ -1,6 +1,6 @@
 # CourtLink PH Pause / Resume Handoff
 
-Last updated: 2026-07-02 (Asia/Manila)
+Last updated: 2026-07-03 (Asia/Manila)
 
 ## Resume prompt
 
@@ -14,8 +14,7 @@ Last updated: 2026-07-02 (Asia/Manila)
 ## Current checkpoint
 
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
-- Branch: `main` (latest pushed commit `98010f8`; marketplace feature-complete; see previous
-  checkpoint below).
+- Branch: `main`, clean and pushed at this pause.
 - Recent repository maintenance: contributor guardrails added in `e6bba3c` and Dependabot security
   alerts remediated in `98010f8`. `main` now requires PR review, CODEOWNER review, the `verify`
   status check, resolved conversations, linear history, and no force-push/delete for non-bypass
@@ -42,42 +41,32 @@ Last updated: 2026-07-02 (Asia/Manila)
 - Phase 7 complete (2026-07-02): every component migrated off legacy classes (rating-badge,
   report-button, notification-bell, logout-button, google-sign-in, promotion-banner/manager,
   venue-amenity-manager, operations-status, court-schedule-manager, offline page, manage page).
-  `globals.css` reduced 961 → 110 lines (theme, base html/body/a/h1-h2 rules, `.tnum`, reveal
-  keyframes, reduced-motion). Visual snapshots passed with ZERO diffs — appearance unchanged.
-  Next: Phase 8 (venue photos — schema, API with re-encode pipeline, manager UI, next/image).
-- Phase 8 API foundation done (2026-07-02): `VenuePhoto` model + migration
-  `20260702120000_venue_photos` (applied to local DB), `storage/reencode-photo.ts` (forces webp),
-  `VenuePhotoService` (10 unit tests: cap of 8, alt-text 5-200, tenant denial via
-  `tenancy.assertRole`, position swap vs move, approved-only public URLs),
-  `PrismaVenuePhotosRepository` (3-step position swap in a transaction),
-  `VenuePhotosController` (POST multipart/PATCH/DELETE under `/venues/:venueId/photos`,
-  public `GET /venue-photos/:photoId` → 302 signed URL + Cache-Control 86400), wired in
-  `venue.module.ts`; `PHOTO_NOT_FOUND`/`PHOTO_LIMIT_REACHED` added to the exception filter.
-  Verified: pnpm check green, API boots, public route returns domain 404.
-  Venue detail `GET /venues/by-slug/:slug` now also returns
-  `photos: [{ id, altText, position, url }]` (url is the public redirect path
-  `/api/v1/venue-photos/:id`) — verified live against the seeded venue.
-  Discovery list responses now carry `coverPhotoUrl` (position-0 photo → redirect path,
-  null when no photos): `DiscoveryVenueCandidate.coverPhotoId` (optional), repository includes
-  position-0 photo id, controller flattens `coverPhotoUrl`; web `lib/api.ts` has
-  `DiscoveryVenue.coverPhotoUrl` and a `VenuePhotoInfo` type ready for the UI.
-  **Remaining for Phase 8 (all web + one API test):** integration test
-  `apps/api/integration/venue-photos.test.ts` (follow existing integration suite setup),
-  `components/manage/venue-photo-manager.tsx` (+ unit test; upload via multipart FormData to
-  `/venues/:venueId/photos`, swap-position buttons, delete, alt edit), wire into
-  `app/manage/page.tsx`, make `VenueCard`/venue detail prefer `coverPhotoUrl`/`photos[]` over
-  `CoverPlaceholder` using `next/image` (add API host remotePattern to `next.config.ts`;
-  note photo URLs are same-origin `/api/v1/...` paths proxied to the API, so `next/image`
-  may need `unoptimized` or a loader for the redirect — decide there), owner-login e2e
-  (upload → cover appears on /courts card), then gate + commit
-  `"feat: venue photo galleries with safe re-encoding and public covers"`.
+  `globals.css` reduced 961 -> 110 lines (theme, base html/body/a/h1-h2 rules, `.tnum`, reveal
+  keyframes, reduced-motion). Visual snapshots passed with zero diffs. Next: Phase 8
+  (venue photos - schema, API with re-encode pipeline, manager UI, next/image).
+- Phase 8 complete (2026-07-03): venue photo galleries end to end. API: `VenuePhotoService` +
+  `VenuePhotosController` (upload with webp re-encode via the proof pipeline, 8-photo cap,
+  alt-text validation, tenant-guarded mutations, position swap, public `302` redirect for
+  approved venues, authorized `GET /venues/:venueId/photos`), discovery `coverPhotoUrl` +
+  `coverPhotoAltText`, detail `photos[]`, `apps/api/integration/venue-photos.test.ts` (5/5).
+  Web: `components/manage/venue-photo-manager.tsx` (+3 unit tests) wired into `/manage`, real
+  photos on discovery cards and venue detail, `e2e/venue-photos.spec.ts` with upload/delete
+  helpers in `e2e/helpers.ts`. Gate this session: `pnpm check` 18/18, functional e2e 41/41
+  (API up + seed), visual snapshots 8/8 zero diffs (API stopped), full integration suite green
+  after the flake fix below.
+- Also fixed a pre-existing flaky test (separate commit): `apps/api/integration/public-stats.test.ts`
+  compared `getPublicStats()` to `venue.count()` from two different read-committed snapshots, so
+  a parallel test file's cleanup between the reads made approved-count exceed total-count. Both
+  reads now run inside one `RepeatableRead` transaction.
+- Resume from here: Phase 9 (dark mode + motion polish) — first unchecked phase in the plan.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
-- Local API env (no `.env` file in checkout): DATABASE_URL/REDIS_URL as below plus
-  SESSION_SECRET (any 32+ chars), ENCRYPTION_KEY (32-byte base64), OBJECT_STORAGE_ENDPOINT
-  `http://localhost:9000`, OBJECT_STORAGE_BUCKET `courtlink-private`, OBJECT_STORAGE_ACCESS_KEY
-  `courtlink`, OBJECT_STORAGE_SECRET_KEY `courtlink-dev-secret` (matches compose MinIO).
+- Local API env (no `.env` file in checkout): `DATABASE_URL`/`REDIS_URL` as below plus
+  `SESSION_SECRET` (any 32+ chars), `ENCRYPTION_KEY` (32-byte base64),
+  `OBJECT_STORAGE_ENDPOINT` `http://localhost:9000`, `OBJECT_STORAGE_BUCKET` `courtlink-private`,
+  `OBJECT_STORAGE_ACCESS_KEY` `courtlink`, `OBJECT_STORAGE_SECRET_KEY`
+  `courtlink-dev-secret` (matches compose MinIO).
 - CI on `main` is green as of commit `98010f8`: GitHub Actions run `28571832540` (`CI` / `verify`)
   passed, and run `28571832579` (`Docker images`) passed for api, worker, and web images. The three
   Dependabot alerts opened after enabling security updates (`@hono/node-server`, `postcss`,
@@ -109,5 +98,6 @@ $env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'
 $env:REDIS_URL='redis://localhost:6379'
 pnpm check
 pnpm test:integration
+pnpm --filter @courtlink/database db:seed
 pnpm --filter @courtlink/web test:e2e   # dev server auto-starts; API must be running for data tests
 ```

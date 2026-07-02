@@ -212,10 +212,10 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 
 **Interfaces:** `POST /api/v1/venues/:venueId/photos` (multipart `file`, `altText`) → photo json; `PATCH /api/v1/venues/:venueId/photos/:photoId` (`{ altText?, position? }`); `DELETE .../:photoId`; public `GET /api/v1/venue-photos/:photoId` → 302 to signed URL, `Cache-Control: public, max-age=86400`. Tenant authorization on all mutations (owner/manager of the venue's business).
 
-- [ ] **Step 1 (TDD):** failing service tests — photo cap (9th upload rejected), alt-text validation, tenant denial for non-members, position uniqueness swap, public URL redirect for approved venues only.
-- [ ] **Step 2:** schema + migration + implement service/controller reusing the proof re-encode + storage adapters. Integration test with the database (`pnpm test:integration` group).
-- [ ] **Step 3:** web manager UI + wiring cards/detail with `next/image` (explicit `sizes`, `alt` from stored altText).
-- [ ] **Step 4:** e2e (needs owner login helper): upload → cover appears on `/courts` card. Update OpenAPI docs (Swagger decorators as in neighboring controllers). Gate + integration suite, commit `"feat: venue photo galleries with safe re-encoding and public covers"`, push, update `PAUSE.md`.
+- [x] **Step 1 (TDD):** failing service tests — photo cap (9th upload rejected), alt-text validation, tenant denial for non-members, position uniqueness swap, public URL redirect for approved venues only.
+- [x] **Step 2:** schema + migration + implement service/controller reusing the proof re-encode + storage adapters. Integration test with the database (`pnpm test:integration` group).
+- [x] **Step 3:** web manager UI + wiring cards/detail with `next/image` (explicit `sizes`, `alt` from stored altText).
+- [x] **Step 4:** e2e (needs owner login helper): upload → cover appears on `/courts` card. Update OpenAPI docs (Swagger decorators as in neighboring controllers). Gate + integration suite, commit `"feat: venue photo galleries with safe re-encoding and public covers"`, push, update `PAUSE.md`.
 
 ### Phase 9: Dark mode and motion polish
 

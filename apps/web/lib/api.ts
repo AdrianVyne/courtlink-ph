@@ -28,6 +28,8 @@ export interface VenueSummary {
   streetAddress: string;
   timezone: string;
   approvedAt: string | null;
+  amenities?: string[];
+  photos?: VenuePhotoInfo[];
 }
 
 export interface DiscoveryVenue extends VenueSummary {
@@ -35,6 +37,7 @@ export interface DiscoveryVenue extends VenueSummary {
   fromPrice: number | null;
   availableCourtCount: number;
   coverPhotoUrl: string | null;
+  coverPhotoAltText: string | null;
 }
 
 export interface VenuePhotoInfo {

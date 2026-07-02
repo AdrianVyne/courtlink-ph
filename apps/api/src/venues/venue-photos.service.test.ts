@@ -189,6 +189,28 @@ describe("VenuePhotoService.updatePhoto", () => {
   });
 });
 
+describe("VenuePhotoService.listManagedPhotos", () => {
+  it("requires a venue manager before returning photos", async () => {
+    const expected = [photo({ id: "photo-a" }), photo({ id: "photo-b", position: 1 })];
+    const { service, photos } = makeService({
+      memberRole: "MANAGER",
+      photos: { listForVenue: vi.fn().mockResolvedValue(expected) },
+    });
+
+    await expect(service.listManagedPhotos("user-1", "venue-1")).resolves.toEqual(expected);
+    expect(photos.listForVenue).toHaveBeenCalledWith("venue-1");
+  });
+
+  it("denies non-members before listing photos", async () => {
+    const { service, photos } = makeService({ memberRole: null });
+
+    await expect(service.listManagedPhotos("user-1", "venue-1")).rejects.toBeInstanceOf(
+      ForbiddenTenantError,
+    );
+    expect(photos.listForVenue).not.toHaveBeenCalled();
+  });
+});
+
 describe("VenuePhotoService.publicPhotoUrl", () => {
   it("returns a signed url for photos of approved venues", async () => {
     const { service, storage } = makeService({
