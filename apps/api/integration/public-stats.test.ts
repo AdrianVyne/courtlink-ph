@@ -8,7 +8,6 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL is required for public stats tests");
 
 const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
-const service = new PublicStatsService(new PrismaPublicStatsRepository(prisma));
 
 const marker = crypto.randomUUID().slice(0, 8);
 
@@ -71,7 +70,19 @@ describe("Public stats", () => {
       data: { userId: coachUser.id, hourlyRate: 500, active: true },
     });
 
-    const stats = await service.getPublicStats();
+    // Other integration files insert and delete venues concurrently, so the
+    // stats read and the total-count read must come from one snapshot: under
+    // read-committed, a cleanup landing between the two reads can shrink the
+    // total below the approved count observed a moment earlier.
+    const [stats, totalVenues] = await prisma.$transaction(
+      async (tx) => {
+        const snapshotService = new PublicStatsService(
+          new PrismaPublicStatsRepository(tx as PrismaClient),
+        );
+        return [await snapshotService.getPublicStats(), await tx.venue.count()] as const;
+      },
+      { isolationLevel: "RepeatableRead" },
+    );
     expect(stats.venues).toBeGreaterThanOrEqual(1);
     expect(stats.cities).toBeGreaterThanOrEqual(1);
     expect(stats.coaches).toBeGreaterThanOrEqual(1);
@@ -79,7 +90,6 @@ describe("Public stats", () => {
     // The draft venue must not be counted: approved-only filtering means the
     // approved count is strictly less than the total number of venues now in
     // the table (which includes our draft).
-    const totalVenues = await prisma.venue.count();
     expect(stats.venues).toBeLessThan(totalVenues);
   });
 });
