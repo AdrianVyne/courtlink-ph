@@ -41,18 +41,34 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 11.8.0
           run_install: false
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @courtlink/web exec playwright install --with-deps chromium
       - run: pnpm --filter @courtlink/database db:migrate
       - run: pnpm check
       - run: pnpm test:integration
-      - run: docker compose config
+      - run: pnpm --filter @courtlink/web test:e2e
+      - name: Validate development Compose config
+        run: docker compose -f compose.yaml config --quiet
+      - name: Validate production Compose config
+        env:
+          APP_BASE_URL: http://localhost:3000
+          BACKUP_ENCRYPTION_KEY: ci-backup-encryption-key
+          DATABASE_URL: postgresql://courtlink:courtlink@postgres:5432/courtlink?schema=public
+          ENCRYPTION_KEY: ci-encryption-key
+          OBJECT_STORAGE_ACCESS_KEY: ci-access-key
+          OBJECT_STORAGE_BUCKET: courtlink-ci
+          OBJECT_STORAGE_ENDPOINT: http://minio:9000
+          OBJECT_STORAGE_SECRET_KEY: ci-secret-key
+          POSTGRES_PASSWORD: courtlink
+          SESSION_SECRET: ci-session-secret
+        run: docker compose -f compose.prod.yaml config --quiet
 

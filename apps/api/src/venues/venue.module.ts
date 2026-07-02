@@ -8,13 +8,16 @@ import { TenancyModule } from "../tenancy/tenancy.module.js";
 import { TenancyService } from "../tenancy/tenancy.service.js";
 import { DiscoveryService } from "./discovery.service.js";
 import { PrismaDiscoveryRepository } from "./prisma-discovery.repository.js";
+import { PrismaPublicStatsRepository } from "./prisma-public-stats.repository.js";
 import { PrismaVenueRepository } from "./prisma-venue.repository.js";
+import { PublicStatsController } from "./public-stats.controller.js";
+import { PublicStatsService } from "./public-stats.service.js";
 import { VenueController } from "./venue.controller.js";
 import { VenueService } from "./venue.service.js";
 
 @Module({
   imports: [TenancyModule, AmenityModule],
-  controllers: [VenueController],
+  controllers: [VenueController, PublicStatsController],
   providers: [
     {
       provide: PrismaVenueRepository,
@@ -35,6 +38,21 @@ import { VenueService } from "./venue.service.js";
       provide: DiscoveryService,
       useFactory: (repo: PrismaDiscoveryRepository) => new DiscoveryService(repo),
       inject: [PrismaDiscoveryRepository],
+    },
+    {
+      provide: PrismaPublicStatsRepository,
+      useFactory: (prisma: PrismaClient) => new PrismaPublicStatsRepository(prisma),
+      inject: [PRISMA_CLIENT],
+    },
+    {
+      provide: PublicStatsService,
+      useFactory: (repo: PrismaPublicStatsRepository) => new PublicStatsService(repo),
+      inject: [PrismaPublicStatsRepository],
+    },
+    {
+      provide: PublicStatsController,
+      useFactory: (stats: PublicStatsService) => new PublicStatsController(stats),
+      inject: [PublicStatsService],
     },
     {
       provide: VenueController,

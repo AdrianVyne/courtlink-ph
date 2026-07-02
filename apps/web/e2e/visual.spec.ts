@@ -25,8 +25,9 @@ for (const { path, name } of pages) {
   for (const viewport of viewports) {
     test(`${name} at ${viewport.label}px matches baseline`, async ({ page }) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto(path);
-      await page.waitForLoadState("networkidle");
+      await page.goto(path, { waitUntil: "load" });
+      await expect(page.locator("main")).toBeVisible();
+      await page.evaluate(() => document.fonts.ready);
       await expect(page).toHaveScreenshot(`${name}-${viewport.label}.png`, {
         fullPage: true,
         animations: "disabled",

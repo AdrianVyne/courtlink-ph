@@ -1,0 +1,82 @@
+import { PrismaClient } from "@courtlink/database";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { PrismaPublicStatsRepository } from "../src/venues/prisma-public-stats.repository.js";
+import { PublicStatsService } from "../src/venues/public-stats.service.js";
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL is required for public stats tests");
+
+const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const service = new PublicStatsService(new PrismaPublicStatsRepository(prisma));
+
+const marker = crypto.randomUUID().slice(0, 8);
+
+beforeAll(async () => {
+  await prisma.$connect();
+});
+
+afterAll(async () => {
+  await prisma.venue.deleteMany({ where: { slug: { startsWith: `pstat-${marker}` } } });
+  await prisma.business.deleteMany({ where: { name: { startsWith: `PSTAT ${marker}` } } });
+  await prisma.coachProfile.deleteMany({
+    where: { user: { email: { startsWith: `pstat-${marker}` } } },
+  });
+  await prisma.user.deleteMany({ where: { email: { startsWith: `pstat-${marker}` } } });
+  await prisma.$disconnect();
+});
+
+/**
+ * Integration files run in parallel against one database, so these
+ * assertions are >=-invariants over rows this file creates rather than
+ * exact global counts.
+ */
+describe("Public stats", () => {
+  it("counts approved venues, their cities, and active coaches", async () => {
+    const business = await prisma.business.create({ data: { name: `PSTAT ${marker}` } });
+    await prisma.venue.create({
+      data: {
+        businessId: business.id,
+        name: `PSTAT Venue ${marker}`,
+        slug: `pstat-${marker}-approved`,
+        status: "APPROVED",
+        approvedAt: new Date(),
+        regionCode: "NCR",
+        cityMunicipality: `PstatCity-${marker}`,
+        streetAddress: "1 St",
+      },
+    });
+    await prisma.venue.create({
+      data: {
+        businessId: business.id,
+        name: `PSTAT Draft ${marker}`,
+        slug: `pstat-${marker}-draft`,
+        status: "DRAFT",
+        regionCode: "NCR",
+        cityMunicipality: `PstatDraftCity-${marker}`,
+        streetAddress: "2 St",
+      },
+    });
+    const coachUser = await prisma.user.create({
+      data: {
+        email: `pstat-${marker}@test.courtlink.ph`,
+        displayName: "PSTAT Coach",
+        passwordHash: "x",
+      },
+    });
+    await prisma.coachProfile.create({
+      data: { userId: coachUser.id, hourlyRate: 500, active: true },
+    });
+
+    const stats = await service.getPublicStats();
+    expect(stats.venues).toBeGreaterThanOrEqual(1);
+    expect(stats.cities).toBeGreaterThanOrEqual(1);
+    expect(stats.coaches).toBeGreaterThanOrEqual(1);
+
+    // The draft venue must not be counted: approved-only filtering means the
+    // approved count is strictly less than the total number of venues now in
+    // the table (which includes our draft).
+    const totalVenues = await prisma.venue.count();
+    expect(stats.venues).toBeLessThan(totalVenues);
+  });
+});

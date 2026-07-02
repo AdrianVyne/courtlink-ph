@@ -1,90 +1,100 @@
-﻿import { ArrowRight, CalendarDays, MapPin, ShieldCheck, Users } from "lucide-react";
-import Link from "next/link";
+import { ArrowRight, ShieldCheck } from "lucide-react";
+import { CoachesBand } from "../components/landing/coaches-band";
+import { CtaBand } from "../components/landing/cta-band";
+import { Faq } from "../components/landing/faq";
+import { FeaturedVenues } from "../components/landing/featured-venues";
+import { HeroSearch } from "../components/landing/hero-search";
+import { HowItWorks } from "../components/landing/how-it-works";
+import { ProofStrip } from "../components/landing/proof-strip";
+import { TrustSection } from "../components/landing/trust-section";
 import { SiteFooter } from "../components/site-footer";
 import { SiteHeader } from "../components/site-header";
+import { Button, CourtLines } from "../components/ui";
+import {
+  type CoachProfileSummary,
+  type DiscoveryVenue,
+  type PublicStats,
+  apiFetch,
+} from "../lib/api";
 import { getSession } from "../lib/session";
 
 export const dynamic = "force-dynamic";
 
-const features = [
-  {
-    icon: MapPin,
-    title: "Courts across the Philippines",
-    detail: "Browse trusted venues by city, schedule, price, and amenities.",
-  },
-  {
-    icon: CalendarDays,
-    title: "Clear availability",
-    detail: "Choose a time that works and keep every booking in one place.",
-  },
-  {
-    icon: Users,
-    title: "Coaches for every level",
-    detail: "Book a coach directly or post a request and compare offers.",
-  },
-];
+async function loadStats(): Promise<PublicStats | null> {
+  try {
+    return await apiFetch<PublicStats>("/stats/public");
+  } catch {
+    return null;
+  }
+}
+
+async function loadVenues(): Promise<DiscoveryVenue[]> {
+  try {
+    return await apiFetch<DiscoveryVenue[]>("/venues");
+  } catch {
+    return [];
+  }
+}
+
+async function loadCoaches(): Promise<CoachProfileSummary[]> {
+  try {
+    return await apiFetch<CoachProfileSummary[]>("/coaches");
+  } catch {
+    return [];
+  }
+}
 
 export default async function HomePage() {
-  const session = await getSession();
+  const [session, stats, venues, coaches] = await Promise.all([
+    getSession(),
+    loadStats(),
+    loadVenues(),
+    loadCoaches(),
+  ]);
 
   return (
     <>
       <SiteHeader session={session} />
       <main>
-        <section className="hero">
-          <div className="eyebrow">
-            <ShieldCheck size={16} aria-hidden="true" />
-            Pickleball, made easier
+        <section className="relative overflow-hidden px-[5vw] pt-24 pb-16 text-center">
+          <CourtLines
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-8 w-[min(1100px,120vw)] -translate-x-1/2 text-court-400/15"
+            variant="field"
+          />
+          <div className="relative">
+            <p className="reveal m-0 mx-auto flex w-fit items-center gap-2 rounded-full bg-lime-400 px-3.5 py-2 text-[0.78rem] font-bold text-court-950">
+              <ShieldCheck aria-hidden="true" size={15} />
+              Pickleball courts &amp; coaches, PH-wide
+            </p>
+            <h1 className="reveal reveal-1 m-0 mx-auto mt-6 max-w-4xl font-display text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.98] tracking-tight text-ink-900">
+              Your next game is already out there.
+            </h1>
+            <p className="reveal reveal-2 m-0 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-500">
+              Find courts and coaches across the Philippines, hold your slot, and pay the venue
+              directly — no markups, no runaround.
+            </p>
+            <div className="reveal reveal-3 mt-8 flex flex-wrap justify-center gap-3">
+              <Button href="/courts">
+                Find a court <ArrowRight aria-hidden="true" size={17} />
+              </Button>
+              <Button href="/coaches" variant="secondary">
+                Find a coach
+              </Button>
+            </div>
+            <div className="reveal reveal-4">
+              <HeroSearch />
+            </div>
           </div>
-          <h1>Book your next pickleball game.</h1>
-          <p className="hero-copy">
-            Discover courts, connect with coaches, and organize your next session anywhere in the
-            Philippines.
-          </p>
-          <div className="hero-actions">
-            <Link className="button" href="/courts">
-              Find a court <ArrowRight size={18} aria-hidden="true" />
-            </Link>
-            <Link className="button button-secondary" href="/coaches">
-              Find a coach
-            </Link>
-          </div>
-          <section className="availability-card" aria-label="Court search preview">
-            <div>
-              <span className="field-label">Location</span>
-              <strong>Metro Manila</strong>
-            </div>
-            <div>
-              <span className="field-label">Date</span>
-              <strong>This weekend</strong>
-            </div>
-            <div>
-              <span className="field-label">Players</span>
-              <strong>4 players</strong>
-            </div>
-            <Link className="button button-small" href="/courts">
-              Search availability
-            </Link>
-          </section>
         </section>
 
-        <section className="features" aria-labelledby="why-courtlink">
-          <div className="section-heading">
-            <span className="kicker">Everything in one place</span>
-            <h2 id="why-courtlink">Spend less time planning. Play more.</h2>
-          </div>
-          <div className="feature-grid">
-            {features.map(({ icon: Icon, title, detail }) => (
-              <article className="feature-card" key={title}>
-                <span className="feature-icon">
-                  <Icon size={22} aria-hidden="true" />
-                </span>
-                <h3>{title}</h3>
-                <p>{detail}</p>
-              </article>
-            ))}
-          </div>
-        </section>
+        <ProofStrip stats={stats} />
+        <HowItWorks />
+        <FeaturedVenues venues={venues} />
+        <CoachesBand coaches={coaches} />
+        <TrustSection />
+        <Faq />
+        <CtaBand />
       </main>
       <SiteFooter />
     </>

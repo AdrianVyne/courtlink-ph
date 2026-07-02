@@ -8,6 +8,7 @@
       "!!**/.next",
       "!!**/coverage",
       "!!**/generated",
+      "!!**/.turbo",
       "!!**/playwright-report",
       "!!**/test-results",
       "!!.worktrees",

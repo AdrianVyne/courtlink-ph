@@ -190,6 +190,12 @@ export interface OperationsStatusSnapshot {
   capturedAt: string;
 }
 
+export interface PublicStats {
+  venues: number;
+  cities: number;
+  coaches: number;
+}
+
 export interface SessionUser {
   id: string;
   email: string;
