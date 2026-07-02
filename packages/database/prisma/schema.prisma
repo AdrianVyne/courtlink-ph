@@ -282,10 +282,25 @@ model Venue {
   favorites        FavoriteVenue[]
   promotions       Promotion[]
   amenities        VenueAmenity[]
+  photos           VenuePhoto[]
 
   @@index([businessId])
   @@index([status, regionCode, cityMunicipality])
   @@map("venues")
+}
+
+model VenuePhoto {
+  id        String   @id @default(uuid()) @db.Uuid
+  venueId   String   @db.Uuid
+  objectKey String
+  altText   String
+  position  Int
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  venue     Venue    @relation(fields: [venueId], references: [id], onDelete: Cascade)
+
+  @@unique([venueId, position])
+  @@index([venueId])
+  @@map("venue_photos")
 }
 
 model VenuePaymentMethod {

@@ -45,6 +45,22 @@ Last updated: 2026-07-02 (Asia/Manila)
   `globals.css` reduced 961 → 110 lines (theme, base html/body/a/h1-h2 rules, `.tnum`, reveal
   keyframes, reduced-motion). Visual snapshots passed with ZERO diffs — appearance unchanged.
   Next: Phase 8 (venue photos — schema, API with re-encode pipeline, manager UI, next/image).
+- Phase 8 API foundation done (2026-07-02): `VenuePhoto` model + migration
+  `20260702120000_venue_photos` (applied to local DB), `storage/reencode-photo.ts` (forces webp),
+  `VenuePhotoService` (10 unit tests: cap of 8, alt-text 5-200, tenant denial via
+  `tenancy.assertRole`, position swap vs move, approved-only public URLs),
+  `PrismaVenuePhotosRepository` (3-step position swap in a transaction),
+  `VenuePhotosController` (POST multipart/PATCH/DELETE under `/venues/:venueId/photos`,
+  public `GET /venue-photos/:photoId` → 302 signed URL + Cache-Control 86400), wired in
+  `venue.module.ts`; `PHOTO_NOT_FOUND`/`PHOTO_LIMIT_REACHED` added to the exception filter.
+  Verified: pnpm check green, API boots, public route returns domain 404.
+  **Remaining for Phase 8:** integration test `apps/api/integration/venue-photos.test.ts`
+  (follow existing integration suite setup), discovery + venue detail responses
+  (`coverPhotoUrl` on discovery list, `photos[]` on detail — extend discovery repository and
+  the by-slug response), web: `components/manage/venue-photo-manager.tsx` (+ test; upload,
+  swap-position buttons, delete, alt edit), wire manage page, venue cards/detail prefer real
+  photos via `next/image` (add API host remote pattern to `next.config.ts`), owner-login e2e,
+  then gate + commit.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
