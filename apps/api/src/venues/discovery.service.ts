@@ -26,6 +26,8 @@ export interface DiscoveryVenueCandidate {
   venue: VenueSummary;
   amenityKeys: string[];
   courts: DiscoveryCourtCandidate[];
+  /** Position-0 photo id; optional so fixtures without photos stay valid. */
+  coverPhotoId?: string | null;
 }
 
 export interface DiscoveryFilters {
@@ -48,6 +50,7 @@ export interface DiscoveryVenueResult {
   amenities: string[];
   fromPrice: number | null;
   availableCourtCount: number;
+  coverPhotoUrl: string | null;
 }
 
 export interface VenueEvaluation {
@@ -162,6 +165,9 @@ export class DiscoveryService {
         amenities: candidate.amenityKeys,
         fromPrice: evaluation.fromPrice,
         availableCourtCount: evaluation.availableCourtCount,
+        coverPhotoUrl: candidate.coverPhotoId
+          ? `/api/v1/venue-photos/${candidate.coverPhotoId}`
+          : null,
       });
       if (results.length >= limit) break;
     }

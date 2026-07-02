@@ -104,6 +104,7 @@ export class VenueController {
       amenities: result.amenities,
       fromPrice: result.fromPrice,
       availableCourtCount: result.availableCourtCount,
+      coverPhotoUrl: result.coverPhotoUrl,
     }));
   }
 

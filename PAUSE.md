@@ -57,14 +57,20 @@ Last updated: 2026-07-02 (Asia/Manila)
   Venue detail `GET /venues/by-slug/:slug` now also returns
   `photos: [{ id, altText, position, url }]` (url is the public redirect path
   `/api/v1/venue-photos/:id`) — verified live against the seeded venue.
-  **Remaining for Phase 8:** `coverPhotoUrl` on discovery list responses (extend
-  `DiscoveryVenueCandidate`/service mapping — position-0 photo id → redirect path; update
-  discovery service tests), integration test `apps/api/integration/venue-photos.test.ts`
-  (follow existing integration suite setup), web: add `photos`/`coverPhotoUrl` to
-  `lib/api.ts` types, `components/manage/venue-photo-manager.tsx` (+ test; upload,
-  swap-position buttons, delete, alt edit), wire manage page, venue cards/detail prefer real
-  photos via `next/image` (add API host remote pattern to `next.config.ts`), owner-login e2e,
-  then gate + commit.
+  Discovery list responses now carry `coverPhotoUrl` (position-0 photo → redirect path,
+  null when no photos): `DiscoveryVenueCandidate.coverPhotoId` (optional), repository includes
+  position-0 photo id, controller flattens `coverPhotoUrl`; web `lib/api.ts` has
+  `DiscoveryVenue.coverPhotoUrl` and a `VenuePhotoInfo` type ready for the UI.
+  **Remaining for Phase 8 (all web + one API test):** integration test
+  `apps/api/integration/venue-photos.test.ts` (follow existing integration suite setup),
+  `components/manage/venue-photo-manager.tsx` (+ unit test; upload via multipart FormData to
+  `/venues/:venueId/photos`, swap-position buttons, delete, alt edit), wire into
+  `app/manage/page.tsx`, make `VenueCard`/venue detail prefer `coverPhotoUrl`/`photos[]` over
+  `CoverPlaceholder` using `next/image` (add API host remotePattern to `next.config.ts`;
+  note photo URLs are same-origin `/api/v1/...` paths proxied to the API, so `next/image`
+  may need `unoptimized` or a loader for the redirect — decide there), owner-login e2e
+  (upload → cover appears on /courts card), then gate + commit
+  `"feat: venue photo galleries with safe re-encoding and public covers"`.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.

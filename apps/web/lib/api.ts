@@ -34,6 +34,14 @@ export interface DiscoveryVenue extends VenueSummary {
   amenities: string[];
   fromPrice: number | null;
   availableCourtCount: number;
+  coverPhotoUrl: string | null;
+}
+
+export interface VenuePhotoInfo {
+  id: string;
+  altText: string;
+  position: number;
+  url: string;
 }
 
 export interface AmenityCatalogEntry {
