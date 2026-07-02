@@ -74,18 +74,21 @@ describe("Coach marketplace flow", () => {
     const coachA = await coaches.upsertProfile({ userId: coachUserA.id, hourlyRate: 800 });
     const coachB = await coaches.upsertProfile({ userId: coachUserB.id, hourlyRate: 900 });
 
-    const sessionStart = new Date("2026-07-01T02:00:00.000Z");
+    // One consistent clock for the whole flow, with relative dates so the
+    // test never goes stale (fixed 2026 dates previously let the hold expire
+    // for real once the calendar passed them).
+    const now = new Date();
+    const sessionStart = new Date(now.getTime() + 7 * 86400000);
     const request = await market.createRequest({
       playerId: player.id,
       startsAt: sessionStart,
-      endsAt: new Date("2026-07-01T03:00:00.000Z"),
+      endsAt: new Date(sessionStart.getTime() + 3600000),
       location: "Manila Pickleball Center",
       groupSize: 2,
       skillLevel: "beginner",
     });
 
-    const now = new Date("2026-06-30T12:00:00.000Z");
-    const expiresAt = new Date("2026-07-01T00:00:00.000Z");
+    const expiresAt = new Date(sessionStart.getTime() - 2 * 3600000);
     const winner = await market.createOffer({
       requestId: request.id,
       coachId: coachA.id,
@@ -116,6 +119,7 @@ describe("Coach marketplace flow", () => {
       channel: "GCASH",
       transactionRef: `CTEST-${crypto.randomUUID()}`,
       proofObjectKey: "proofs/coach.jpg",
+      now,
     });
     const confirmed = await bookings.approveProof({
       submissionId: submission.id,
