@@ -3,7 +3,9 @@ packages:
   - packages/*
 
 overrides:
+  "@hono/node-server@1.19.11": 1.19.13
   ioredis: 5.11.1
+  postcss@8.4.31: 8.5.16
 
 allowBuilds:
   "@prisma/engines": true
