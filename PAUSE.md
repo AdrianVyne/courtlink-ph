@@ -16,7 +16,11 @@ Last updated: 2026-07-02 (Asia/Manila)
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
 - Branch: `main` (marketplace feature-complete; see previous checkpoint below).
 - Active effort: **web experience redesign** — spec and 10-phase plan committed 2026-07-02.
-- Phase status: no phases executed yet. Start at Phase 1 (design system foundation).
+- Phase status: Phase 1 (design system foundation) complete — tokens, Bricolage Grotesque
+  display font, `components/ui/` primitives with 24 unit tests. Next: Phase 2 (app shell).
+- Environment notes: root `node_modules` had a corrupt pnpm link tree (missing `tslib` under
+  `@nestjs/core`) — fixed by full reinstall. `biome.json` now excludes `.worktrees`/`static`
+  and enables `css.parser.tailwindDirectives`. Playwright Chromium reinstalled.
 - Root checkout has unrelated untracked `config.yaml` and `static/` — do not touch.
 - The `.worktrees/foundation` worktree is from the completed foundation effort; redesign work
   happens directly on `main` in the root checkout.

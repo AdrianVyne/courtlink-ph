@@ -7,13 +7,20 @@
       "!!**/dist",
       "!!**/.next",
       "!!**/coverage",
-      "!!**/generated"
+      "!!**/generated",
+      "!!.worktrees",
+      "!!static"
     ]
   },
   "formatter": {
     "enabled": true,
     "indentStyle": "space",
     "lineWidth": 100
+  },
+  "css": {
+    "parser": {
+      "tailwindDirectives": true
+    }
   },
   "javascript": {
     "parser": {

@@ -65,7 +65,7 @@ export function CourtLines({ className, variant }: { className?: string; variant
 // inline SVG of pickleball court geometry (sidelines, kitchen line, service boxes), currentColor strokes
 ```
 
-- [ ] **Step 1: Add the `@theme` token block** at the top of `globals.css` (directly after `@import "tailwindcss";`):
+- [x] **Step 1: Add the `@theme` token block** at the top of `globals.css` (directly after `@import "tailwindcss";`):
 
 ```css
 @theme {
@@ -104,12 +104,12 @@ export function CourtLines({ className, variant }: { className?: string; variant
 
 Then repoint the legacy variables so un-migrated pages inherit the new palette (`--soft: var(--color-sand-50)`, `--line: var(--color-sand-200)`, `--ink: var(--color-ink-900)`, `--muted: var(--color-ink-500)`, `--green: var(--color-court-700)`, `--green-dark: var(--color-court-800)`, `--lime: var(--color-lime-400)`). Also fix the pre-existing bug: `.breadcrumb a` and `.coach-rate-large` reference undefined `var(--accent)` — point them at `var(--color-court-700)`.
 
-- [ ] **Step 2: Add the display font.** In `layout.tsx`: `import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";` → `const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display" });` and add `${display.variable}` to the body className. Add a `.font-display` usage check: `h1, h2 { font-family: var(--font-display); }` in globals (legacy pages get the new voice immediately).
-- [ ] **Step 3: Write failing unit tests** in `apps/web/components/ui/ui.test.tsx` (Vitest + Testing Library, jsdom — mirror setup of `components/court-booking.test.tsx`). Cover at minimum: Button renders `<a>` when `href` set and `<button>` otherwise; `loading` sets `disabled` and `aria-busy="true"`; StatusPill maps `confirmed→success` class, `held→pending`, `rejected→danger`, unknown→neutral (assert via `data-tone` attribute, not class strings); Field wires `aria-describedby` from hint and error to the child input; EmptyState renders title and action; Stat renders value and label; CourtLines renders an `svg` with `aria-hidden="true"`.
-- [ ] **Step 4: Run to verify failure:** `pnpm --filter @courtlink/web test -- components/ui/ui.test.tsx` → FAIL (module not found).
-- [ ] **Step 5: Implement the primitives** with Tailwind utilities on the tokens (e.g. Button primary: `bg-court-700 hover:bg-court-800 text-white rounded-[10px] min-h-12 px-5 font-semibold inline-flex items-center justify-center gap-2 transition-colors`). StatusPill emits `data-tone="success|pending|danger|neutral"` plus tone utilities. CourtLines: one `<svg viewBox="0 0 440 200">` drawing outer boundary, centre net line, kitchen lines at ±64 from net, and service centreline — strokes `currentColor`, `strokeWidth 1.5`, `fill none`; `variant="corner"` renders a cropped 120×120 corner; `variant="divider"` a 440×24 baseline strip.
-- [ ] **Step 6: Run tests to verify pass**, then run full gate: `pnpm check` and `pnpm --filter @courtlink/web test:e2e`.
-- [ ] **Step 7: Commit + push:** `git add -A && git commit -m "feat(web): add design tokens, display font, and ui primitives" && git push origin main`. Update `PAUSE.md` checkpoint.
+- [x] **Step 2: Add the display font.** In `layout.tsx`: `import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";` → `const display = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-display" });` and add `${display.variable}` to the body className. Add a `.font-display` usage check: `h1, h2 { font-family: var(--font-display); }` in globals (legacy pages get the new voice immediately).
+- [x] **Step 3: Write failing unit tests** in `apps/web/components/ui/ui.test.tsx` (Vitest + Testing Library, jsdom — mirror setup of `components/court-booking.test.tsx`). Cover at minimum: Button renders `<a>` when `href` set and `<button>` otherwise; `loading` sets `disabled` and `aria-busy="true"`; StatusPill maps `confirmed→success` class, `held→pending`, `rejected→danger`, unknown→neutral (assert via `data-tone` attribute, not class strings); Field wires `aria-describedby` from hint and error to the child input; EmptyState renders title and action; Stat renders value and label; CourtLines renders an `svg` with `aria-hidden="true"`.
+- [x] **Step 4: Run to verify failure:** `pnpm --filter @courtlink/web test -- components/ui/ui.test.tsx` → FAIL (module not found).
+- [x] **Step 5: Implement the primitives** with Tailwind utilities on the tokens (e.g. Button primary: `bg-court-700 hover:bg-court-800 text-white rounded-[10px] min-h-12 px-5 font-semibold inline-flex items-center justify-center gap-2 transition-colors`). StatusPill emits `data-tone="success|pending|danger|neutral"` plus tone utilities. CourtLines: one `<svg viewBox="0 0 440 200">` drawing outer boundary, centre net line, kitchen lines at ±64 from net, and service centreline — strokes `currentColor`, `strokeWidth 1.5`, `fill none`; `variant="corner"` renders a cropped 120×120 corner; `variant="divider"` a 440×24 baseline strip.
+- [x] **Step 6: Run tests to verify pass**, then run full gate: `pnpm check` and `pnpm --filter @courtlink/web test:e2e`.
+- [x] **Step 7: Commit + push:** `git add -A && git commit -m "feat(web): add design tokens, display font, and ui primitives" && git push origin main`. Update `PAUSE.md` checkpoint.
 
 ### Phase 2: App shell — header, mobile drawer, footer, system pages, screenshot harness
 
