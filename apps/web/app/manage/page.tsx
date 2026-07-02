@@ -101,9 +101,14 @@ export default async function ManagePage() {
                       }
                     />
                   ) : (
-                    <article className="schedule-manager" key={court.id}>
+                    <article
+                      className="rounded-[12px] border border-sand-200 bg-white p-5"
+                      key={court.id}
+                    >
                       <h3>{court.name}</h3>
-                      <p className="form-error">Schedule unavailable. Reload before editing.</p>
+                      <p className="m-0 rounded-[10px] border border-[#f1b5b0] bg-danger-bg px-[0.8rem] py-[0.6rem] text-[0.88rem] text-danger-fg">
+                        Schedule unavailable. Reload before editing.
+                      </p>
                     </article>
                   ),
                 )}

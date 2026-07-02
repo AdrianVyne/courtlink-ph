@@ -32,16 +32,23 @@ export function ReportButton({
   }
 
   if (state === "done") {
-    return <span className="report-done">Report submitted. Thank you.</span>;
+    return <span className="text-[0.85rem] text-ink-500">Report submitted. Thank you.</span>;
   }
 
   return (
-    <span className="report-wrap">
-      <button className="text-button report-button" type="button" onClick={report}>
+    <span className="inline-flex items-center gap-2">
+      <button
+        className="inline-flex cursor-pointer items-center gap-[0.3rem] text-[0.9rem] font-semibold text-danger-fg"
+        type="button"
+        onClick={report}
+      >
         <Flag size={14} aria-hidden="true" /> Report
       </button>
       {error ? (
-        <span className="form-error" role="alert">
+        <span
+          className="m-0 rounded-[10px] border border-[#f1b5b0] bg-danger-bg px-[0.8rem] py-[0.6rem] text-[0.88rem] text-danger-fg"
+          role="alert"
+        >
           {error}
         </span>
       ) : null}

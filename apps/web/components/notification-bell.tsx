@@ -28,13 +28,17 @@ export function NotificationBell() {
 
   return (
     <Link
-      className="notif-bell"
+      className="relative inline-flex size-10 items-center justify-center rounded-[9px] border border-sand-200 hover:border-court-700 hover:text-court-800"
       href="/notifications"
       aria-label="Notifications"
       title="Notifications"
     >
       <Bell size={18} aria-hidden="true" />
-      {count > 0 ? <span className="notif-badge">{count > 99 ? "99+" : count}</span> : null}
+      {count > 0 ? (
+        <span className="absolute -right-1 -top-1 min-w-[18px] rounded-full bg-[#c0362c] px-[0.25rem] py-[0.15rem] text-center text-[0.65rem] font-bold leading-none text-white">
+          {count > 99 ? "99+" : count}
+        </span>
+      ) : null}
     </Link>
   );
 }

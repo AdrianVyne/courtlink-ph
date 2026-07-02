@@ -22,7 +22,7 @@ export function LogoutButton() {
 
   return (
     <button
-      className="text-button icon-button"
+      className="inline-flex size-10 cursor-pointer items-center justify-center rounded-[9px] border border-sand-200 bg-transparent font-semibold text-ink-700 hover:border-court-700 hover:text-court-800"
       type="button"
       onClick={handleLogout}
       disabled={pending}

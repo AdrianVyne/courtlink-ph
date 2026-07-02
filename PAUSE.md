@@ -39,20 +39,21 @@ Last updated: 2026-07-02 (Asia/Manila)
   Also fixed `e2e/helpers.ts` `loginAs` (pre-hydration native form submit made the dashboard
   axe test skip silently; it now waits for networkidle and sniffs the login POST with retries).
   Next: Phase 7 (legacy CSS retirement).
-- Phase 7 Step 1 inventory (done 2026-07-02, nothing migrated yet): `globals.css` is 961 lines
-  with 132 distinct legacy classes; 67 are already unreferenced and can be deleted outright
-  (auth-panel, queue-*, notif-list/item/row, review-list/row, slot-*, status-<value> variants,
-  page-band/heading/sub, kicker, etc.). 65 are still referenced by components:
-  booking-list.tsx (booking-*), venue-queue/coach-workspace (coach-workspace, row-form),
-  court-schedule-manager.tsx (schedule-*), operations-status.tsx (operations-*, status-critical),
-  promotion-*.tsx (promo-*), notification-bell.tsx (notif-badge/bell), rating-badge.tsx
-  (rating-*), report-button.tsx (report-*), favorite-toggle-adjacent (icon-button),
-  google-sign-in.tsx (google-*, auth-divider), amenity editor (amenity-*), review-form.tsx
-  (review-form, row-form), court-booking (court-card*, slot pieces), plus shared button/field/
-  form-error/text-button/section-title/workspace-title and keepers (tnum, sr-only, reveal-*,
-  status-pill tone utilities). Migrate consumers to `components/ui` primitives, then shrink
-  `globals.css` to < 250 lines; this phase must not change appearance (visual snapshots are the
-  proof — regenerate expecting zero diffs).
+- Phase 7 in progress (Step 1 mostly done 2026-07-02). Migrated to token utilities/primitives
+  and verified by the full gate: rating-badge, report-button, notification-bell, logout-button,
+  google-sign-in (login visual snapshots pass with zero diff), promotion-banner,
+  promotion-manager, venue-amenity-manager, operations-status, offline page (rebuilt on
+  EmptyState-style layout with CourtLines), manage page stragglers. **Remaining:**
+  `components/court-schedule-manager.tsx` (287 lines, the last legacy-class consumer; its test
+  asserts `schedule-manager` — update in same commit), then the Step 2 `globals.css` shrink to
+  < 250 lines (tailwind import, `@theme`, base rules, `.tnum`, reveal keyframes, reduced-motion;
+  the `:root` legacy-variable block and all `@layer components` legacy classes go away — check
+  nothing else references `var(--ink|--muted|--line|--surface|--soft|--green|--green-dark|
+  --lime|--accent)` before deleting). Then Step 3: full gate + visual snapshots must show zero
+  diffs (this phase must not change appearance). Useful recurring utility strings from the
+  migration: form-error → `m-0 rounded-[10px] border border-[#f1b5b0] bg-danger-bg px-[0.8rem]
+  py-[0.6rem] text-[0.88rem] text-danger-fg`; booking-row → `flex flex-wrap items-center
+  justify-between gap-3 rounded-[10px] border border-sand-200 bg-white px-4 py-[0.85rem]`.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
