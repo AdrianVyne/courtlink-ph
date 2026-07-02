@@ -24,6 +24,10 @@ const viewports = [
 for (const { path, name } of pages) {
   for (const viewport of viewports) {
     test(`${name} at ${viewport.label}px matches baseline`, async ({ page }) => {
+      test.skip(
+        !!process.env.CI,
+        "Baselines are rendered on Windows; Linux CI font rendering differs. Run visual checks locally.",
+      );
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await page.goto(path, { waitUntil: "load" });
       await expect(page.locator("main")).toBeVisible();

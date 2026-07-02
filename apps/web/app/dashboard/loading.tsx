@@ -2,7 +2,7 @@ import { Skeleton } from "../../components/ui";
 
 export default function DashboardLoading() {
   return (
-    <main className="mx-auto max-w-[1080px] px-[5vw] py-12" aria-busy="true">
+    <div className="mx-auto max-w-[1080px] px-[5vw] py-12" aria-busy="true">
       <Skeleton className="mb-2 h-4 w-24" />
       <Skeleton className="mb-3 h-9 w-72" />
       <div className="mb-8 flex gap-2">
@@ -14,6 +14,6 @@ export default function DashboardLoading() {
           <Skeleton className="h-20" key={key} />
         ))}
       </div>
-    </main>
+    </div>
   );
 }

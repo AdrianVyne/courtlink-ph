@@ -24,6 +24,9 @@ pnpm playwright test e2e/visual.spec.ts --update-snapshots   # refresh baselines
   commit message. Never refresh baselines to make an unrelated change pass.
 - Screenshot tests assume the API is not running (empty discovery states) or is
   seeded with the standard demo seed. Mixing states will produce diffs.
+- Screenshot tests are skipped on CI: baselines are rendered on Windows and
+  Linux runners rasterize fonts differently. Run them locally before pushing
+  visual changes; functional + axe specs still run on CI.
 - Data-dependent specs (dashboard flows) use the demo accounts from
   `packages/database` seed: `player@demo.courtlink.ph` etc., password
   `courtlink-demo-2026`.
