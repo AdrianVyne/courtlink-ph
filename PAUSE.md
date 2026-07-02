@@ -39,6 +39,20 @@ Last updated: 2026-07-02 (Asia/Manila)
   Also fixed `e2e/helpers.ts` `loginAs` (pre-hydration native form submit made the dashboard
   axe test skip silently; it now waits for networkidle and sniffs the login POST with retries).
   Next: Phase 7 (legacy CSS retirement).
+- Phase 7 Step 1 inventory (done 2026-07-02, nothing migrated yet): `globals.css` is 961 lines
+  with 132 distinct legacy classes; 67 are already unreferenced and can be deleted outright
+  (auth-panel, queue-*, notif-list/item/row, review-list/row, slot-*, status-<value> variants,
+  page-band/heading/sub, kicker, etc.). 65 are still referenced by components:
+  booking-list.tsx (booking-*), venue-queue/coach-workspace (coach-workspace, row-form),
+  court-schedule-manager.tsx (schedule-*), operations-status.tsx (operations-*, status-critical),
+  promotion-*.tsx (promo-*), notification-bell.tsx (notif-badge/bell), rating-badge.tsx
+  (rating-*), report-button.tsx (report-*), favorite-toggle-adjacent (icon-button),
+  google-sign-in.tsx (google-*, auth-divider), amenity editor (amenity-*), review-form.tsx
+  (review-form, row-form), court-booking (court-card*, slot pieces), plus shared button/field/
+  form-error/text-button/section-title/workspace-title and keepers (tnum, sr-only, reveal-*,
+  status-pill tone utilities). Migrate consumers to `components/ui` primitives, then shrink
+  `globals.css` to < 250 lines; this phase must not change appearance (visual snapshots are the
+  proof — regenerate expecting zero diffs).
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
