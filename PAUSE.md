@@ -14,29 +14,36 @@ Last updated: 2026-07-02 (Asia/Manila)
 ## Current checkpoint
 
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
-- Branch: `main` (marketplace feature-complete; see previous checkpoint below).
-- Active effort: **web experience redesign** — spec and 10-phase plan committed 2026-07-02.
-- Phase status: Phases 1–5 complete. Phase 1: tokens, display font, `components/ui/`
+- Branch: `main` (latest pushed commit `98010f8`; marketplace feature-complete; see previous
+  checkpoint below).
+- Recent repository maintenance: contributor guardrails added in `e6bba3c` and Dependabot security
+  alerts remediated in `98010f8`. `main` now requires PR review, CODEOWNER review, the `verify`
+  status check, resolved conversations, linear history, and no force-push/delete for non-bypass
+  users. Squash merge is the only enabled merge method. Secret scanning and push protection are on;
+  private vulnerability reporting and Dependabot security updates are enabled.
+- Active effort: **web experience redesign** - spec and 10-phase plan committed 2026-07-02.
+- Phase status: Phases 1-5 complete. Phase 1: tokens, display font, `components/ui/`
   primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
   loading pages, visual snapshot harness (`apps/web/e2e/__screenshots__/`). Phase 3: landing
   rebuild (hero search, live-stats strip via new `GET /api/v1/stats/public`, how-it-works
-  tabs, featured venues, coaches band, trust, FAQ, CTA). Phase 4: discovery redesign —
+  tabs, featured venues, coaches band, trust, FAQ, CTA). Phase 4: discovery redesign -
   FilterBar with removable chips + mobile sheet, VenueCard/CoachCard/CoverPlaceholder,
   venue + coach detail pages migrated, legacy discovery CSS removed. Phase 5: Toast+Countdown
   primitives, workspaces (dashboard/manage/coach/admin/notifications) on WorkspaceShell with
   StatusPill, toasts, loading buttons; auth pages with password toggle. Next: Phase 6
   (trust pages and SEO).
-- CI on `main` is green again as of commit `1970684` — the coach-flow integration test was a
-  calendar time bomb (mocked clock on acceptance, real clock on proof submission); fixed with
-  relative dates and one consistent injected `now`.
+- CI on `main` is green as of commit `98010f8`: GitHub Actions run `28571832540` (`CI` / `verify`)
+  passed, and run `28571832579` (`Docker images`) passed for api, worker, and web images. The three
+  Dependabot alerts opened after enabling security updates (`@hono/node-server`, `postcss`,
+  `js-yaml`) are marked fixed by GitHub.
 - Environment notes: root `node_modules` had a corrupt pnpm link tree (missing `tslib` under
-  `@nestjs/core`) — fixed by full reinstall. `biome.json` now excludes `.worktrees`/`static`
+  `@nestjs/core`) - fixed by full reinstall. `biome.json` now excludes `.worktrees`/`static`
   and enables `css.parser.tailwindDirectives`. Playwright Chromium reinstalled.
-- Root checkout has unrelated untracked `config.yaml` and `static/` — do not touch.
+- Root checkout has unrelated untracked `config.yaml` and `static/` - do not touch.
 - The `.worktrees/foundation` worktree is from the completed foundation effort; redesign work
   happens directly on `main` in the root checkout.
 
-## Prior effort (complete)
+## Prior Effort
 
 The marketplace is feature-complete: auth (email + Google OAuth), courts (inventory, discovery,
 holds, proof review, refunds), coaches (profiles, offers, atomic winner), web workspaces,
@@ -46,7 +53,7 @@ tests, Playwright + axe e2e scaffold.
 Known operational items (not blockers): CI dependency/container scans, live Google OAuth
 verification, clean Oracle VM deployment.
 
-## Local commands
+## Local Commands
 
 ```powershell
 Set-Location C:\Users\Admin\Documents\Github\pickelball-website
