@@ -1,11 +1,14 @@
-import Link from "next/link";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { BookingList } from "../../components/booking-list";
-import { SiteHeader } from "../../components/site-header";
+import { Button } from "../../components/ui";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import { type BookingListItem, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = { title: "Your dashboard" };
 
 async function loadMyBookings(cookie: string): Promise<BookingListItem[]> {
   try {
@@ -24,35 +27,32 @@ export default async function DashboardPage() {
   const isSuperAdmin = session.roles.includes("SUPER_ADMIN");
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Your account</span>
-          <h1>Welcome, {session.displayName}</h1>
-          <p className="page-sub">{session.email}</p>
-        </div>
-
-        <div className="dashboard-links">
-          <Link className="button button-secondary button-small" href="/manage">
+    <WorkspaceShell
+      actions={
+        <>
+          <Button href="/manage" size="sm" variant="secondary">
             Manage venue
-          </Link>
-          <Link className="button button-secondary button-small" href="/coach">
+          </Button>
+          <Button href="/coach" size="sm" variant="secondary">
             Coach workspace
-          </Link>
-          <Link className="button button-secondary button-small" href="/coach-requests">
+          </Button>
+          <Button href="/coach-requests" size="sm" variant="secondary">
             Find a coach
-          </Link>
+          </Button>
           {isSuperAdmin ? (
-            <Link className="button button-secondary button-small" href="/admin">
+            <Button href="/admin" size="sm" variant="secondary">
               Admin approvals
-            </Link>
+            </Button>
           ) : null}
-        </div>
-
-        <h2 className="section-title">Your bookings</h2>
-        <BookingList bookings={bookings} />
-      </section>
-    </main>
+        </>
+      }
+      kicker="Your account"
+      session={session}
+      sub={session.email}
+      title={`Welcome, ${session.displayName}`}
+    >
+      <h2 className="m-0 mb-4 font-display text-xl font-bold text-ink-900">Your bookings</h2>
+      <BookingList bookings={bookings} />
+    </WorkspaceShell>
   );
 }

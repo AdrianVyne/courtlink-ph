@@ -2,8 +2,8 @@ import { redirect } from "next/navigation";
 import { CourtScheduleManager } from "../../components/court-schedule-manager";
 import { PromotionManager } from "../../components/promotion-manager";
 import { VenueAmenityManager } from "../../components/venue-amenity-manager";
-import { SiteHeader } from "../../components/site-header";
 import { VenueQueue } from "../../components/venue-queue";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import {
   type AmenityCatalogEntry,
   type BookingListItem,
@@ -65,57 +65,59 @@ export default async function ManagePage() {
   );
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Venue operations</span>
-          <h1>Review queue</h1>
-          <p className="page-sub">Approve payment proofs and handle refund requests.</p>
-        </div>
-        <VenueQueue bookings={queue} />
+    <WorkspaceShell
+      kicker="Venue operations"
+      session={session}
+      sub="Approve payment proofs and handle refund requests."
+      title="Review queue"
+    >
+      <VenueQueue bookings={queue} />
 
-        {workspaces.map(({ membership, promotions, schedules, venueAmenities }) => (
-          <div className="venue-workspace" key={membership.venue.id}>
-            <h2 className="section-title">{membership.venue.name}</h2>
-            <section aria-labelledby={`schedule-${membership.venue.id}`}>
-              <h3 className="workspace-title" id={`schedule-${membership.venue.id}`}>
-                Court schedules
-              </h3>
-              {schedules.length === 0 ? (
-                <p className="empty-state">No courts are configured for this venue.</p>
-              ) : (
-                <div className="schedule-grid">
-                  {schedules.map(({ court, schedule }) =>
-                    schedule ? (
-                      <CourtScheduleManager
-                        key={court.id}
-                        court={court}
-                        schedule={schedule}
-                        canEdit={
-                          membership.membershipRole === "OWNER" ||
-                          membership.membershipRole === "MANAGER"
-                        }
-                      />
-                    ) : (
-                      <article className="schedule-manager" key={court.id}>
-                        <h3>{court.name}</h3>
-                        <p className="form-error">Schedule unavailable. Reload before editing.</p>
-                      </article>
-                    ),
-                  )}
-                </div>
-              )}
-            </section>
-            <VenueAmenityManager
-              venueId={membership.venue.id}
-              catalog={amenityCatalog}
-              selected={venueAmenities.amenities}
-            />
-            <PromotionManager venueId={membership.venue.id} promotions={promotions} />
-          </div>
-        ))}
-      </section>
-    </main>
+      {workspaces.map(({ membership, promotions, schedules, venueAmenities }) => (
+        <div className="mt-10 border-t border-sand-200 pt-6" key={membership.venue.id}>
+          <h2 className="m-0 mb-4 font-display text-2xl font-bold tracking-tight text-ink-900">
+            {membership.venue.name}
+          </h2>
+          <section aria-labelledby={`schedule-${membership.venue.id}`}>
+            <h3
+              className="m-0 mb-3 text-base font-semibold text-ink-900"
+              id={`schedule-${membership.venue.id}`}
+            >
+              Court schedules
+            </h3>
+            {schedules.length === 0 ? (
+              <p className="m-0 text-sm text-ink-500">No courts are configured for this venue.</p>
+            ) : (
+              <div className="grid gap-4">
+                {schedules.map(({ court, schedule }) =>
+                  schedule ? (
+                    <CourtScheduleManager
+                      key={court.id}
+                      court={court}
+                      schedule={schedule}
+                      canEdit={
+                        membership.membershipRole === "OWNER" ||
+                        membership.membershipRole === "MANAGER"
+                      }
+                    />
+                  ) : (
+                    <article className="schedule-manager" key={court.id}>
+                      <h3>{court.name}</h3>
+                      <p className="form-error">Schedule unavailable. Reload before editing.</p>
+                    </article>
+                  ),
+                )}
+              </div>
+            )}
+          </section>
+          <VenueAmenityManager
+            venueId={membership.venue.id}
+            catalog={amenityCatalog}
+            selected={venueAmenities.amenities}
+          />
+          <PromotionManager venueId={membership.venue.id} promotions={promotions} />
+        </div>
+      ))}
+    </WorkspaceShell>
   );
 }

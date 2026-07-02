@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { OperationsStatus } from "../../../components/operations-status";
-import { SiteHeader } from "../../../components/site-header";
+import { WorkspaceShell } from "../../../components/workspace-shell";
 import { type OperationsStatusSnapshot, apiFetch } from "../../../lib/api";
 import { getSession } from "../../../lib/session";
 
@@ -15,16 +15,13 @@ export default async function OperationsPage() {
   const snapshot = await apiFetch<OperationsStatusSnapshot>("/operations/status", { cookie });
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Platform operations</span>
-          <h1>System status</h1>
-          <p className="page-sub">Live dependency, capacity, and background-job visibility.</p>
-        </div>
-        <OperationsStatus snapshot={snapshot} />
-      </section>
-    </main>
+    <WorkspaceShell
+      kicker="Platform operations"
+      session={session}
+      sub="Live dependency, capacity, and background-job visibility."
+      title="System status"
+    >
+      <OperationsStatus snapshot={snapshot} />
+    </WorkspaceShell>
   );
 }

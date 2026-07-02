@@ -16,14 +16,16 @@ Last updated: 2026-07-02 (Asia/Manila)
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
 - Branch: `main` (marketplace feature-complete; see previous checkpoint below).
 - Active effort: **web experience redesign** — spec and 10-phase plan committed 2026-07-02.
-- Phase status: Phases 1–3 complete. Phase 1: tokens, display font, `components/ui/`
+- Phase status: Phases 1–5 complete. Phase 1: tokens, display font, `components/ui/`
   primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
   loading pages, visual snapshot harness (`apps/web/e2e/__screenshots__/`). Phase 3: landing
   rebuild (hero search, live-stats strip via new `GET /api/v1/stats/public`, how-it-works
   tabs, featured venues, coaches band, trust, FAQ, CTA). Phase 4: discovery redesign —
   FilterBar with removable chips + mobile sheet, VenueCard/CoachCard/CoverPlaceholder,
-  venue + coach detail pages migrated, legacy discovery CSS removed. Next: Phase 5
-  (booking flows and workspaces).
+  venue + coach detail pages migrated, legacy discovery CSS removed. Phase 5: Toast+Countdown
+  primitives, workspaces (dashboard/manage/coach/admin/notifications) on WorkspaceShell with
+  StatusPill, toasts, loading buttons; auth pages with password toggle. Next: Phase 6
+  (trust pages and SEO).
 - CI on `main` is green again as of commit `1970684` — the coach-flow integration test was a
   calendar time bomb (mocked clock on acceptance, real clock on proof submission); fixed with
   relative dates and one consistent injected `now`.

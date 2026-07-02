@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AdminVenueQueue } from "../../components/admin-venue-queue";
-import { SiteHeader } from "../../components/site-header";
+import { Button } from "../../components/ui";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import { type VenueSummary, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
 
@@ -24,24 +24,23 @@ export default async function AdminPage() {
   const pending = await loadPending(cookie);
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Marketplace administration</span>
-          <h1>Pending venue approvals</h1>
-          <p className="page-sub">Review and approve venues before they go public.</p>
-        </div>
-        <div className="dashboard-links">
-          <Link className="button button-secondary button-small" href="/admin/moderation">
+    <WorkspaceShell
+      actions={
+        <>
+          <Button href="/admin/moderation" size="sm" variant="secondary">
             Moderation queue
-          </Link>
-          <Link className="button button-secondary button-small" href="/admin/operations">
+          </Button>
+          <Button href="/admin/operations" size="sm" variant="secondary">
             System status
-          </Link>
-        </div>
-        <AdminVenueQueue venues={pending} />
-      </section>
-    </main>
+          </Button>
+        </>
+      }
+      kicker="Marketplace administration"
+      session={session}
+      sub="Review and approve venues before they go public."
+      title="Pending venue approvals"
+    >
+      <AdminVenueQueue venues={pending} />
+    </WorkspaceShell>
   );
 }

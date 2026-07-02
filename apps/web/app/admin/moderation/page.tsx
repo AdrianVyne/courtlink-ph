@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { ModerationQueue } from "../../../components/moderation-queue";
-import { SiteHeader } from "../../../components/site-header";
+import { WorkspaceShell } from "../../../components/workspace-shell";
 import { type ModerationCase, apiFetch } from "../../../lib/api";
 import { getSession } from "../../../lib/session";
 
@@ -23,16 +23,13 @@ export default async function ModerationPage() {
   const cases = await load(cookie);
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Trust and safety</span>
-          <h1>Moderation queue</h1>
-          <p className="page-sub">Review reports, suspend abusive listings, and resolve cases.</p>
-        </div>
-        <ModerationQueue cases={cases} />
-      </section>
-    </main>
+    <WorkspaceShell
+      kicker="Trust and safety"
+      session={session}
+      sub="Review reports, suspend abusive listings, and resolve cases."
+      title="Moderation queue"
+    >
+      <ModerationQueue cases={cases} />
+    </WorkspaceShell>
   );
 }

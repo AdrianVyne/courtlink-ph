@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { type FormEvent, useState } from "react";
 import { ApiError, type PlayerCoachRequest, apiFetch } from "../lib/api";
+import { peso } from "../lib/format";
+import { Button, Card, EmptyState, Field, Input, Select, StatusPill, useToast } from "./ui";
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
@@ -14,14 +16,16 @@ function formatWhen(iso: string): string {
 
 export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] }) {
   const router = useRouter();
+  const { push } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function call(action: () => Promise<unknown>) {
+  async function call(done: string, action: () => Promise<unknown>) {
     setPending(true);
     setError(null);
     try {
       await action();
+      push(done);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Action failed.");
@@ -33,7 +37,7 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
   async function postRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await call(() =>
+    await call("Request posted — coaches can now send offers.", () =>
       apiFetch("/coaches/requests", {
         method: "POST",
         body: {
@@ -73,6 +77,7 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
         const body = (await response.json().catch(() => ({}))) as { message?: string };
         throw new ApiError(response.status, "API_ERROR", body.message ?? "Upload failed");
       }
+      push("Proof submitted.");
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Upload failed.");
@@ -82,86 +87,96 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
   }
 
   return (
-    <div className="coach-workspace">
+    <div className="flex flex-col">
       {error ? (
-        <p className="form-error" role="alert">
+        <p
+          className="m-0 mb-4 rounded-(--radius-control) border border-danger-fg/30 bg-danger-bg px-3 py-2.5 text-sm text-danger-fg"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
 
-      <h2 className="section-title">Post a coaching request</h2>
-      <form className="row-form" onSubmit={postRequest}>
-        <label className="field">
-          <span className="field-label">Start</span>
-          <input name="startsAt" type="datetime-local" required />
-        </label>
-        <label className="field">
-          <span className="field-label">End</span>
-          <input name="endsAt" type="datetime-local" required />
-        </label>
-        <label className="field">
-          <span className="field-label">Location</span>
-          <input name="location" type="text" required minLength={2} />
-        </label>
-        <label className="field">
-          <span className="field-label">Players</span>
-          <input name="groupSize" type="number" min={1} max={64} defaultValue={2} required />
-        </label>
-        <label className="field">
-          <span className="field-label">Skill level</span>
-          <select name="skillLevel" defaultValue="beginner">
+      <h2 className="m-0 mt-6 mb-4 font-display text-xl font-bold text-ink-900">
+        Post a coaching request
+      </h2>
+      <form className="flex flex-wrap items-end gap-3" onSubmit={postRequest}>
+        <Field label="Start">
+          <Input name="startsAt" required type="datetime-local" />
+        </Field>
+        <Field label="End">
+          <Input name="endsAt" required type="datetime-local" />
+        </Field>
+        <Field label="Location">
+          <Input minLength={2} name="location" required type="text" />
+        </Field>
+        <Field label="Players">
+          <Input defaultValue={2} max={64} min={1} name="groupSize" required type="number" />
+        </Field>
+        <Field label="Skill level">
+          <Select defaultValue="beginner" name="skillLevel">
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="advanced">Advanced</option>
-          </select>
-        </label>
-        <button className="button button-small" type="submit" disabled={pending}>
+          </Select>
+        </Field>
+        <Button loading={pending} size="sm" type="submit">
           Post request
-        </button>
+        </Button>
       </form>
 
-      <h2 className="section-title">Your coaching requests</h2>
+      <h2 className="m-0 mt-8 mb-4 font-display text-xl font-bold text-ink-900">
+        Your coaching requests
+      </h2>
       {requests.length === 0 ? (
-        <p className="empty-state">You have not posted any coaching requests.</p>
+        <EmptyState
+          body="Post what you need above and compare coach offers."
+          title="You have not posted any coaching requests"
+        />
       ) : (
-        <div className="queue-list">
+        <div className="grid gap-4 md:grid-cols-2">
           {requests.map((request) => (
-            <article className="queue-card" key={request.id}>
-              <div className="queue-head">
-                <strong>
-                  {request.groupSize} players - {request.skillLevel}
+            <Card className="flex flex-col gap-2 p-5" key={request.id}>
+              <div className="flex items-center justify-between gap-3">
+                <strong className="text-ink-900">
+                  {request.groupSize} players — {request.skillLevel}
                 </strong>
-                <span className={`status-pill status-${request.status.toLowerCase()}`}>
-                  {request.status}
-                </span>
+                <StatusPill status={request.status} />
               </div>
-              <p className="queue-when">
+              <p className="m-0 text-sm text-ink-700">
                 {formatWhen(request.startsAt)} at {request.location}
               </p>
 
               {request.status === "OPEN" && request.offers.length > 0 ? (
-                <ul className="offer-list">
+                <ul className="m-0 flex list-none flex-col gap-2 p-0">
                   {request.offers
                     .filter((offer) => offer.status === "ACTIVE")
                     .map((offer) => (
-                      <li className="offer-row" key={offer.id}>
-                        <span>PHP {offer.amount.toFixed(2)}</span>
-                        <span className="offer-expiry">expires {formatWhen(offer.expiresAt)}</span>
-                        <button
-                          className="button button-small"
-                          type="button"
-                          disabled={pending}
+                      <li
+                        className="flex flex-wrap items-center gap-3 rounded-(--radius-control) bg-sand-100 px-3 py-2"
+                        key={offer.id}
+                      >
+                        <span className="tnum font-semibold text-ink-900">
+                          {peso(offer.amount)}
+                        </span>
+                        <span className="text-sm text-ink-500">
+                          expires {formatWhen(offer.expiresAt)}
+                        </span>
+                        <Button
+                          className="ml-auto"
+                          loading={pending}
                           onClick={() =>
-                            call(() =>
+                            call("Offer accepted — pay the coach and upload proof.", () =>
                               apiFetch("/coaches/offers/accept", {
                                 method: "POST",
                                 body: { offerId: offer.id },
                               }),
                             )
                           }
+                          size="sm"
                         >
                           Accept
-                        </button>
+                        </Button>
                       </li>
                     ))}
                 </ul>
@@ -169,64 +184,63 @@ export function PlayerCoaching({ requests }: { requests: PlayerCoachRequest[] })
 
               {request.booking && request.booking.status === "HELD" ? (
                 <form
-                  className="proof-form"
+                  className="flex flex-col gap-3"
                   onSubmit={(e) => uploadProof(request.booking?.id ?? "", e)}
                 >
-                  <p className="court-note">Pay the coach, then upload your proof.</p>
-                  <label className="field">
-                    <span className="field-label">Channel</span>
-                    <select name="channel" defaultValue="GCASH">
+                  <p className="m-0 rounded-(--radius-control) bg-pending-bg px-3 py-2 text-sm text-pending-fg">
+                    Pay the coach, then upload your proof.
+                  </p>
+                  <Field label="Channel">
+                    <Select defaultValue="GCASH" name="channel">
                       <option value="GCASH">GCash</option>
                       <option value="MAYA">Maya</option>
                       <option value="QR_PH">QR Ph</option>
                       <option value="BANK_TRANSFER">Bank transfer</option>
                       <option value="OTHER">Other</option>
-                    </select>
-                  </label>
-                  <label className="field">
-                    <span className="field-label">Reference number</span>
-                    <input name="transactionRef" type="text" required minLength={2} />
-                  </label>
-                  <label className="field">
-                    <span className="field-label">Payment screenshot</span>
-                    <input
-                      name="file"
-                      type="file"
+                    </Select>
+                  </Field>
+                  <Field label="Reference number">
+                    <Input minLength={2} name="transactionRef" required type="text" />
+                  </Field>
+                  <Field label="Payment screenshot">
+                    <Input
                       accept="image/png,image/jpeg,image/webp"
+                      name="file"
                       required
+                      type="file"
                     />
-                  </label>
-                  <button className="button button-small" type="submit" disabled={pending}>
+                  </Field>
+                  <Button className="self-start" loading={pending} size="sm" type="submit">
                     Submit proof
-                  </button>
+                  </Button>
                 </form>
               ) : null}
 
               {request.booking && request.booking.status !== "HELD" ? (
-                <div className="queue-actions">
-                  <p className="court-note">Booking status: {request.booking.status}</p>
+                <div className="flex flex-wrap items-center gap-3">
+                  <StatusPill status={request.booking.status} />
                   {request.booking.status === "CONFIRMED" ? (
-                    <button
-                      className="button button-secondary button-small"
-                      type="button"
+                    <Button
                       disabled={pending}
                       onClick={() => {
                         const reason = window.prompt("Reason for the refund request?");
                         if (!reason) return;
-                        void call(() =>
+                        void call("Refund requested.", () =>
                           apiFetch("/coaches/bookings/refund/request", {
                             method: "POST",
                             body: { bookingId: request.booking?.id, reason },
                           }),
                         );
                       }}
+                      size="sm"
+                      variant="secondary"
                     >
                       Request refund
-                    </button>
+                    </Button>
                   ) : null}
                 </div>
               ) : null}
-            </article>
+            </Card>
           ))}
         </div>
       )}

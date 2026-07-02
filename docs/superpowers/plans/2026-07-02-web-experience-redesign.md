@@ -168,11 +168,11 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 - Modify: `apps/web/app/dashboard/page.tsx`, `manage/page.tsx`, `coach/page.tsx`, `admin/**`, `notifications/page.tsx`, `login/page.tsx`, `register/page.tsx`
 - Modify: existing component tests where they assert legacy class names
 
-- [ ] **Step 1 (TDD):** failing tests for Toast (useToast pushes message rendered in `role="status"`; auto-dismiss with fake timers) and Countdown (renders mm:ss for a fixed future date with mocked `Date.now`).
-- [ ] **Step 2:** implement Toast + Countdown; convert action feedback (proof submit/approve/reject, cancellations, offer accept, amenity save) to toasts using verbs matching their buttons ("Proof submitted." after "Submit proof"). Replace every ad-hoc status span with `StatusPill`. Add `Countdown` to HELD bookings ("Proof due in 3:42"). Auth forms: password visibility toggle (`aria-pressed`), `Button loading` during submit, errors via `Field error`.
-- [ ] **Step 3:** migrate the listed pages/components to primitives; delete their legacy CSS blocks. Keep every existing test green — update assertions that referenced old markup in the same commit.
-- [ ] **Step 4:** e2e: login form shows validation error for bad credentials (existing dev API), password toggle flips input type; dashboard axe check with demo player session (see `e2e/README.md` — document a `loginAs(page, "player@demo.courtlink.ph")` helper in `e2e/helpers.ts`).
-- [ ] **Step 5:** gate, regenerate affected snapshots, commit `"feat(web): redesign booking flows and workspaces with toasts, countdowns, status pills"`, push, update `PAUSE.md`.
+- [x] **Step 1 (TDD):** failing tests for Toast (useToast pushes message rendered in `role="status"`; auto-dismiss with fake timers) and Countdown (renders mm:ss for a fixed future date with mocked `Date.now`).
+- [x] **Step 2:** implement Toast + Countdown; convert action feedback (proof submit/approve/reject, cancellations, offer accept, amenity save) to toasts using verbs matching their buttons ("Proof submitted." after "Submit proof"). Replace every ad-hoc status span with `StatusPill`. Add `Countdown` to HELD bookings ("Proof due in 3:42"). Auth forms: password visibility toggle (`aria-pressed`), `Button loading` during submit, errors via `Field error`.
+- [x] **Step 3:** migrate the listed pages/components to primitives; delete their legacy CSS blocks. Keep every existing test green — update assertions that referenced old markup in the same commit.
+- [x] **Step 4:** e2e: login form shows validation error for bad credentials (existing dev API), password toggle flips input type; dashboard axe check with demo player session (see `e2e/README.md` — document a `loginAs(page, "player@demo.courtlink.ph")` helper in `e2e/helpers.ts`).
+- [x] **Step 5:** gate, regenerate affected snapshots, commit `"feat(web): redesign booking flows and workspaces with toasts, countdowns, status pills"`, push, update `PAUSE.md`.
 
 ### Phase 6: Trust pages and SEO
 

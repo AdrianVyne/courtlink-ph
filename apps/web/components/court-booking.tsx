@@ -10,6 +10,7 @@ import {
   type CourtSummary,
   apiFetch,
 } from "../lib/api";
+import { Badge, Button, Card, Countdown, Field, Input, Select, useToast } from "./ui";
 
 type Channel = "GCASH" | "MAYA" | "QR_PH" | "BANK_TRANSFER" | "OTHER";
 
@@ -20,6 +21,7 @@ export function CourtBooking({
   court: CourtSummary;
   isAuthenticated: boolean;
 }) {
+  const { push } = useToast();
   const [date, setDate] = useState("");
   const [durationMin, setDurationMin] = useState(court.minimumDurationMin);
   const [slots, setSlots] = useState<CourtAvailabilitySlot[]>([]);
@@ -64,6 +66,7 @@ export function CourtBooking({
         body: { startsAt: selectedSlot.startsAt, endsAt: selectedSlot.endsAt },
       });
       setBooking(result);
+      push("Slot held — submit your payment proof within 5 minutes.");
     } catch (err) {
       setError(err instanceof ApiError ? friendly(err) : "Could not hold this slot.");
     } finally {
@@ -103,6 +106,7 @@ export function CourtBooking({
         );
       }
       setConfirmed(true);
+      push("Proof submitted.");
     } catch (err) {
       setError(err instanceof ApiError ? friendly(err) : "Could not submit proof.");
     } finally {
@@ -113,133 +117,138 @@ export function CourtBooking({
   const durations = durationOptions(court);
 
   return (
-    <article className="court-card">
-      <div className="court-card-head">
-        <h3>{court.name}</h3>
-        <span className="court-tag">{court.indoor ? "Indoor" : "Outdoor"}</span>
+    <Card className="flex flex-col gap-3 p-5">
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="m-0 text-lg font-semibold text-ink-900">{court.name}</h3>
+        <Badge>{court.indoor ? "Indoor" : "Outdoor"}</Badge>
       </div>
-      {court.description ? <p className="court-desc">{court.description}</p> : null}
+      {court.description ? (
+        <p className="m-0 text-[0.9rem] text-ink-700">{court.description}</p>
+      ) : null}
 
       {!isAuthenticated ? (
-        <p className="court-note">
-          <Link href="/login">Log in</Link> to check availability and book.
+        <p className="m-0 text-sm text-ink-500">
+          <Link className="font-semibold text-court-800 hover:underline" href="/login">
+            Log in
+          </Link>{" "}
+          to check availability and book.
         </p>
       ) : confirmed ? (
-        <p className="court-success">
+        <p className="m-0 rounded-(--radius-control) bg-success-bg px-3 py-2.5 text-sm text-success-fg">
           Proof submitted. The venue will review and confirm your booking.
         </p>
       ) : booking ? (
         <form
-          className="proof-form"
+          className="flex flex-col gap-3"
           action={(formData) => {
             void submitProof(formData);
           }}
         >
-          <p className="court-note">
-            Slot held until {new Date(booking.proofDeadline).toLocaleTimeString()}. Pay the venue,
+          <p className="m-0 rounded-(--radius-control) bg-pending-bg px-3 py-2.5 text-sm font-medium text-pending-fg">
+            Slot held — proof due in <Countdown until={booking.proofDeadline} />. Pay the venue,
             then submit your reference.
           </p>
-          <label className="field">
-            <span className="field-label">Channel</span>
-            <select name="channel" defaultValue="GCASH">
+          <Field label="Channel">
+            <Select defaultValue="GCASH" name="channel">
               <option value="GCASH">GCash</option>
               <option value="MAYA">Maya</option>
               <option value="QR_PH">QR Ph</option>
               <option value="BANK_TRANSFER">Bank transfer</option>
               <option value="OTHER">Other</option>
-            </select>
-          </label>
-          <label className="field">
-            <span className="field-label">Reference number</span>
-            <input name="transactionRef" type="text" required minLength={2} />
-          </label>
-          <label className="field">
-            <span className="field-label">Payment screenshot</span>
-            <input name="file" type="file" accept="image/png,image/jpeg,image/webp" required />
-          </label>
-          <button className="button button-small" type="submit" disabled={pending}>
+            </Select>
+          </Field>
+          <Field label="Reference number">
+            <Input minLength={2} name="transactionRef" required type="text" />
+          </Field>
+          <Field label="Payment screenshot">
+            <Input accept="image/png,image/jpeg,image/webp" name="file" required type="file" />
+          </Field>
+          <Button className="self-start" loading={pending} size="sm" type="submit">
             Submit proof
-          </button>
+          </Button>
         </form>
       ) : (
-        <div className="booking-controls">
-          <label className="field">
-            <span className="field-label">Date</span>
-            <input
-              type="date"
-              value={date}
-              onChange={(event) => {
-                setDate(event.target.value);
-                setSlots([]);
-                setSelectedSlot(null);
-                setLoaded(false);
-              }}
-            />
-          </label>
-          <label className="field">
-            <span className="field-label">Duration</span>
-            <select
-              value={durationMin}
-              onChange={(event) => {
-                setDurationMin(Number(event.target.value));
-                setSlots([]);
-                setSelectedSlot(null);
-                setLoaded(false);
-              }}
-            >
-              {durations.map((minutes) => (
-                <option key={minutes} value={minutes}>
-                  {minutes} min
-                </option>
-              ))}
-            </select>
-          </label>
-          <div className="booking-actions">
-            <button
-              className="button button-secondary button-small"
-              type="button"
-              onClick={loadAvailability}
-              disabled={pending}
-            >
-              <CalendarClock size={16} aria-hidden="true" /> Load available times
-            </button>
-            {selectedSlot ? (
-              <button
-                className="button button-small"
-                type="button"
-                onClick={placeHold}
-                disabled={pending}
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap gap-3">
+            <Field label="Date">
+              <Input
+                onChange={(event) => {
+                  setDate(event.target.value);
+                  setSlots([]);
+                  setSelectedSlot(null);
+                  setLoaded(false);
+                }}
+                type="date"
+                value={date}
+              />
+            </Field>
+            <Field label="Duration">
+              <Select
+                onChange={(event) => {
+                  setDurationMin(Number(event.target.value));
+                  setSlots([]);
+                  setSelectedSlot(null);
+                  setLoaded(false);
+                }}
+                value={durationMin}
               >
+                {durations.map((minutes) => (
+                  <option key={minutes} value={minutes}>
+                    {minutes} min
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button disabled={pending} onClick={loadAvailability} size="sm" variant="secondary">
+              <CalendarClock aria-hidden="true" size={16} /> Load available times
+            </Button>
+            {selectedSlot ? (
+              <Button loading={pending} onClick={placeHold} size="sm">
                 Hold for {selectedSlot.currency} {selectedSlot.totalAmount.toFixed(2)}
-              </button>
+              </Button>
             ) : null}
           </div>
           {slots.length > 0 ? (
-            <fieldset className="slot-list">
+            <fieldset className="m-0 grid grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2 border-0 p-0">
               <legend className="sr-only">Available times</legend>
-              {slots.map((slot) => (
-                <button
-                  className={`slot-button${selectedSlot?.startsAt === slot.startsAt ? " is-selected" : ""}`}
-                  key={slot.startsAt}
-                  type="button"
-                  onClick={() => setSelectedSlot(slot)}
-                >
-                  {formatSlot(slot)} ?? {slot.currency} {slot.totalAmount.toFixed(2)}
-                </button>
-              ))}
+              {slots.map((slot) => {
+                const selected = selectedSlot?.startsAt === slot.startsAt;
+                return (
+                  <button
+                    aria-pressed={selected}
+                    className={`tnum cursor-pointer rounded-(--radius-control) border px-3 py-2.5 text-left text-sm transition-colors ${
+                      selected
+                        ? "border-court-700 bg-court-100 font-semibold text-court-800"
+                        : "border-sand-200 bg-white text-ink-900 hover:border-court-400"
+                    }`}
+                    key={slot.startsAt}
+                    onClick={() => setSelectedSlot(slot)}
+                    type="button"
+                  >
+                    {formatSlot(slot)} · {slot.currency} {slot.totalAmount.toFixed(2)}
+                  </button>
+                );
+              })}
             </fieldset>
           ) : loaded ? (
-            <p className="court-note">No available times for that date and duration.</p>
+            <p className="m-0 text-sm text-ink-500">
+              No available times for that date and duration.
+            </p>
           ) : null}
         </div>
       )}
 
       {error ? (
-        <p className="form-error" role="alert">
+        <p
+          className="m-0 rounded-(--radius-control) border border-danger-fg/30 bg-danger-bg px-3 py-2.5 text-sm text-danger-fg"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
-    </article>
+    </Card>
   );
 }
 
@@ -250,7 +259,7 @@ function formatSlot(slot: CourtAvailabilitySlot): string {
       minute: "2-digit",
       timeZone: "Asia/Manila",
     });
-  return `${format(slot.startsAt)} ??? ${format(slot.endsAt)}`;
+  return `${format(slot.startsAt)} – ${format(slot.endsAt)}`;
 }
 
 function durationOptions(court: CourtSummary): number[] {

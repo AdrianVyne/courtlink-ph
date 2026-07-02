@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { PlayerCoaching } from "../../components/player-coaching";
-import { SiteHeader } from "../../components/site-header";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import { type PlayerCoachRequest, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
 
@@ -22,16 +22,13 @@ export default async function CoachRequestsPage() {
   const requests = await load(cookie);
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Coaching</span>
-          <h1>Find a coach</h1>
-          <p className="page-sub">Post a request, compare offers, and pay your coach.</p>
-        </div>
-        <PlayerCoaching requests={requests} />
-      </section>
-    </main>
+    <WorkspaceShell
+      kicker="Coaching"
+      session={session}
+      sub="Post a request, compare offers, and pay your coach."
+      title="Find a coach"
+    >
+      <PlayerCoaching requests={requests} />
+    </WorkspaceShell>
   );
 }

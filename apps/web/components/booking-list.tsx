@@ -1,16 +1,8 @@
+import Link from "next/link";
 import type { BookingListItem } from "../lib/api";
+import { peso } from "../lib/format";
 import { ReviewForm } from "./review-form";
-
-const STATUS_LABEL: Record<string, string> = {
-  HELD: "Hold (awaiting proof)",
-  PROOF_SUBMITTED: "Under review",
-  CONFIRMED: "Confirmed",
-  REJECTED: "Proof rejected",
-  EXPIRED: "Expired",
-  CANCELLED: "Cancelled",
-  COMPLETED: "Completed",
-  REFUND_REQUESTED: "Refund requested",
-};
+import { Button, Card, Countdown, EmptyState, StatusPill } from "./ui";
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
@@ -22,28 +14,42 @@ function formatWhen(iso: string): string {
 
 export function BookingList({ bookings }: { bookings: BookingListItem[] }) {
   if (bookings.length === 0) {
-    return <p className="empty-state">No bookings yet. Find a court to get started.</p>;
+    return (
+      <EmptyState
+        action={<Button href="/courts">Find a court</Button>}
+        body="Your court reservations will show up here."
+        title="No bookings yet"
+      />
+    );
   }
   return (
-    <ul className="booking-list">
+    <ul className="m-0 flex list-none flex-col gap-3 p-0">
       {bookings.map((booking) => (
-        <li className="booking-row" key={booking.id}>
-          <div className="booking-main">
-            <strong>{booking.court.name}</strong>
-            <span className="booking-venue">{booking.venue.name}</span>
-            <span className="booking-when">{formatWhen(booking.startsAt)}</span>
-            {booking.status === "COMPLETED" && !booking.reviewed ? (
-              <ReviewForm scope="courts" bookingId={booking.id} />
-            ) : null}
-          </div>
-          <div className="booking-meta">
-            <span className={`status-pill status-${booking.status.toLowerCase()}`}>
-              {STATUS_LABEL[booking.status] ?? booking.status}
-            </span>
-            <span className="booking-amount">
-              {booking.currency} {booking.quotedAmount.toFixed(2)}
-            </span>
-          </div>
+        <li key={booking.id}>
+          <Card className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+            <div className="flex flex-col gap-0.5">
+              <strong className="text-ink-900">{booking.court.name}</strong>
+              <Link
+                className="text-sm text-ink-500 hover:text-court-800"
+                href={`/courts/${booking.venue.slug}`}
+              >
+                {booking.venue.name}
+              </Link>
+              <span className="text-sm text-ink-700">{formatWhen(booking.startsAt)}</span>
+              {booking.status === "HELD" && booking.proofDeadline ? (
+                <span className="mt-1 text-sm font-semibold text-pending-fg">
+                  Proof due in <Countdown until={booking.proofDeadline} />
+                </span>
+              ) : null}
+              {booking.status === "COMPLETED" && !booking.reviewed ? (
+                <ReviewForm scope="courts" bookingId={booking.id} />
+              ) : null}
+            </div>
+            <div className="flex flex-col items-end gap-1.5">
+              <StatusPill status={booking.status} />
+              <span className="tnum font-semibold text-ink-900">{peso(booking.quotedAmount)}</span>
+            </div>
+          </Card>
         </li>
       ))}
     </ul>

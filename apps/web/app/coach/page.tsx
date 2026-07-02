@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { CoachWorkspace } from "../../components/coach-workspace";
-import { SiteHeader } from "../../components/site-header";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import {
   type CoachBookingListItem,
   type CoachMe,
@@ -33,16 +33,13 @@ export default async function CoachPage() {
   ]);
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Coach workspace</span>
-          <h1>Coaching</h1>
-          <p className="page-sub">Manage your profile, availability, offers, and bookings.</p>
-        </div>
-        <CoachWorkspace me={me} jobs={jobs} bookings={bookings} directed={directed} />
-      </section>
-    </main>
+    <WorkspaceShell
+      kicker="Coach workspace"
+      session={session}
+      sub="Manage your profile, availability, offers, and bookings."
+      title="Coaching"
+    >
+      <CoachWorkspace me={me} jobs={jobs} bookings={bookings} directed={directed} />
+    </WorkspaceShell>
   );
 }

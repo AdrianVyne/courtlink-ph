@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { apiFetch, type NotificationItem } from "../lib/api";
+import { type NotificationItem, apiFetch } from "../lib/api";
+import { Button, EmptyState } from "./ui";
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
@@ -39,28 +40,34 @@ export function NotificationList({ initial }: { initial: NotificationItem[] }) {
   }
 
   if (items.length === 0) {
-    return <p className="empty-state">No notifications yet.</p>;
+    return (
+      <EmptyState
+        body="Booking updates, proof decisions, and offers will land here."
+        title="No notifications yet"
+      />
+    );
   }
 
   return (
-    <div className="notif-wrap">
-      <div className="notif-toolbar">
-        <button
-          className="button button-secondary button-small"
-          type="button"
-          onClick={markAll}
-          disabled={pending}
-        >
+    <div>
+      <div className="mb-3 flex justify-end">
+        <Button loading={pending} onClick={markAll} size="sm" variant="secondary">
           Mark all read
-        </button>
+        </Button>
       </div>
-      <ul className="notif-list">
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {items.map((n) => (
-          <li className={`notif-row${n.readAt ? "" : " notif-unread"}`} key={n.id}>
-            <button type="button" className="notif-item" onClick={() => markOne(n.id)}>
-              <span className="notif-title">{n.title}</span>
-              <span className="notif-body">{n.body}</span>
-              <span className="notif-when">{formatWhen(n.createdAt)}</span>
+          <li key={n.id}>
+            <button
+              className={`flex w-full cursor-pointer flex-col gap-0.5 rounded-(--radius-card) border bg-white px-4 py-3 text-left transition-colors hover:border-court-400 ${
+                n.readAt ? "border-sand-200" : "border-l-4 border-sand-200 border-l-court-700"
+              }`}
+              onClick={() => markOne(n.id)}
+              type="button"
+            >
+              <span className="font-semibold text-ink-900">{n.title}</span>
+              <span className="text-[0.9rem] text-ink-700">{n.body}</span>
+              <span className="text-sm text-ink-500">{formatWhen(n.createdAt)}</span>
             </button>
           </li>
         ))}

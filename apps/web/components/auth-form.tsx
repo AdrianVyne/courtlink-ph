@@ -1,8 +1,10 @@
-﻿"use client";
+"use client";
 
+import { Eye, EyeOff } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useId, useState } from "react";
 import { ApiError, apiFetch } from "../lib/api";
+import { Button, Field, Input } from "./ui";
 
 interface AuthFormProps {
   mode: "login" | "register";
@@ -12,6 +14,9 @@ export function AuthForm({ mode }: AuthFormProps) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const passwordId = useId();
+  const passwordHintId = mode === "register" ? `${passwordId}-hint` : undefined;
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -48,36 +53,61 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <form className="auth-form" onSubmit={onSubmit} noValidate>
+    <form className="flex flex-col gap-4" onSubmit={onSubmit} noValidate>
       {mode === "register" ? (
-        <label className="field">
-          <span className="field-label">Full name</span>
-          <input name="displayName" type="text" required minLength={1} autoComplete="name" />
-        </label>
+        <Field label="Full name">
+          <Input autoComplete="name" minLength={1} name="displayName" required type="text" />
+        </Field>
       ) : null}
-      <label className="field">
-        <span className="field-label">Email</span>
-        <input name="email" type="email" required autoComplete="email" />
-      </label>
-      <label className="field">
-        <span className="field-label">Password</span>
-        <input
-          name="password"
-          type="password"
-          required
-          minLength={mode === "register" ? 12 : 1}
-          autoComplete={mode === "register" ? "new-password" : "current-password"}
-        />
-      </label>
-      {mode === "register" ? <p className="field-hint">Use at least 12 characters.</p> : null}
+      <Field label="Email">
+        <Input autoComplete="email" name="email" required type="email" />
+      </Field>
+      <div className="flex flex-col gap-1.5">
+        <label className="text-sm font-semibold text-ink-700" htmlFor={passwordId}>
+          Password
+        </label>
+        <div className="relative">
+          <Input
+            aria-describedby={passwordHintId}
+            autoComplete={mode === "register" ? "new-password" : "current-password"}
+            className="w-full pr-12"
+            id={passwordId}
+            minLength={mode === "register" ? 12 : 1}
+            name="password"
+            required
+            type={showPassword ? "text" : "password"}
+          />
+          <button
+            aria-pressed={showPassword}
+            className="absolute inset-y-0 right-0 inline-flex w-11 items-center justify-center text-ink-500 hover:text-court-800"
+            onClick={() => setShowPassword((current) => !current)}
+            type="button"
+          >
+            {showPassword ? (
+              <EyeOff aria-hidden="true" size={18} />
+            ) : (
+              <Eye aria-hidden="true" size={18} />
+            )}
+            <span className="sr-only">{showPassword ? "Hide password" : "Show password"}</span>
+          </button>
+        </div>
+        {passwordHintId ? (
+          <p className="m-0 text-[0.82rem] text-ink-500" id={passwordHintId}>
+            Use at least 12 characters.
+          </p>
+        ) : null}
+      </div>
       {error ? (
-        <p className="form-error" role="alert">
+        <p
+          className="m-0 rounded-(--radius-control) border border-danger-fg/30 bg-danger-bg px-3 py-2.5 text-sm text-danger-fg"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
-      <button className="button" type="submit" disabled={pending}>
-        {pending ? "Please wait..." : mode === "register" ? "Create account" : "Log in"}
-      </button>
+      <Button loading={pending} type="submit">
+        {pending ? "Please wait" : mode === "register" ? "Create account" : "Log in"}
+      </Button>
     </form>
   );
 }

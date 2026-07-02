@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { NotificationList } from "../../components/notification-list";
-import { SiteHeader } from "../../components/site-header";
+import { WorkspaceShell } from "../../components/workspace-shell";
 import { type NotificationItem, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
 
@@ -22,16 +22,13 @@ export default async function NotificationsPage() {
   const items = await load(cookie);
 
   return (
-    <main>
-      <SiteHeader session={session} />
-      <section className="page-band">
-        <div className="page-heading">
-          <span className="kicker">Updates</span>
-          <h1>Notifications</h1>
-          <p className="page-sub">Booking, payment, refund, and coaching updates.</p>
-        </div>
-        <NotificationList initial={items} />
-      </section>
-    </main>
+    <WorkspaceShell
+      kicker="Updates"
+      session={session}
+      sub="Booking, payment, refund, and coaching updates."
+      title="Notifications"
+    >
+      <NotificationList initial={items} />
+    </WorkspaceShell>
   );
 }

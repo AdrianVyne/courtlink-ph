@@ -2,6 +2,7 @@
 import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import { ServiceWorkerRegistration } from "../components/service-worker-registration";
+import { ToastProvider } from "../components/ui/toast";
 import "./globals.css";
 
 const sans = Geist({ subsets: ["latin"], variable: "--font-sans" });
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
   return (
     <html lang="en">
       <body className={`${sans.variable} ${mono.variable} ${display.variable}`}>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
         <ServiceWorkerRegistration />
       </body>
     </html>

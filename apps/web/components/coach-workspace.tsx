@@ -12,6 +12,8 @@ import {
   type OpenCoachJob,
   apiFetch,
 } from "../lib/api";
+import { peso } from "../lib/format";
+import { Button, Card, EmptyState, Field, Input, StatusPill, useToast } from "./ui";
 
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
@@ -19,6 +21,10 @@ function formatWhen(iso: string): string {
     timeStyle: "short",
     timeZone: "Asia/Manila",
   });
+}
+
+function SectionTitle({ children }: { children: string }) {
+  return <h2 className="m-0 mt-8 mb-4 font-display text-xl font-bold text-ink-900">{children}</h2>;
 }
 
 export function CoachWorkspace({
@@ -33,14 +39,16 @@ export function CoachWorkspace({
   directed: DirectedRequest[];
 }) {
   const router = useRouter();
+  const { push } = useToast();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  async function call(action: () => Promise<unknown>) {
+  async function call(done: string, action: () => Promise<unknown>) {
     setPending(true);
     setError(null);
     try {
       await action();
+      push(done);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Action failed.");
@@ -52,7 +60,7 @@ export function CoachWorkspace({
   async function saveProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await call(() =>
+    await call("Profile saved.", () =>
       apiFetch("/coaches/profile", {
         method: "POST",
         body: {
@@ -69,7 +77,7 @@ export function CoachWorkspace({
     const form = new FormData(event.currentTarget);
     const start = String(form.get("startsAt") ?? "");
     const end = String(form.get("endsAt") ?? "");
-    await call(() =>
+    await call("Availability added.", () =>
       apiFetch("/coaches/availability", {
         method: "POST",
         body: {
@@ -84,7 +92,7 @@ export function CoachWorkspace({
   async function makeOffer(job: OpenCoachJob, event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await call(() =>
+    await call("Offer sent.", () =>
       apiFetch("/coaches/offers", {
         method: "POST",
         body: {
@@ -98,220 +106,214 @@ export function CoachWorkspace({
   }
 
   return (
-    <div className="coach-workspace">
+    <div className="flex flex-col">
       {error ? (
-        <p className="form-error" role="alert">
+        <p
+          className="m-0 mb-4 rounded-(--radius-control) border border-danger-fg/30 bg-danger-bg px-3 py-2.5 text-sm text-danger-fg"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
 
-      <h2 className="section-title">Your coach profile</h2>
-      <form className="stack-form" onSubmit={saveProfile}>
-        <label className="field">
-          <span className="field-label">Hourly rate (PHP)</span>
-          <input
-            name="hourlyRate"
-            type="number"
-            min={1}
-            step="0.01"
+      <SectionTitle>Your coach profile</SectionTitle>
+      <form className="flex max-w-md flex-col gap-3" onSubmit={saveProfile}>
+        <Field label="Hourly rate (PHP)">
+          <Input
             defaultValue={me.profile?.hourlyRate ?? 800}
+            min={1}
+            name="hourlyRate"
             required
+            step="0.01"
+            type="number"
           />
-        </label>
-        <label className="field">
-          <span className="field-label">Bio</span>
-          <input name="bio" type="text" defaultValue={me.profile?.bio ?? ""} maxLength={2000} />
-        </label>
-        <label className="field">
-          <span className="field-label">Experience</span>
-          <input
-            name="experience"
-            type="text"
+        </Field>
+        <Field label="Bio">
+          <Input defaultValue={me.profile?.bio ?? ""} maxLength={2000} name="bio" type="text" />
+        </Field>
+        <Field label="Experience">
+          <Input
             defaultValue={me.profile?.experience ?? ""}
             maxLength={2000}
+            name="experience"
+            type="text"
           />
-        </label>
-        <button className="button button-small" type="submit" disabled={pending}>
+        </Field>
+        <Button className="self-start" loading={pending} size="sm" type="submit">
           {me.profile ? "Update profile" : "Create profile"}
-        </button>
+        </Button>
       </form>
 
       {me.profile ? (
         <>
-          <h2 className="section-title">Availability</h2>
+          <SectionTitle>Availability</SectionTitle>
           <AvailabilityList slots={me.availability} />
-          <form className="row-form" onSubmit={addAvailability}>
-            <label className="field">
-              <span className="field-label">Start</span>
-              <input name="startsAt" type="datetime-local" required />
-            </label>
-            <label className="field">
-              <span className="field-label">End</span>
-              <input name="endsAt" type="datetime-local" required />
-            </label>
-            <label className="field">
-              <span className="field-label">Location</span>
-              <input name="location" type="text" required minLength={2} />
-            </label>
-            <button
-              className="button button-secondary button-small"
-              type="submit"
-              disabled={pending}
-            >
+          <form className="mt-3 flex flex-wrap items-end gap-3" onSubmit={addAvailability}>
+            <Field label="Start">
+              <Input name="startsAt" required type="datetime-local" />
+            </Field>
+            <Field label="End">
+              <Input name="endsAt" required type="datetime-local" />
+            </Field>
+            <Field label="Location">
+              <Input minLength={2} name="location" required type="text" />
+            </Field>
+            <Button loading={pending} size="sm" type="submit" variant="secondary">
               Add slot
-            </button>
+            </Button>
           </form>
 
-          <h2 className="section-title">Directed requests</h2>
+          <SectionTitle>Directed requests</SectionTitle>
           {directed.length === 0 ? (
-            <p className="empty-state">No directed requests awaiting your approval.</p>
+            <EmptyState
+              body="Players who pick you directly appear here for approval."
+              title="No directed requests awaiting your approval"
+            />
           ) : (
-            <div className="queue-list">
+            <div className="grid gap-4 md:grid-cols-2">
               {directed.map((req) => (
-                <article className="queue-card" key={req.id}>
-                  <div className="queue-head">
-                    <strong>
-                      {req.player.displayName} - {req.groupSize} players
+                <Card className="flex flex-col gap-2 p-5" key={req.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <strong className="text-ink-900">
+                      {req.player.displayName} — {req.groupSize} players
                     </strong>
-                    <span className="status-pill status-pending_coach">Awaiting approval</span>
+                    <StatusPill status="PENDING_COACH" />
                   </div>
-                  <p className="queue-when">
+                  <p className="m-0 text-sm text-ink-700">
                     {formatWhen(req.startsAt)} at {req.location}
                   </p>
-                  {req.goals ? <p className="court-note">{req.goals}</p> : null}
-                  <div className="queue-actions">
-                    <button
-                      className="button button-small"
-                      type="button"
-                      disabled={pending}
+                  {req.goals ? <p className="m-0 text-sm text-ink-500">{req.goals}</p> : null}
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    <Button
+                      loading={pending}
                       onClick={() =>
-                        call(() =>
-                          apiFetch(`/coaches/requests/${req.id}/approve`, {
-                            method: "POST",
-                          }),
+                        call("Request approved — the player can now pay.", () =>
+                          apiFetch(`/coaches/requests/${req.id}/approve`, { method: "POST" }),
                         )
                       }
+                      size="sm"
                     >
-                      <Check size={16} aria-hidden="true" /> Approve
-                    </button>
-                    <button
-                      className="button button-secondary button-small"
-                      type="button"
+                      <Check aria-hidden="true" size={16} /> Approve
+                    </Button>
+                    <Button
                       disabled={pending}
                       onClick={() =>
-                        call(() =>
-                          apiFetch(`/coaches/requests/${req.id}/decline`, {
-                            method: "POST",
-                          }),
+                        call("Request declined.", () =>
+                          apiFetch(`/coaches/requests/${req.id}/decline`, { method: "POST" }),
                         )
                       }
+                      size="sm"
+                      variant="secondary"
                     >
-                      <X size={16} aria-hidden="true" /> Decline
-                    </button>
+                      <X aria-hidden="true" size={16} /> Decline
+                    </Button>
                   </div>
-                </article>
+                </Card>
               ))}
             </div>
           )}
 
-          <h2 className="section-title">Open coaching jobs</h2>
+          <SectionTitle>Open coaching jobs</SectionTitle>
           {jobs.length === 0 ? (
-            <p className="empty-state">No open requests right now.</p>
+            <EmptyState
+              body="Open player requests you can bid on will show here."
+              title="No open requests right now"
+            />
           ) : (
-            <div className="queue-list">
+            <div className="grid gap-4 md:grid-cols-2">
               {jobs.map((job) => (
-                <article className="queue-card" key={job.id}>
-                  <div className="queue-head">
-                    <strong>
-                      {job.groupSize} players - {job.skillLevel}
-                    </strong>
-                  </div>
-                  <p className="queue-when">
+                <Card className="flex flex-col gap-2 p-5" key={job.id}>
+                  <strong className="text-ink-900">
+                    {job.groupSize} players — {job.skillLevel}
+                  </strong>
+                  <p className="m-0 text-sm text-ink-700">
                     {formatWhen(job.startsAt)} at {job.location}
                   </p>
-                  <form className="row-form" onSubmit={(e) => makeOffer(job, e)}>
-                    <label className="field">
-                      <span className="field-label">Your price (PHP)</span>
-                      <input name="amount" type="number" min={1} step="0.01" required />
-                    </label>
-                    <label className="field">
-                      <span className="field-label">Offer expires</span>
-                      <input name="expiresAt" type="datetime-local" required />
-                    </label>
-                    <button className="button button-small" type="submit" disabled={pending}>
+                  <form
+                    className="mt-1 flex flex-wrap items-end gap-3"
+                    onSubmit={(e) => makeOffer(job, e)}
+                  >
+                    <Field label="Your price (PHP)">
+                      <Input min={1} name="amount" required step="0.01" type="number" />
+                    </Field>
+                    <Field label="Offer expires">
+                      <Input name="expiresAt" required type="datetime-local" />
+                    </Field>
+                    <Button loading={pending} size="sm" type="submit">
                       Send offer
-                    </button>
+                    </Button>
                   </form>
-                </article>
+                </Card>
               ))}
             </div>
           )}
 
-          <h2 className="section-title">Your coaching bookings</h2>
+          <SectionTitle>Your coaching bookings</SectionTitle>
           {bookings.length === 0 ? (
-            <p className="empty-state">No coaching bookings yet.</p>
+            <EmptyState
+              body="Accepted offers and direct bookings appear here."
+              title="No coaching bookings yet"
+            />
           ) : (
-            <div className="queue-list">
+            <div className="grid gap-4 md:grid-cols-2">
               {bookings.map((booking) => (
-                <article className="queue-card" key={booking.id}>
-                  <div className="queue-head">
-                    <strong>{booking.player.displayName}</strong>
-                    <span className={`status-pill status-${booking.status.toLowerCase()}`}>
-                      {booking.status}
-                    </span>
+                <Card className="flex flex-col gap-2 p-5" key={booking.id}>
+                  <div className="flex items-center justify-between gap-3">
+                    <strong className="text-ink-900">{booking.player.displayName}</strong>
+                    <StatusPill status={booking.status} />
                   </div>
-                  <p className="queue-when">
+                  <p className="m-0 text-sm text-ink-700">
                     {formatWhen(booking.startsAt)} at {booking.location}
                   </p>
-                  <p className="queue-amount">
-                    {booking.currency} {booking.amount.toFixed(2)}
+                  <p className="tnum m-0 text-sm font-semibold text-ink-900">
+                    {peso(booking.amount)}
                   </p>
                   {booking.status === "CONFIRMED" ? (
-                    <div className="queue-actions">
-                      <button
-                        className="button button-secondary button-small"
-                        type="button"
+                    <div className="flex flex-wrap gap-2">
+                      <Button
                         disabled={pending}
                         onClick={() => {
                           const reason = window.prompt("Reason for cancelling this session?");
                           if (!reason) return;
-                          void call(() =>
+                          void call("Session cancelled.", () =>
                             apiFetch("/coaches/bookings/cancel-by-coach", {
                               method: "POST",
                               body: { bookingId: booking.id, reason },
                             }),
                           );
                         }}
+                        size="sm"
+                        variant="danger"
                       >
-                        <Ban size={16} aria-hidden="true" /> Cancel session
-                      </button>
+                        <Ban aria-hidden="true" size={16} /> Cancel session
+                      </Button>
                     </div>
                   ) : null}
                   {booking.status === "PROOF_SUBMITTED" && booking.submission ? (
-                    <div className="queue-actions">
-                      <button
-                        className="button button-small"
-                        type="button"
-                        disabled={pending}
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        loading={pending}
                         onClick={() =>
-                          call(() =>
+                          call("Proof approved — session confirmed.", () =>
                             apiFetch("/coaches/bookings/proof/approve", {
                               method: "POST",
-                              body: { submissionId: booking.submission?.id, bookingId: booking.id },
+                              body: {
+                                submissionId: booking.submission?.id,
+                                bookingId: booking.id,
+                              },
                             }),
                           )
                         }
+                        size="sm"
                       >
-                        <Check size={16} aria-hidden="true" /> Approve
-                      </button>
-                      <button
-                        className="button button-secondary button-small"
-                        type="button"
+                        <Check aria-hidden="true" size={16} /> Approve
+                      </Button>
+                      <Button
                         disabled={pending}
                         onClick={() => {
                           const reason = window.prompt("Reason for rejecting?");
                           if (!reason) return;
-                          void call(() =>
+                          void call("Proof rejected.", () =>
                             apiFetch("/coaches/bookings/proof/reject", {
                               method: "POST",
                               body: {
@@ -322,12 +324,14 @@ export function CoachWorkspace({
                             }),
                           );
                         }}
+                        size="sm"
+                        variant="secondary"
                       >
-                        <X size={16} aria-hidden="true" /> Reject
-                      </button>
+                        <X aria-hidden="true" size={16} /> Reject
+                      </Button>
                     </div>
                   ) : null}
-                </article>
+                </Card>
               ))}
             </div>
           )}
@@ -338,13 +342,18 @@ export function CoachWorkspace({
 }
 
 function AvailabilityList({ slots }: { slots: AvailabilitySlot[] }) {
-  if (slots.length === 0) return <p className="empty-state">No availability posted yet.</p>;
+  if (slots.length === 0) {
+    return <p className="m-0 text-sm text-ink-500">No availability posted yet.</p>;
+  }
   return (
-    <ul className="booking-list">
+    <ul className="m-0 flex list-none flex-col gap-2 p-0">
       {slots.map((slot) => (
-        <li className="booking-row" key={slot.id}>
-          <span>{formatWhen(slot.startsAt)}</span>
-          <span className="booking-venue">{slot.location}</span>
+        <li
+          className="flex flex-wrap items-center gap-3 rounded-(--radius-control) border border-sand-200 bg-white px-4 py-2.5 text-sm"
+          key={slot.id}
+        >
+          <span className="font-medium text-ink-900">{formatWhen(slot.startsAt)}</span>
+          <span className="text-ink-500">{slot.location}</span>
         </li>
       ))}
     </ul>

@@ -1,7 +1,13 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type CourtSummary, apiFetch } from "../lib/api";
+import { ToastProvider } from "./ui";
 import { CourtBooking } from "./court-booking";
+
+function renderWithToasts(node: ReactNode) {
+  return render(<ToastProvider>{node}</ToastProvider>);
+}
 
 vi.mock("../lib/api", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../lib/api")>();
@@ -52,7 +58,7 @@ describe("CourtBooking", () => {
         reviewDueAt: null,
       });
 
-    render(<CourtBooking court={court} isAuthenticated />);
+    renderWithToasts(<CourtBooking court={court} isAuthenticated />);
     fireEvent.change(screen.getByLabelText("Date"), { target: { value: "2026-06-22" } });
     fireEvent.click(screen.getByRole("button", { name: "Load available times" }));
 
