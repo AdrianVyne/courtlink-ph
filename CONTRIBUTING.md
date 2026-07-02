@@ -12,5 +12,11 @@ CourtLink PH accepts focused issues and pull requests that match the approved pr
 
 Use failing tests to define behavior before implementation. Never include real user data, payment proofs, credentials, or production infrastructure identifiers in an issue, fixture, screenshot, commit, or log.
 
+## Pull requests
+
+All changes to `main` go through pull requests unless the repository owner explicitly bypasses protection for emergency maintenance. Pull requests should be narrow, include the relevant verification output, and keep product behavior aligned with the approved specs in `docs/superpowers/specs/`.
+
+Do not open public pull requests or issues for suspected vulnerabilities. Use the repository's private vulnerability reporting flow instead.
+
 By contributing, you agree that your contribution is licensed under AGPL-3.0-only.
 
