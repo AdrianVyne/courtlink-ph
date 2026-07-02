@@ -33,6 +33,73 @@
   --shadow-float: 0 12px 32px rgb(13 43 28 / 0.12);
 }
 
+@custom-variant dark ([data-theme="dark"] &);
+
+/*
+ * Dark theme: warm green-tinted ink derived from court-950, never pure black.
+ * Utilities keep their role because the palette variables remap; the few
+ * places where one token serves two roles (green button backgrounds, the
+ * always-dark footer/coach bands) carry explicit dark: overrides instead.
+ * Contrast (WCAG AA, checked 2026-07-03): ink-900 16.1:1 / ink-700 11.7:1 /
+ * ink-500 7.1:1 on the page; court-700 links 10.2:1; court-800 12.0:1;
+ * lime-400 text 14.7:1; court-950 on lime-400 buttons 12.3:1; semantic pairs
+ * success 8.0:1, pending 7.5:1, danger 7.4:1, info 7.4:1 on their tints.
+ */
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-court-50: #152119;
+  --color-court-100: #1b2f24;
+  --color-court-200: #325c44;
+  --color-court-400: #63ac83;
+  --color-court-600: #7cc39a;
+  --color-court-700: #8fd0ab;
+  --color-court-800: #aaddc1;
+  --color-sand-50: #0f1713;
+  --color-sand-100: #1c2921;
+  --color-sand-200: #243a2e;
+  --color-sand-300: #2e4636;
+  --color-ink-900: #f3f1ea;
+  --color-ink-700: #c8d2ca;
+  --color-ink-500: #97a59c;
+  --color-success-bg: #12301e;
+  --color-success-fg: #7fd3a1;
+  --color-pending-bg: #33290e;
+  --color-pending-fg: #e3b45e;
+  --color-danger-bg: #391412;
+  --color-danger-fg: #f1968d;
+  --color-info-bg: #12233a;
+  --color-info-fg: #8ab4e8;
+  --shadow-float: 0 12px 32px rgb(0 0 0 / 0.45);
+}
+
+/*
+ * Cards keep `bg-white` as their light-surface utility; in dark they become
+ * the elevated green-ink surface. One rule here beats a dark: override on
+ * every card. text-white / border-white stay untouched on purpose.
+ */
+[data-theme="dark"] .bg-white {
+  background-color: #16211a;
+}
+
+/*
+ * Bands that are court-950-dark in both themes (footer, coaches band, coach
+ * detail hero) keep their light sand text: opacity-modified utilities read
+ * these variables through color-mix, so restoring them here covers every
+ * descendant without per-class dark: overrides.
+ */
+[data-theme="dark"] .bg-court-950 {
+  --color-sand-100: #f3f1ea;
+  --color-sand-300: #d6d0c2;
+}
+
+[data-theme="dark"] .bg-white\/90 {
+  background-color: rgb(15 23 19 / 0.92);
+}
+
+[data-theme="dark"] .bg-white\/95 {
+  background-color: rgb(22 33 26 / 0.95);
+}
+
 @layer base {
   html {
     background: var(--color-sand-50);

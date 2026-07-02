@@ -96,7 +96,9 @@ export function HowItWorks() {
               aria-controls={`panel-${tab.id}`}
               aria-selected={active === index}
               className={`rounded-full px-5 py-2 text-sm font-semibold transition-colors ${
-                active === index ? "bg-court-700 text-white" : "text-ink-700 hover:text-court-800"
+                active === index
+                  ? "bg-court-700 text-white dark:bg-lime-400 dark:text-court-950"
+                  : "text-ink-700 hover:text-court-800"
               }`}
               id={`tab-${tab.id}`}
               key={tab.id}

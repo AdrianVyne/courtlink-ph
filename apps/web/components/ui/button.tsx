@@ -6,12 +6,13 @@ type Size = "sm" | "md";
 
 const base =
   "inline-flex items-center justify-center gap-2 rounded-(--radius-control) font-semibold transition-colors " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-court-700 " +
+  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-court-700 dark:focus-visible:outline-lime-400 " +
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-court-700 text-white hover:bg-court-800 border border-court-700 hover:border-court-800",
+    "bg-court-700 text-white hover:bg-court-800 border border-court-700 hover:border-court-800 " +
+    "dark:bg-lime-400 dark:text-court-950 dark:border-lime-400 dark:hover:bg-lime-300 dark:hover:border-lime-300",
   secondary:
     "bg-transparent text-court-800 border border-court-700/40 hover:border-court-700 hover:bg-court-50",
   ghost: "bg-transparent text-court-800 border border-transparent hover:bg-court-50",

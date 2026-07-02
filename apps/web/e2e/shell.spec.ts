@@ -79,3 +79,39 @@ test.describe("system pages", () => {
     await expect(page.getByRole("link", { name: "Back to the court" })).toBeVisible();
   });
 });
+
+test.describe("theme", () => {
+  test("the toggle cycles to dark and the choice survives a reload", async ({ page }) => {
+    await page.goto("/");
+    const html = page.locator("html");
+    await expect(html).toHaveAttribute("data-theme", "light");
+
+    // The cycle passes dark every third click; retrying also absorbs clicks
+    // that land before hydration attaches the handler.
+    const toggle = page.getByRole("button", { name: /^Theme:/ });
+    await expect(async () => {
+      await toggle.click();
+      await expect(html).toHaveAttribute("data-theme", "dark", { timeout: 700 });
+    }).toPass();
+
+    await page.reload();
+    await expect(html).toHaveAttribute("data-theme", "dark");
+    expect(await page.evaluate(() => window.localStorage.getItem("courtlink-theme"))).toBe("dark");
+  });
+
+  test("a stored dark preference applies before paint", async ({ page }) => {
+    await page.addInitScript(() => window.localStorage.setItem("courtlink-theme", "dark"));
+    await page.goto("/");
+    await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  });
+});
+
+test.describe("motion", () => {
+  test("reduced motion disables the hero reveal animation", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    const reveal = page.locator(".reveal").first();
+    await expect(reveal).toBeVisible();
+    expect(await reveal.evaluate((el) => window.getComputedStyle(el).animationName)).toBe("none");
+  });
+});

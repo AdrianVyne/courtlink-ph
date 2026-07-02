@@ -172,16 +172,23 @@ test.describe("accessibility (WCAG 2.2 AA)", () => {
     "/privacy",
   ];
 
-  for (const path of pages) {
-    test(`${path} passes axe accessibility audit`, async ({ page }) => {
-      // Reduced motion keeps entry animations from being scanned mid-fade,
-      // which would report transient contrast values.
-      await page.emulateMedia({ reducedMotion: "reduce" });
-      await page.goto(path);
-      const results = await new AxeBuilder({ page })
-        .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
-        .analyze();
-      expect(results.violations).toEqual([]);
-    });
+  for (const theme of ["light", "dark"] as const) {
+    for (const path of pages) {
+      test(`${path} passes axe accessibility audit in ${theme}`, async ({ page }) => {
+        // Reduced motion keeps entry animations from being scanned mid-fade,
+        // which would report transient contrast values.
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await page.addInitScript(
+          (stored) => window.localStorage.setItem("courtlink-theme", stored),
+          theme,
+        );
+        await page.goto(path);
+        await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+        const results = await new AxeBuilder({ page })
+          .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
+          .analyze();
+        expect(results.violations).toEqual([]);
+      });
+    }
   }
 });

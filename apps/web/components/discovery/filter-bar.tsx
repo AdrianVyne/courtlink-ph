@@ -217,7 +217,7 @@ export function FilterBar({
           <SlidersHorizontal aria-hidden="true" size={17} />
           Filters
           {chips.length > 0 ? (
-            <span className="inline-flex size-5 items-center justify-center rounded-full bg-court-700 text-xs font-bold text-white">
+            <span className="inline-flex size-5 items-center justify-center rounded-full bg-court-700 text-xs font-bold text-white dark:bg-lime-400 dark:text-court-950">
               {chips.length}
             </span>
           ) : null}

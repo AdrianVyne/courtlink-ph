@@ -2,7 +2,10 @@ import { Button, CourtLines } from "../ui";
 
 export function CtaBand() {
   return (
-    <section aria-labelledby="cta" className="relative overflow-hidden bg-court-700 px-[5vw] py-20">
+    <section
+      aria-labelledby="cta"
+      className="relative overflow-hidden bg-court-700 px-[5vw] py-20 dark:bg-[#14472f]"
+    >
       <CourtLines
         className="pointer-events-none absolute -right-16 -top-10 w-96 rotate-6 text-white/10"
         variant="field"

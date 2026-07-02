@@ -1,5 +1,5 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiteHeader } from "./site-header";
 
 vi.mock("next/navigation", () => ({
@@ -7,7 +7,22 @@ vi.mock("next/navigation", () => ({
   usePathname: () => "/",
 }));
 
-afterEach(cleanup);
+beforeEach(() => {
+  // jsdom has no matchMedia; the embedded ThemeToggle resolves "system" with it.
+  vi.stubGlobal(
+    "matchMedia",
+    vi.fn().mockReturnValue({
+      matches: false,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }),
+  );
+});
+
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 describe("SiteHeader", () => {
   it("shows primary navigation and guest actions when there is no session", () => {

@@ -58,7 +58,24 @@ Last updated: 2026-07-03 (Asia/Manila)
   compared `getPublicStats()` to `venue.count()` from two different read-committed snapshots, so
   a parallel test file's cleanup between the reads made approved-count exceed total-count. Both
   reads now run inside one `RepeatableRead` transaction.
-- Resume from here: Phase 9 (dark mode + motion polish) — first unchecked phase in the plan.
+- Phase 9 complete (2026-07-03): dark mode + motion polish. `[data-theme="dark"]` palette-variable
+  remap in `globals.css` (warm green-ink surfaces `#0f1713`→`#16211a`→`#1c2921`, AA ratios
+  documented in the CSS comment), `@custom-variant dark`, three-line `.bg-white` card override,
+  scoped sand-var restore for always-dark `bg-court-950` bands. In dark, primary actions flip to
+  lime with `court-950` text (Button primary + header/mobile CTAs + filter badge + active tab);
+  focus rings go lime. `components/theme-toggle.tsx` (system→light→dark cycle, `courtlink-theme`
+  in localStorage, 3 unit tests) mounted in header (md+) and mobile drawer; pre-paint inline
+  script + `suppressHydrationWarning` in `layout.tsx`; dual `themeColor` viewport. Motion: card
+  hover lift + `shadow-float` behind `motion-safe:`. E2e: axe suite runs both themes (20 checks),
+  toggle persistence + pre-paint test, reduced-motion animation assertion, dark visual snapshots
+  (landing/courts × 375/1280) plus refreshed light 1280 baselines (header now shows the toggle);
+  `e2e/screenshot.css` hides the Next dev overlay from screenshots via `stylePath`.
+- Session gotcha (2026-07-03): the Next 16 persistent dev cache under `apps/web/.next` served
+  stale layout/header SSR after edits made while no dev server was running — visual baselines
+  captured without the toggle/theme script, masked by `maxDiffPixelRatio: 0.02`. If a snapshot
+  looks stale after editing shared components, delete `apps/web/.next` and regenerate.
+- Resume from here: Phase 10 (performance audit + Lighthouse, optional Leaflet map view, final
+  audit doc + README refresh) — first unchecked phase in the plan.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.

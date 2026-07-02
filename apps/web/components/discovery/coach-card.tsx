@@ -7,7 +7,7 @@ import { Avatar } from "../ui";
 export function CoachCard({ coach }: { coach: CoachProfileSummary }) {
   return (
     <Link
-      className="flex h-full flex-col gap-3 rounded-(--radius-card) border border-sand-200 bg-white p-5 transition-colors hover:border-court-400"
+      className="flex h-full flex-col gap-3 rounded-(--radius-card) border border-sand-200 bg-white p-5 transition-[border-color,box-shadow,transform] duration-200 ease-out hover:border-court-400 hover:shadow-float motion-safe:hover:-translate-y-0.5"
       href={`/coaches/${coach.id}`}
     >
       <div className="flex items-center gap-3">

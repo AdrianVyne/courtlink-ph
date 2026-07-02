@@ -225,10 +225,10 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 - Modify: `apps/web/components/site-header.tsx`, `mobile-nav.tsx` (mount toggle)
 - Modify: `apps/web/e2e/` (axe both themes; toggle persistence test), visual snapshots for dark landing + courts
 
-- [ ] **Step 1:** define dark overrides under `[data-theme="dark"]` (and `@custom-variant dark ([data-theme="dark"] &);` for `dark:` utilities): surfaces from `court-950`→`#0f1713` ramp, text `sand-100`, borders `#243a2e`, semantic tone pairs re-checked to AA (document contrast ratios in the commit message or a comment).
-- [ ] **Step 2 (TDD):** ThemeToggle unit test (cycles value, writes localStorage, sets `data-theme`); inline script in layout reads localStorage/`prefers-color-scheme` before paint (`dangerouslySetInnerHTML`, < 15 lines).
-- [ ] **Step 3:** finalize landing reveal + hover micro-interactions; verify reduced-motion disables all of it (e2e: emulate `reducedMotion: "reduce"`, assert no animation styles).
-- [ ] **Step 4:** e2e: axe suite parameterized over both themes; toggle persists across reload. Add dark visual snapshots. Gate, commit `"feat(web): dark mode with pre-paint theme script and motion polish"`, push, update `PAUSE.md`.
+- [x] **Step 1:** define dark overrides under `[data-theme="dark"]` (and `@custom-variant dark ([data-theme="dark"] &);` for `dark:` utilities): surfaces from `court-950`→`#0f1713` ramp, text `sand-100`, borders `#243a2e`, semantic tone pairs re-checked to AA (document contrast ratios in the commit message or a comment). (Ratios documented in the `globals.css` comment.)
+- [x] **Step 2 (TDD):** ThemeToggle unit test (cycles value, writes localStorage, sets `data-theme`); inline script in layout reads localStorage/`prefers-color-scheme` before paint (`dangerouslySetInnerHTML`, < 15 lines).
+- [x] **Step 3:** finalize landing reveal + hover micro-interactions; verify reduced-motion disables all of it (e2e: emulate `reducedMotion: "reduce"`, assert no animation styles). (Card hover lift + shadow behind `motion-safe:`; hero reveal asserted `animation-name: none` under reduce.)
+- [x] **Step 4:** e2e: axe suite parameterized over both themes; toggle persists across reload. Add dark visual snapshots. Gate, commit `"feat(web): dark mode with pre-paint theme script and motion polish"`, push, update `PAUSE.md`.
 
 ### Phase 10: Performance audit, optional map view, final report
 

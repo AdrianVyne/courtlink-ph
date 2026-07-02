@@ -15,14 +15,14 @@ export function VenueCard({
 }) {
   return (
     <Link
-      className="group flex h-full flex-col overflow-hidden rounded-(--radius-card) border border-sand-200 bg-white transition-colors hover:border-court-400"
+      className="group flex h-full flex-col overflow-hidden rounded-(--radius-card) border border-sand-200 bg-white transition-[border-color,box-shadow,transform] duration-200 ease-out hover:border-court-400 hover:shadow-float motion-safe:hover:-translate-y-0.5"
       href={`/courts/${venue.slug}`}
     >
       {venue.coverPhotoUrl ? (
         <div className="relative h-28 overflow-hidden bg-sand-100">
           <Image
             alt={venue.coverPhotoAltText ?? `${venue.name} court photo`}
-            className="object-cover transition-transform duration-200 group-hover:scale-[1.02]"
+            className="object-cover transition-transform duration-200 motion-safe:group-hover:scale-[1.02]"
             fill
             sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
             src={venue.coverPhotoUrl}

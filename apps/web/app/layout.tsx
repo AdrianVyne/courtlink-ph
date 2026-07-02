@@ -30,12 +30,31 @@ export const metadata: Metadata = {
   },
 };
 
-export const viewport = { themeColor: "#236b48" };
+export const viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#236b48" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f1713" },
+  ],
+};
+
+// Runs before paint so a stored dark preference never flashes light.
+// Mirrors ThemeToggle: "dark"/"light" win, anything else falls back to the OS.
+const themeInitScript = `(function () {
+  try {
+    var p = localStorage.getItem("courtlink-theme");
+    var dark = p === "dark" || (p !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
+  } catch (e) {}
+})();`;
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${sans.variable} ${mono.variable} ${display.variable}`}>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: static theme bootstrap, no user input
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: static JSON-LD, no user input
           dangerouslySetInnerHTML={{ __html: jsonLdScript(organizationJsonLd()) }}

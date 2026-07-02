@@ -1,0 +1,8 @@
+/*
+ * Applied by toHaveScreenshot via stylePath. The Next dev overlay can pop an
+ * error badge when Playwright's caret-hiding style races hydration on a cold
+ * dev-server compile; it must never appear in committed baselines.
+ */
+nextjs-portal {
+  display: none !important;
+}

@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import path from "node:path";
+import { expect, type Page, test } from "@playwright/test";
 
 /**
  * Visual regression net. Baselines live in e2e/__screenshots__/ and are
@@ -21,21 +22,49 @@ const viewports = [
   { width: 1280, height: 800, label: "1280" },
 ];
 
-for (const { path, name } of pages) {
+const darkPages = [
+  { path: "/", name: "landing" },
+  { path: "/courts", name: "courts" },
+];
+
+async function snap(
+  page: Page,
+  target: string,
+  viewport: { width: number; height: number },
+  file: string,
+) {
+  await page.setViewportSize(viewport);
+  await page.goto(target, { waitUntil: "load" });
+  await expect(page.locator("main")).toBeVisible();
+  await page.evaluate(() => document.fonts.ready);
+  await expect(page).toHaveScreenshot(file, {
+    fullPage: true,
+    animations: "disabled",
+    stylePath: path.join(__dirname, "screenshot.css"),
+  });
+}
+
+for (const { path: target, name } of pages) {
   for (const viewport of viewports) {
     test(`${name} at ${viewport.label}px matches baseline`, async ({ page }) => {
       test.skip(
         !!process.env.CI,
         "Baselines are rendered on Windows; Linux CI font rendering differs. Run visual checks locally.",
       );
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await page.goto(path, { waitUntil: "load" });
-      await expect(page.locator("main")).toBeVisible();
-      await page.evaluate(() => document.fonts.ready);
-      await expect(page).toHaveScreenshot(`${name}-${viewport.label}.png`, {
-        fullPage: true,
-        animations: "disabled",
-      });
+      await snap(page, target, viewport, `${name}-${viewport.label}.png`);
+    });
+  }
+}
+
+for (const { path: target, name } of darkPages) {
+  for (const viewport of viewports) {
+    test(`${name} (dark) at ${viewport.label}px matches baseline`, async ({ page }) => {
+      test.skip(
+        !!process.env.CI,
+        "Baselines are rendered on Windows; Linux CI font rendering differs. Run visual checks locally.",
+      );
+      await page.addInitScript(() => window.localStorage.setItem("courtlink-theme", "dark"));
+      await snap(page, target, viewport, `${name}-dark-${viewport.label}.png`);
     });
   }
 }

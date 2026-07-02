@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { SessionUser } from "../lib/api";
 import { LogoutButton } from "./logout-button";
 import { primaryNav } from "./nav-links";
+import { ThemeToggle } from "./theme-toggle";
 
 export function MobileNav({ session }: { session: SessionUser | null }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -49,6 +50,9 @@ export function MobileNav({ session }: { session: SessionUser | null }) {
         <div className="flex h-full flex-col gap-6 p-6">
           <div className="flex items-center justify-between">
             <span className="font-display text-lg font-bold text-court-800">Menu</span>
+            <span className="ml-auto mr-2 inline-flex">
+              <ThemeToggle />
+            </span>
             <button
               className="inline-flex size-10 items-center justify-center rounded-(--radius-control) border border-sand-200 text-ink-700 hover:border-court-700"
               onClick={closeDrawer}
@@ -99,7 +103,7 @@ export function MobileNav({ session }: { session: SessionUser | null }) {
                   Log in
                 </Link>
                 <Link
-                  className="inline-flex min-h-12 items-center justify-center rounded-(--radius-control) bg-court-700 px-5 font-semibold text-white hover:bg-court-800"
+                  className="inline-flex min-h-12 items-center justify-center rounded-(--radius-control) bg-court-700 px-5 font-semibold text-white hover:bg-court-800 dark:bg-lime-400 dark:text-court-950 dark:hover:bg-lime-300"
                   href="/register"
                   onClick={closeDrawer}
                 >
