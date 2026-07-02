@@ -27,6 +27,9 @@
     },
     "typecheck": {
       "dependsOn": ["^typecheck"]
+    },
+    "@courtlink/database#typecheck": {
+      "dependsOn": ["@courtlink/database#build"]
     }
   }
 }
