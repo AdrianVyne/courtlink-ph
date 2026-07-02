@@ -236,9 +236,9 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 - Create: `docs/verification/2026-XX-XX-web-redesign-audit.md`
 - Optional: `apps/web/components/discovery/venue-map.tsx` (dynamic import, Leaflet + OSM tiles, markers from lat/lng, list/map toggle on `/courts`)
 
-- [ ] **Step 1:** production build (`pnpm build`), run `npx lighthouse http://localhost:3000 --preset=perf --form-factor=mobile` (and `/courts`) against `next start`; record scores; fix regressions until performance ≥ 90 mobile (typical fixes: font preload, image sizes, third-party-free landing).
-- [ ] **Step 2 (optional, only if Steps 1 is done and stable):** map toggle with `leaflet` + `react-leaflet` behind `next/dynamic` (`ssr: false`); markers only for venues with coordinates; keyboard-accessible fallback list always present; axe on map view.
-- [ ] **Step 3:** write the audit doc: what shipped per phase, gate results, Lighthouse numbers, axe status, snapshot inventory, known gaps. Update `README.md` features/tech table (screenshots section optional), refresh `PAUSE.md` to point at the audit. Commit `"docs: web redesign audit and readme refresh"` (+ `"feat(web): optional map view"` separately if built), push.
+- [x] **Step 1:** production build (`pnpm build`), run `npx lighthouse http://localhost:3000 --preset=perf --form-factor=mobile` (and `/courts`) against `next start`; record scores; fix regressions until performance ≥ 90 mobile (typical fixes: font preload, image sizes, third-party-free landing). (Landing 95, courts 98 after the hero-headline LCP fix — see the audit doc.)
+- [x] **Step 2 (optional, only if Steps 1 is done and stable):** map toggle with `leaflet` + `react-leaflet` behind `next/dynamic` (`ssr: false`); markers only for venues with coordinates; keyboard-accessible fallback list always present; axe on map view. (Deliberately skipped — venues carry no coordinates yet; recorded as a known gap in the audit doc.)
+- [x] **Step 3:** write the audit doc: what shipped per phase, gate results, Lighthouse numbers, axe status, snapshot inventory, known gaps. Update `README.md` features/tech table (screenshots section optional), refresh `PAUSE.md` to point at the audit. Commit `"docs: web redesign audit and readme refresh"` (+ `"feat(web): optional map view"` separately if built), push. (Audit: `docs/verification/2026-07-03-web-redesign-audit.md`.)
 
 ---
 

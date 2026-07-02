@@ -4,12 +4,13 @@ Last updated: 2026-07-03 (Asia/Manila)
 
 ## Resume prompt
 
-> Resume CourtLink PH from `PAUSE.md`. Current effort: the web experience redesign. Read
-> `docs/superpowers/specs/2026-07-02-web-experience-redesign-design.md` and execute
-> `docs/superpowers/plans/2026-07-02-web-experience-redesign.md` phase by phase from the first
-> unchecked phase. Work on `main`; run the phase gate (`pnpm check` +
-> `pnpm --filter @courtlink/web test:e2e`) before each commit; push after each phase; plain
-> commit messages without co-author trailers; update `PAUSE.md` before stopping.
+> Resume CourtLink PH from `PAUSE.md`. **The web experience redesign is complete** — all 10
+> phases of `docs/superpowers/plans/2026-07-02-web-experience-redesign.md` are checked off and
+> the final audit lives at `docs/verification/2026-07-03-web-redesign-audit.md`. There is no
+> active effort; pick up the next task from the owner or the known operational items below.
+> House rules: work on `main`; gate with `pnpm check` + `pnpm --filter @courtlink/web test:e2e`
+> before each commit; plain commit messages without co-author trailers; update `PAUSE.md`
+> before stopping.
 
 ## Current checkpoint
 
@@ -74,8 +75,15 @@ Last updated: 2026-07-03 (Asia/Manila)
   stale layout/header SSR after edits made while no dev server was running — visual baselines
   captured without the toggle/theme script, masked by `maxDiffPixelRatio: 0.02`. If a snapshot
   looks stale after editing shared components, delete `apps/web/.next` and regenerate.
-- Resume from here: Phase 10 (performance audit + Lighthouse, optional Leaflet map view, final
-  audit doc + README refresh) — first unchecked phase in the plan.
+- Phase 10 complete (2026-07-03): production Lighthouse (mobile perf preset, `next start` + API):
+  landing **95**, courts **98** — landing was 89 until the hero-headline LCP fix (`.reveal-solid`
+  rises without fading; the h1 is the LCP element). Optional map view deliberately skipped
+  (venues have no coordinates yet) and recorded as a known gap. Final audit:
+  `docs/verification/2026-07-03-web-redesign-audit.md`; README features/tech/verification
+  refreshed (also repaired mojibake em-dashes from an old encoding accident).
+- **The 10-phase web redesign effort is finished.** All phases checked off in the plan; every
+  phase gated (pnpm check, functional e2e, visual snapshots, integration where relevant) and
+  pushed; CI green on `main`.
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
