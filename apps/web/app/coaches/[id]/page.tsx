@@ -7,7 +7,9 @@ import { SiteHeader } from "../../../components/site-header";
 import { Avatar, Button, Card } from "../../../components/ui";
 import { type PublicCoachDetail, type VenueReviews, apiFetch } from "../../../lib/api";
 import { peso } from "../../../lib/format";
+import { coachJsonLd, jsonLdScript } from "../../../lib/jsonld";
 import { getSession } from "../../../lib/session";
+import { absoluteUrl } from "../../../lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -34,18 +36,18 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { id } = await params;
   const coach = await loadCoach(id);
-  if (!coach) return { title: "Coach not found | CourtLink PH" };
+  if (!coach) return { title: "Coach not found" };
   const description = coach.bio
-    ? `${coach.bio.slice(0, 150)}${coach.bio.length > 150 ? "..." : ""}`
+    ? `${coach.bio.slice(0, 150)}${coach.bio.length > 150 ? "…" : ""}`
     : `Book ${coach.displayName} for pickleball coaching in the Philippines.`;
   return {
-    title: `${coach.displayName} | Pickleball Coach | CourtLink PH`,
+    title: `${coach.displayName} — pickleball coach`,
     description,
+    alternates: { canonical: absoluteUrl(`/coaches/${coach.id}`) },
     openGraph: {
-      title: `${coach.displayName} — Pickleball Coach`,
+      title: `${coach.displayName} — pickleball coach`,
       description,
       type: "profile",
-      siteName: "CourtLink PH",
     },
   };
 }
@@ -74,6 +76,11 @@ export default async function CoachProfilePage({ params }: { params: Promise<{ i
   return (
     <>
       <SiteHeader session={session} />
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: jsonLdScript escapes user-authored text
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(coachJsonLd(coach, reviews.rating)) }}
+        type="application/ld+json"
+      />
       <main className="mx-auto w-full max-w-4xl px-[5vw] py-8">
         <nav aria-label="Breadcrumb" className="mb-6 text-sm text-ink-500">
           <Link className="font-semibold text-court-800 hover:underline" href="/coaches">

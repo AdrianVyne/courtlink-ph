@@ -50,6 +50,25 @@ test.describe("footer", () => {
       await expect(footer).toContainText("GCash");
     });
   }
+
+  const footerDestinations = [
+    { href: "/about", heading: "Built for Filipino pickleball" },
+    { href: "/contact", heading: "Get in touch" },
+    { href: "/faq", heading: "Fair questions, straight answers" },
+    { href: "/terms", heading: "Terms of service" },
+    { href: "/privacy", heading: "Privacy" },
+  ];
+
+  for (const destination of footerDestinations) {
+    test(`footer link ${destination.href} resolves to its content page`, async ({ page }) => {
+      await page.goto("/");
+      await page.getByRole("contentinfo").locator(`a[href="${destination.href}"]`).click();
+      await expect(page).toHaveURL(new RegExp(`${destination.href}$`));
+      await expect(page.getByRole("heading", { level: 1, name: destination.heading })).toBeVisible({
+        timeout: 20000,
+      });
+    });
+  }
 });
 
 test.describe("system pages", () => {

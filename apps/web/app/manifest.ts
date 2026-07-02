@@ -7,6 +7,7 @@ export default function manifest(): MetadataRoute.Manifest {
     description: "Book pickleball courts and coaches across the Philippines.",
     start_url: "/",
     display: "standalone",
+    categories: ["sports", "lifestyle"],
     background_color: "#f4f7f4",
     theme_color: "#236b48",
     icons: [

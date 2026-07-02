@@ -121,8 +121,56 @@ test.describe("detail pages (need a seeded API)", () => {
   });
 });
 
+test.describe("seo endpoints", () => {
+  test("sitemap.xml responds with the static routes", async ({ request }) => {
+    const response = await request.get("/sitemap.xml");
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    for (const path of ["/courts", "/about", "/terms", "/privacy"]) {
+      expect(body).toContain(`${path}</loc>`);
+    }
+  });
+
+  test("robots.txt allows crawling and points at the sitemap", async ({ request }) => {
+    const response = await request.get("/robots.txt");
+    expect(response.status()).toBe(200);
+    const body = await response.text();
+    expect(body).toContain("Allow: /");
+    expect(body).toContain("/sitemap.xml");
+  });
+
+  test("the opengraph image renders", async ({ request }) => {
+    const response = await request.get("/opengraph-image", { timeout: 30000 });
+    expect(response.status()).toBe(200);
+    expect(response.headers()["content-type"]).toContain("image/png");
+  });
+
+  test("venue structured data is embedded on detail pages", async ({ page, request }) => {
+    const response = await request.get("/api/v1/venues").catch(() => null);
+    test.skip(!response || !response.ok(), "API is not running");
+    const venues = (await response?.json()) as Array<{ slug: string }>;
+    test.skip(!Array.isArray(venues) || venues.length === 0, "no venues seeded");
+
+    await page.goto(`/courts/${venues[0]?.slug}`);
+    const jsonLd = await page.locator('script[type="application/ld+json"]').last().textContent();
+    const data = JSON.parse(jsonLd ?? "{}") as Record<string, unknown>;
+    expect(data["@type"]).toBe("SportsActivityLocation");
+  });
+});
+
 test.describe("accessibility (WCAG 2.2 AA)", () => {
-  const pages = ["/", "/courts", "/coaches", "/login", "/register"];
+  const pages = [
+    "/",
+    "/courts",
+    "/coaches",
+    "/login",
+    "/register",
+    "/about",
+    "/contact",
+    "/faq",
+    "/terms",
+    "/privacy",
+  ];
 
   for (const path of pages) {
     test(`${path} passes axe accessibility audit`, async ({ page }) => {

@@ -1,4 +1,5 @@
 import { MapPin, Star } from "lucide-react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { CourtBooking } from "../../../components/court-booking";
 import { CoverPlaceholder } from "../../../components/discovery/cover-placeholder";
@@ -16,7 +17,9 @@ import {
   type VenueSummary,
   apiFetch,
 } from "../../../lib/api";
+import { jsonLdScript, venueJsonLd } from "../../../lib/jsonld";
 import { getSession } from "../../../lib/session";
+import { absoluteUrl } from "../../../lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +70,29 @@ function formatWhen(iso: string): string {
   return new Date(iso).toLocaleDateString("en-PH", { dateStyle: "medium" });
 }
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const venue = await loadVenue(slug);
+  if (!venue) return { title: "Venue not found" };
+  const description = venue.description
+    ? `${venue.description.slice(0, 150)}${venue.description.length > 150 ? "…" : ""}`
+    : `Book pickleball courts at ${venue.name} in ${venue.cityMunicipality} — pay the venue directly, no markup.`;
+  return {
+    title: `${venue.name} — pickleball courts in ${venue.cityMunicipality}`,
+    description,
+    alternates: { canonical: absoluteUrl(`/courts/${venue.slug}`) },
+    openGraph: {
+      title: venue.name,
+      description,
+      type: "website",
+    },
+  };
+}
+
 export default async function VenueDetailPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const [venue, session] = await Promise.all([loadVenue(slug), getSession()]);
@@ -86,6 +112,11 @@ export default async function VenueDetailPage({ params }: { params: Promise<{ sl
   return (
     <>
       <SiteHeader session={session} />
+      <script
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: jsonLdScript escapes user-authored text
+        dangerouslySetInnerHTML={{ __html: jsonLdScript(venueJsonLd(venue, reviews.rating)) }}
+        type="application/ld+json"
+      />
       <main className="mx-auto w-full max-w-6xl px-[5vw] py-8">
         {/* Gallery slot: real photos arrive in Phase 8 of the redesign plan. */}
         <CoverPlaceholder className="h-44 rounded-(--radius-card) sm:h-56" seed={venue.slug} />

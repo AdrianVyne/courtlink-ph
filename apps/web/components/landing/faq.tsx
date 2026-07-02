@@ -1,6 +1,6 @@
 import { ChevronDown } from "lucide-react";
 
-const items = [
+export const landingFaqItems = [
   {
     question: "How do booking holds work?",
     answer:
@@ -47,7 +47,7 @@ export function Faq() {
           </h2>
         </div>
         <div className="flex flex-col gap-3">
-          {items.map((item) => (
+          {landingFaqItems.map((item) => (
             <details
               className="group rounded-(--radius-card) border border-sand-200 bg-white open:border-court-400"
               key={item.question}

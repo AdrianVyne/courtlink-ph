@@ -22,7 +22,7 @@ Last updated: 2026-07-02 (Asia/Manila)
   users. Squash merge is the only enabled merge method. Secret scanning and push protection are on;
   private vulnerability reporting and Dependabot security updates are enabled.
 - Active effort: **web experience redesign** - spec and 10-phase plan committed 2026-07-02.
-- Phase status: Phases 1-5 complete. Phase 1: tokens, display font, `components/ui/`
+- Phase status: Phases 1-6 complete. Phase 1: tokens, display font, `components/ui/`
   primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
   loading pages, visual snapshot harness (`apps/web/e2e/__screenshots__/`). Phase 3: landing
   rebuild (hero search, live-stats strip via new `GET /api/v1/stats/public`, how-it-works
@@ -30,8 +30,22 @@ Last updated: 2026-07-02 (Asia/Manila)
   FilterBar with removable chips + mobile sheet, VenueCard/CoachCard/CoverPlaceholder,
   venue + coach detail pages migrated, legacy discovery CSS removed. Phase 5: Toast+Countdown
   primitives, workspaces (dashboard/manage/coach/admin/notifications) on WorkspaceShell with
-  StatusPill, toasts, loading buttons; auth pages with password toggle. Next: Phase 6
-  (trust pages and SEO).
+  StatusPill, toasts, loading buttons; auth pages with password toggle. Phase 6: trust pages
+  (/about /contact /faq /terms /privacy on shared `ContentPage`), `lib/site.ts` +
+  `lib/jsonld.ts` (venue/coach/organization JSON-LD with escaping serializer, 13 unit tests),
+  layout title template + OG defaults + `metadataBase`, venue detail `generateMetadata`,
+  sitemap/robots/opengraph-image routes, manifest categories, `SITE_URL` in `.env.example`;
+  e2e now navigates footer links, axe covers all 10 public routes, SEO endpoints smoke-tested.
+  Also fixed `e2e/helpers.ts` `loginAs` (pre-hydration native form submit made the dashboard
+  axe test skip silently; it now waits for networkidle and sniffs the login POST with retries).
+  Next: Phase 7 (legacy CSS retirement).
+- E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
+  the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
+  the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
+- Local API env (no `.env` file in checkout): DATABASE_URL/REDIS_URL as below plus
+  SESSION_SECRET (any 32+ chars), ENCRYPTION_KEY (32-byte base64), OBJECT_STORAGE_ENDPOINT
+  `http://localhost:9000`, OBJECT_STORAGE_BUCKET `courtlink-private`, OBJECT_STORAGE_ACCESS_KEY
+  `courtlink`, OBJECT_STORAGE_SECRET_KEY `courtlink-dev-secret` (matches compose MinIO).
 - CI on `main` is green as of commit `98010f8`: GitHub Actions run `28571832540` (`CI` / `verify`)
   passed, and run `28571832579` (`Docker images`) passed for api, worker, and web images. The three
   Dependabot alerts opened after enabling security updates (`@hono/node-server`, `postcss`,
