@@ -2,7 +2,7 @@
 
 import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { type FormEvent, useState } from "react";
+import type { FormEvent } from "react";
 import { Button } from "../ui";
 
 const durations = [
@@ -11,16 +11,21 @@ const durations = [
   { value: "120", label: "2 hours" },
 ];
 
+/**
+ * Uncontrolled on purpose: values are read from the form at submit, and the
+ * native action="/courts" GET works even before hydration (or without JS).
+ */
 export function HeroSearch() {
   const router = useRouter();
-  const [city, setCity] = useState("");
-  const [date, setDate] = useState("");
-  const [durationMin, setDurationMin] = useState("60");
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const city = String(data.get("city") ?? "").trim();
+    const date = String(data.get("date") ?? "");
+    const durationMin = String(data.get("durationMin") ?? "60");
     const params = new URLSearchParams();
-    if (city.trim()) params.set("city", city.trim());
+    if (city) params.set("city", city);
     if (date) {
       params.set("date", date);
       params.set("durationMin", durationMin);
@@ -31,8 +36,10 @@ export function HeroSearch() {
 
   return (
     <form
+      action="/courts"
       aria-label="Search courts"
       className="mx-auto mt-14 grid w-full max-w-3xl gap-3 rounded-2xl border border-sand-200 bg-white/95 p-4 text-left shadow-(--shadow-float) sm:grid-cols-[1.2fr_1fr_1fr_auto] sm:items-end"
+      method="get"
       onSubmit={submit}
     >
       <label className="flex flex-col gap-1.5">
@@ -40,10 +47,8 @@ export function HeroSearch() {
         <input
           className="min-h-11 rounded-(--radius-control) border border-sand-200 bg-white px-3.5 text-ink-900 focus:border-court-700 focus:outline-2 focus:outline-court-700/30"
           name="city"
-          onChange={(event) => setCity(event.target.value)}
           placeholder="e.g. Cebu City"
           type="text"
-          value={city}
         />
       </label>
       <label className="flex flex-col gap-1.5">
@@ -51,18 +56,15 @@ export function HeroSearch() {
         <input
           className="min-h-11 rounded-(--radius-control) border border-sand-200 bg-white px-3.5 text-ink-900 focus:border-court-700 focus:outline-2 focus:outline-court-700/30"
           name="date"
-          onChange={(event) => setDate(event.target.value)}
           type="date"
-          value={date}
         />
       </label>
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-bold uppercase tracking-widest text-ink-500">Duration</span>
         <select
           className="min-h-11 rounded-(--radius-control) border border-sand-200 bg-white px-3 text-ink-900 focus:border-court-700 focus:outline-2 focus:outline-court-700/30"
+          defaultValue="60"
           name="durationMin"
-          onChange={(event) => setDurationMin(event.target.value)}
-          value={durationMin}
         >
           {durations.map((option) => (
             <option key={option.value} value={option.value}>

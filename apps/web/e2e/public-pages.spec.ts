@@ -9,13 +9,12 @@ test.describe("public pages", () => {
 
   test("hero search navigates to courts with the chosen city", async ({ page }) => {
     await page.goto("/");
-    const city = page.getByRole("textbox", { name: "City" });
-    // Retry the interaction until hydration has attached the submit handler.
-    await expect(async () => {
-      await city.fill("Cebu City");
-      await page.getByRole("button", { name: "Search courts" }).click();
-      await expect(page).toHaveURL(/\/courts\?city=Cebu(\+|%20)City/, { timeout: 2000 });
-    }).toPass();
+    // The form works pre-hydration too (native GET to /courts), so a single
+    // fill+submit is reliable; the generous timeout covers first compile of
+    // /courts on a cold dev server.
+    await page.getByRole("textbox", { name: "City" }).fill("Cebu City");
+    await page.getByRole("button", { name: "Search courts" }).click();
+    await expect(page).toHaveURL(/\/courts\?city=Cebu(\+|%20)City/, { timeout: 20000 });
   });
 
   test("faq accordion expands an answer", async ({ page }) => {

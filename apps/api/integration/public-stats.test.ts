@@ -22,6 +22,9 @@ afterAll(async () => {
   await prisma.coachProfile.deleteMany({
     where: { user: { email: { startsWith: `pstat-${marker}` } } },
   });
+  await prisma.passwordCredential.deleteMany({
+    where: { user: { email: { startsWith: `pstat-${marker}` } } },
+  });
   await prisma.user.deleteMany({ where: { email: { startsWith: `pstat-${marker}` } } });
   await prisma.$disconnect();
 });
@@ -61,7 +64,7 @@ describe("Public stats", () => {
       data: {
         email: `pstat-${marker}@test.courtlink.ph`,
         displayName: "PSTAT Coach",
-        passwordHash: "x",
+        credentials: { create: { passwordHash: "$argon2id$placeholder" } },
       },
     });
     await prisma.coachProfile.create({
