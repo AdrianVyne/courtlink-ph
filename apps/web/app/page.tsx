@@ -67,7 +67,7 @@ export default async function HomePage() {
               <ShieldCheck aria-hidden="true" size={15} />
               Pickleball courts &amp; coaches, PH-wide
             </p>
-            <h1 className="reveal reveal-1 m-0 mx-auto mt-6 max-w-4xl font-display text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.98] tracking-tight text-ink-900">
+            <h1 className="reveal-solid m-0 mx-auto mt-6 max-w-4xl font-display text-[clamp(2.8rem,7vw,5.5rem)] font-bold leading-[0.98] tracking-tight text-ink-900">
               Your next game is already out there.
             </h1>
             <p className="reveal reveal-2 m-0 mx-auto mt-6 max-w-xl text-lg leading-relaxed text-ink-500">

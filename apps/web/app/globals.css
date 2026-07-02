@@ -143,6 +143,24 @@
   animation: rise-in 550ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
+/*
+ * The hero headline is the landing page's LCP element: it must paint at
+ * full opacity on first render, so it rises without fading and skips the
+ * stagger delay.
+ */
+@keyframes rise-solid {
+  from {
+    transform: translateY(14px);
+  }
+  to {
+    transform: none;
+  }
+}
+
+.reveal-solid {
+  animation: rise-solid 550ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+
 .reveal-1 {
   animation-delay: 90ms;
 }
@@ -161,6 +179,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .reveal,
+  .reveal-solid,
   .reveal-1,
   .reveal-2,
   .reveal-3,
