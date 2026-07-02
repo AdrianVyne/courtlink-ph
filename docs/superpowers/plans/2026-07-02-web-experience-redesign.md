@@ -184,11 +184,11 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 - Modify: `apps/web/app/layout.tsx` (metadata: title template `"%s — CourtLink PH"`, OG defaults), venue + coach detail pages (`generateMetadata` + JSON-LD), `.env.example` (+`SITE_URL`), `apps/web/manifest.ts` (categories, maskable icon)
 - Test: `apps/web/lib/jsonld.test.ts`, `apps/web/lib/site.test.ts`; extend `e2e/public-pages.spec.ts`
 
-- [ ] **Step 1 (TDD):** failing unit tests: `absoluteUrl("/courts")` joins without double slash; `venueJsonLd` outputs `@type: "SportsActivityLocation"`, name, address locality, `aggregateRating` only when reviews exist.
-- [ ] **Step 2:** implement lib + pages. Content for about/terms/privacy/faq: write plainly from the spec's §Trust bullets and the product's actual behavior (direct payments, proof privacy/encryption, AGPL, moderation). Terms/privacy carry an honest preamble that they describe platform behavior and are not legal advice.
-- [ ] **Step 3:** sitemap pulls approved venue slugs + coach ids from the API with `try/catch []` fallback; robots allows all, points at sitemap; footer links from Phase 2 now resolve — update `shell.spec.ts` to actually navigate them; axe suite adds the five new routes.
-- [ ] **Step 4:** verify OG image renders: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/opengraph-image` → 200.
-- [ ] **Step 5:** gate, commit `"feat(web): trust pages, sitemap, robots, structured data, og images"`, push, update `PAUSE.md`.
+- [x] **Step 1 (TDD):** failing unit tests: `absoluteUrl("/courts")` joins without double slash; `venueJsonLd` outputs `@type: "SportsActivityLocation"`, name, address locality, `aggregateRating` only when reviews exist.
+- [x] **Step 2:** implement lib + pages. Content for about/terms/privacy/faq: write plainly from the spec's §Trust bullets and the product's actual behavior (direct payments, proof privacy/encryption, AGPL, moderation). Terms/privacy carry an honest preamble that they describe platform behavior and are not legal advice.
+- [x] **Step 3:** sitemap pulls approved venue slugs + coach ids from the API with `try/catch []` fallback; robots allows all, points at sitemap; footer links from Phase 2 now resolve — update `shell.spec.ts` to actually navigate them; axe suite adds the five new routes.
+- [x] **Step 4:** verify OG image renders: `curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/opengraph-image` → 200. (Verified via the `seo endpoints › the opengraph image renders` e2e test: 200 + `image/png`.)
+- [x] **Step 5:** gate, commit `"feat(web): trust pages, sitemap, robots, structured data, og images"`, push, update `PAUSE.md`.
 
 ### Phase 7: Legacy CSS retirement
 
