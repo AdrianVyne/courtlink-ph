@@ -8,6 +8,8 @@
       "!!**/.next",
       "!!**/coverage",
       "!!**/generated",
+      "!!**/playwright-report",
+      "!!**/test-results",
       "!!.worktrees",
       "!!static"
     ]

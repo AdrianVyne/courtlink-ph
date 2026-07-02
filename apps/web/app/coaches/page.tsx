@@ -1,5 +1,6 @@
 import { BadgeCheck } from "lucide-react";
 import Link from "next/link";
+import { SiteFooter } from "../../components/site-footer";
 import { SiteHeader } from "../../components/site-header";
 import { type CoachProfileSummary, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
@@ -18,9 +19,9 @@ export default async function CoachesPage() {
   const [coaches, session] = await Promise.all([loadCoaches(), getSession()]);
 
   return (
-    <main>
+    <>
       <SiteHeader session={session} />
-      <section className="page-band">
+      <main className="page-band">
         <div className="page-heading">
           <span className="kicker">Find a coach</span>
           <h1>Coaches</h1>
@@ -53,7 +54,8 @@ export default async function CoachesPage() {
             ))}
           </ul>
         )}
-      </section>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }

@@ -16,8 +16,12 @@ Last updated: 2026-07-02 (Asia/Manila)
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
 - Branch: `main` (marketplace feature-complete; see previous checkpoint below).
 - Active effort: **web experience redesign** — spec and 10-phase plan committed 2026-07-02.
-- Phase status: Phase 1 (design system foundation) complete — tokens, Bricolage Grotesque
-  display font, `components/ui/` primitives with 24 unit tests. Next: Phase 2 (app shell).
+- Phase status: Phases 1–2 complete. Phase 1: tokens, display font, `components/ui/`
+  primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
+  loading pages, visual snapshot harness (`apps/web/e2e/__screenshots__/`). Next: Phase 3
+  (landing page rebuild).
+- Known CI issue being addressed: `apps/api/integration/coach-flow.test.ts` ("accepts one
+  offer atomically…") flakes on CI with COACH_HOLD_EXPIRED — predates the redesign work.
 - Environment notes: root `node_modules` had a corrupt pnpm link tree (missing `tslib` under
   `@nestjs/core`) — fixed by full reinstall. `biome.json` now excludes `.worktrees`/`static`
   and enables `css.parser.tailwindDirectives`. Playwright Chromium reinstalled.

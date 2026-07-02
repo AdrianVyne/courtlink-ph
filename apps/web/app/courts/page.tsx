@@ -1,5 +1,6 @@
 import { MapPin } from "lucide-react";
 import Link from "next/link";
+import { SiteFooter } from "../../components/site-footer";
 import { SiteHeader } from "../../components/site-header";
 import { type AmenityCatalogEntry, type DiscoveryVenue, apiFetch } from "../../lib/api";
 import { getSession } from "../../lib/session";
@@ -55,9 +56,9 @@ export default async function CourtsPage({
   const selectedAmenities = new Set((params.amenities ?? "").split(",").filter(Boolean));
 
   return (
-    <main>
+    <>
       <SiteHeader session={session} />
-      <section className="page-band">
+      <main className="page-band">
         <div className="page-heading">
           <span className="kicker">Find a court</span>
           <h1>Pickleball venues</h1>
@@ -174,8 +175,9 @@ export default async function CourtsPage({
             ))}
           </ul>
         )}
-      </section>
-    </main>
+      </main>
+      <SiteFooter />
+    </>
   );
 }
 
