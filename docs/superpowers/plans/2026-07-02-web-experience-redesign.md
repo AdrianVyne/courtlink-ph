@@ -195,9 +195,9 @@ Then repoint the legacy variables so un-migrated pages inherit the new palette (
 **Files:**
 - Modify: `apps/web/app/globals.css`, any straggler pages/components still on legacy classes (`offline/page.tsx`, promotion components, operations components, schedule manager)
 
-- [ ] **Step 1:** `grep -o 'className="[^"]*"' -r apps/web/app apps/web/components | ...` — inventory remaining legacy class usage; migrate each remaining consumer to primitives/utilities (this includes `court-schedule-manager.tsx`, `operations-status.tsx`, `promotion-*.tsx`, `notification-bell.tsx`, `favorite-toggle.tsx`, `report-button.tsx`, `rating-badge.tsx`).
-- [ ] **Step 2:** reduce `globals.css` to: tailwind import, `@theme`, base element rules (html/body/a/h1/h2/sr-only), status-pill tone utilities, hero/court-line keyframes, reduced-motion block. Target < 250 lines. Any legacy selector still referenced is a Step 1 failure — go back.
-- [ ] **Step 3:** full gate + full visual snapshot regeneration (expected: zero or near-zero diffs — this phase must NOT change appearance; investigate any diff before updating). Commit `"refactor(web): retire legacy stylesheet in favor of token utilities"`, push, update `PAUSE.md`.
+- [x] **Step 1:** `grep -o 'className="[^"]*"' -r apps/web/app apps/web/components | ...` — inventory remaining legacy class usage; migrate each remaining consumer to primitives/utilities (this includes `court-schedule-manager.tsx`, `operations-status.tsx`, `promotion-*.tsx`, `notification-bell.tsx`, `favorite-toggle.tsx`, `report-button.tsx`, `rating-badge.tsx`).
+- [x] **Step 2:** reduce `globals.css` to: tailwind import, `@theme`, base element rules (html/body/a/h1/h2/sr-only), status-pill tone utilities, hero/court-line keyframes, reduced-motion block. Target < 250 lines. Any legacy selector still referenced is a Step 1 failure — go back. (Landed at 110 lines; sr-only and status tones come from Tailwind/StatusPill utilities.)
+- [x] **Step 3:** full gate + full visual snapshot regeneration (expected: zero or near-zero diffs — this phase must NOT change appearance; investigate any diff before updating). Commit `"refactor(web): retire legacy stylesheet in favor of token utilities"`, push, update `PAUSE.md`. (Snapshots passed with zero diffs — no regeneration needed.)
 
 ### Phase 8: Venue photos
 

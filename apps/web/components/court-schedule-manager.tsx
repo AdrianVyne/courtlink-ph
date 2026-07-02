@@ -10,8 +10,16 @@ import {
   type CourtSummary,
   apiFetch,
 } from "../lib/api";
+import { Button } from "./ui";
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+const fieldClasses = "flex min-w-[135px] flex-col gap-[0.35rem]";
+const labelClasses = "text-[0.72rem] font-bold uppercase tracking-[0.08em] text-ink-500";
+const inputClasses =
+  "min-h-[46px] rounded-[10px] border border-sand-200 bg-white px-[0.85rem] text-ink-900 " +
+  "focus:border-court-700 focus:outline-2 focus:outline-court-700/30 focus:outline-offset-1";
+const textButtonClasses = "w-fit cursor-pointer text-[0.9rem] font-semibold text-ink-700";
 
 interface EditableWindow {
   key: string;
@@ -148,32 +156,43 @@ export function CourtScheduleManager({
   }
 
   return (
-    <article className="schedule-manager">
-      <div className="court-card-head">
-        <h3>{court.name}</h3>
-        <span className="court-tag">Asia/Manila</span>
+    <article className="rounded-[12px] border border-sand-200 bg-white p-5">
+      <div className="flex items-center justify-between">
+        <h3 className="m-0 text-[1.1rem]">{court.name}</h3>
+        <span className="rounded-full bg-sand-50 px-[0.6rem] py-1 text-[0.74rem] font-bold uppercase text-ink-500">
+          Asia/Manila
+        </span>
       </div>
       {error ? (
-        <p className="form-error" role="alert">
+        <p
+          className="m-0 mt-3 rounded-[10px] border border-[#f1b5b0] bg-danger-bg px-[0.8rem] py-[0.6rem] text-[0.88rem] text-danger-fg"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}
 
       {canEdit ? (
-        <form className="schedule-hours" onSubmit={saveHours}>
+        <form className="mt-4 grid gap-[0.65rem]" onSubmit={saveHours}>
           {DAYS.map((day, dayOfWeek) => {
             const dayWindows = windows.filter((window) => window.dayOfWeek === dayOfWeek);
             return (
-              <fieldset className="schedule-day" key={day}>
-                <legend>{day}</legend>
-                {dayWindows.length === 0 ? <span className="court-note">Closed</span> : null}
+              <fieldset
+                className="m-0 grid gap-2 border-0 border-b border-sand-200 p-0 pb-3 pt-2"
+                key={day}
+              >
+                <legend className="p-0 text-[0.85rem] font-bold">{day}</legend>
+                {dayWindows.length === 0 ? (
+                  <span className="text-[0.88rem] text-ink-500">Closed</span>
+                ) : null}
                 {dayWindows.map((window, index) => {
                   const labelPrefix = dayWindows.length > 1 ? `${day} window ${index + 1}` : day;
                   return (
-                    <div className="schedule-window" key={window.key}>
-                      <label className="field">
-                        <span className="field-label">{labelPrefix} opens</span>
+                    <div className="flex flex-wrap items-end gap-2" key={window.key}>
+                      <label className={fieldClasses}>
+                        <span className={labelClasses}>{labelPrefix} opens</span>
                         <input
+                          className={inputClasses}
                           aria-label={`${labelPrefix} opens`}
                           inputMode="numeric"
                           pattern="(?:[01]\d|2[0-3]):[0-5]\d"
@@ -187,9 +206,10 @@ export function CourtScheduleManager({
                           required
                         />
                       </label>
-                      <label className="field">
-                        <span className="field-label">{labelPrefix} closes</span>
+                      <label className={fieldClasses}>
+                        <span className={labelClasses}>{labelPrefix} closes</span>
                         <input
+                          className={inputClasses}
                           aria-label={`${labelPrefix} closes`}
                           inputMode="numeric"
                           pattern="(?:(?:[01]\d|2[0-3]):[0-5]\d|24:00)"
@@ -204,7 +224,7 @@ export function CourtScheduleManager({
                         />
                       </label>
                       <button
-                        className="text-button"
+                        className={textButtonClasses}
                         type="button"
                         onClick={() =>
                           setWindows((current) => current.filter((item) => item.key !== window.key))
@@ -215,18 +235,22 @@ export function CourtScheduleManager({
                     </div>
                   );
                 })}
-                <button className="text-button" type="button" onClick={() => addWindow(dayOfWeek)}>
+                <button
+                  className={textButtonClasses}
+                  type="button"
+                  onClick={() => addWindow(dayOfWeek)}
+                >
                   Add {day} window
                 </button>
               </fieldset>
             );
           })}
-          <button className="button button-small" type="submit" disabled={pending}>
+          <Button className="w-fit" size="sm" type="submit" disabled={pending}>
             Save weekly hours
-          </button>
+          </Button>
         </form>
       ) : (
-        <div className="schedule-readonly">
+        <div className="mt-4 grid gap-1 [&_p]:m-0 [&_p]:text-[0.88rem] [&_p]:text-ink-500">
           {DAYS.map((day, dayOfWeek) => {
             const dayWindows = schedule.operatingHours.filter(
               (window) => window.dayOfWeek === dayOfWeek,
@@ -248,41 +272,44 @@ export function CourtScheduleManager({
         </div>
       )}
 
-      <h4>Upcoming closures</h4>
+      <h4 className="mb-3 mt-6">Upcoming closures</h4>
       {canEdit ? (
-        <form className="row-form" onSubmit={addClosure}>
-          <label className="field">
-            <span className="field-label">Closure starts</span>
-            <input name="startsAt" type="datetime-local" required />
+        <form className="mt-2 flex flex-wrap items-end gap-3" onSubmit={addClosure}>
+          <label className={fieldClasses}>
+            <span className={labelClasses}>Closure starts</span>
+            <input className={inputClasses} name="startsAt" type="datetime-local" required />
           </label>
-          <label className="field">
-            <span className="field-label">Closure ends</span>
-            <input name="endsAt" type="datetime-local" required />
+          <label className={fieldClasses}>
+            <span className={labelClasses}>Closure ends</span>
+            <input className={inputClasses} name="endsAt" type="datetime-local" required />
           </label>
-          <label className="field">
-            <span className="field-label">Closure reason</span>
-            <input name="reason" type="text" maxLength={500} />
+          <label className={fieldClasses}>
+            <span className={labelClasses}>Closure reason</span>
+            <input className={inputClasses} name="reason" type="text" maxLength={500} />
           </label>
-          <button className="button button-small" type="submit" disabled={pending}>
+          <Button size="sm" type="submit" disabled={pending}>
             Add closure
-          </button>
+          </Button>
         </form>
       ) : null}
       {schedule.closures.length === 0 ? (
-        <p className="empty-state">No upcoming closures.</p>
+        <p className="py-8 text-ink-500">No upcoming closures.</p>
       ) : (
-        <ul className="booking-list">
+        <ul className="m-0 mt-3 flex list-none flex-col gap-[0.6rem] p-0">
           {schedule.closures.map((closure: CourtClosure) => (
-            <li className="booking-row" key={closure.id}>
-              <div className="booking-main">
+            <li
+              className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-sand-200 bg-white px-4 py-[0.85rem]"
+              key={closure.id}
+            >
+              <div className="flex flex-col gap-[0.15rem]">
                 <strong>{closure.reason || "Court closed"}</strong>
-                <span className="booking-when">
+                <span className="text-[0.85rem]">
                   {formatManila(closure.startsAt)} - {formatManila(closure.endsAt)}
                 </span>
               </div>
               {canEdit ? (
                 <button
-                  className="text-button"
+                  className={textButtonClasses}
                   type="button"
                   disabled={pending}
                   onClick={() =>

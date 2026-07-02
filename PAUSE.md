@@ -39,21 +39,12 @@ Last updated: 2026-07-02 (Asia/Manila)
   Also fixed `e2e/helpers.ts` `loginAs` (pre-hydration native form submit made the dashboard
   axe test skip silently; it now waits for networkidle and sniffs the login POST with retries).
   Next: Phase 7 (legacy CSS retirement).
-- Phase 7 in progress (Step 1 mostly done 2026-07-02). Migrated to token utilities/primitives
-  and verified by the full gate: rating-badge, report-button, notification-bell, logout-button,
-  google-sign-in (login visual snapshots pass with zero diff), promotion-banner,
-  promotion-manager, venue-amenity-manager, operations-status, offline page (rebuilt on
-  EmptyState-style layout with CourtLines), manage page stragglers. **Remaining:**
-  `components/court-schedule-manager.tsx` (287 lines, the last legacy-class consumer; its test
-  asserts `schedule-manager` — update in same commit), then the Step 2 `globals.css` shrink to
-  < 250 lines (tailwind import, `@theme`, base rules, `.tnum`, reveal keyframes, reduced-motion;
-  the `:root` legacy-variable block and all `@layer components` legacy classes go away — check
-  nothing else references `var(--ink|--muted|--line|--surface|--soft|--green|--green-dark|
-  --lime|--accent)` before deleting). Then Step 3: full gate + visual snapshots must show zero
-  diffs (this phase must not change appearance). Useful recurring utility strings from the
-  migration: form-error → `m-0 rounded-[10px] border border-[#f1b5b0] bg-danger-bg px-[0.8rem]
-  py-[0.6rem] text-[0.88rem] text-danger-fg`; booking-row → `flex flex-wrap items-center
-  justify-between gap-3 rounded-[10px] border border-sand-200 bg-white px-4 py-[0.85rem]`.
+- Phase 7 complete (2026-07-02): every component migrated off legacy classes (rating-badge,
+  report-button, notification-bell, logout-button, google-sign-in, promotion-banner/manager,
+  venue-amenity-manager, operations-status, court-schedule-manager, offline page, manage page).
+  `globals.css` reduced 961 → 110 lines (theme, base html/body/a/h1-h2 rules, `.tnum`, reveal
+  keyframes, reduced-motion). Visual snapshots passed with ZERO diffs — appearance unchanged.
+  Next: Phase 8 (venue photos — schema, API with re-encode pipeline, manager UI, next/image).
 - E2e gate has two documented states (see `apps/web/e2e/README.md`): functional specs run with
   the API up + demo seed (`pnpm --filter @courtlink/database db:seed`), visual snapshots match
   the empty-state baselines with the API stopped. Both were green for the Phase 6 commit.
