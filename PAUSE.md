@@ -54,10 +54,14 @@ Last updated: 2026-07-02 (Asia/Manila)
   public `GET /venue-photos/:photoId` → 302 signed URL + Cache-Control 86400), wired in
   `venue.module.ts`; `PHOTO_NOT_FOUND`/`PHOTO_LIMIT_REACHED` added to the exception filter.
   Verified: pnpm check green, API boots, public route returns domain 404.
-  **Remaining for Phase 8:** integration test `apps/api/integration/venue-photos.test.ts`
-  (follow existing integration suite setup), discovery + venue detail responses
-  (`coverPhotoUrl` on discovery list, `photos[]` on detail — extend discovery repository and
-  the by-slug response), web: `components/manage/venue-photo-manager.tsx` (+ test; upload,
+  Venue detail `GET /venues/by-slug/:slug` now also returns
+  `photos: [{ id, altText, position, url }]` (url is the public redirect path
+  `/api/v1/venue-photos/:id`) — verified live against the seeded venue.
+  **Remaining for Phase 8:** `coverPhotoUrl` on discovery list responses (extend
+  `DiscoveryVenueCandidate`/service mapping — position-0 photo id → redirect path; update
+  discovery service tests), integration test `apps/api/integration/venue-photos.test.ts`
+  (follow existing integration suite setup), web: add `photos`/`coverPhotoUrl` to
+  `lib/api.ts` types, `components/manage/venue-photo-manager.tsx` (+ test; upload,
   swap-position buttons, delete, alt edit), wire manage page, venue cards/detail prefer real
   photos via `next/image` (add API host remote pattern to `next.config.ts`), owner-login e2e,
   then gate + commit.

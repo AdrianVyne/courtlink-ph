@@ -21,6 +21,8 @@ import { VenueService } from "./venue.service.js";
 import { DiscoveryService } from "./discovery.service.js";
 // biome-ignore lint/style/useImportType: AmenityService is injected by Nest at runtime.
 import { AmenityService } from "../amenities/amenity.service.js";
+// biome-ignore lint/style/useImportType: VenuePhotoService is injected by Nest at runtime.
+import { VenuePhotoService } from "./venue-photos.service.js";
 
 const slugSchema = z
   .string()
@@ -76,6 +78,7 @@ export class VenueController {
     private readonly tenancyService: TenancyService,
     private readonly discovery: DiscoveryService,
     private readonly amenities: AmenityService,
+    private readonly photos: VenuePhotoService,
   ) {}
 
   @Public()
@@ -111,8 +114,20 @@ export class VenueController {
     if (venue?.status !== "APPROVED") {
       throw new BadRequestException({ code: "VENUE_NOT_FOUND" });
     }
-    const amenities = await this.amenities.listVenueAmenities(venue.id);
-    return { ...venue, amenities: amenities.map((entry) => entry.key) };
+    const [amenities, photos] = await Promise.all([
+      this.amenities.listVenueAmenities(venue.id),
+      this.photos.listForVenue(venue.id),
+    ]);
+    return {
+      ...venue,
+      amenities: amenities.map((entry) => entry.key),
+      photos: photos.map((photo) => ({
+        id: photo.id,
+        altText: photo.altText,
+        position: photo.position,
+        url: `/api/v1/venue-photos/${photo.id}`,
+      })),
+    };
   }
 
   @Get(":id/amenities")
