@@ -68,6 +68,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @courtlink/web exec playwright install --with-deps chromium
       - run: pnpm --filter @courtlink/database db:migrate
+      - run: pnpm --filter @courtlink/database db:generate
       - run: pnpm --filter @courtlink/database db:seed
       - name: Start API
         env:
