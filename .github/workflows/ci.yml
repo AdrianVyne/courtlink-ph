@@ -42,6 +42,21 @@ jobs:
       TURBO_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v7
+      - name: Start MinIO
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=courtlink \
+            -e MINIO_ROOT_PASSWORD=courtlink-dev-secret \
+            minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          ready=0
+          for i in $(seq 1 20); do
+            if curl -sf http://localhost:9000/minio/health/live; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
       - uses: pnpm/action-setup@v6
         with:
           version: 11.8.0
@@ -53,9 +68,35 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @courtlink/web exec playwright install --with-deps chromium
       - run: pnpm --filter @courtlink/database db:migrate
+      - run: pnpm --filter @courtlink/database db:seed
+      - name: Start API
+        env:
+          DATABASE_URL: postgresql://courtlink:courtlink@localhost:5432/courtlink?schema=public
+          REDIS_URL: redis://localhost:6379
+          SESSION_SECRET: ci-session-secret-32-characters-min
+          ENCRYPTION_KEY: Y2ktZW5jcnlwdGlvbi1rZXktMzItYnl0ZXMtbG9uZyEh
+          OBJECT_STORAGE_ENDPOINT: http://localhost:9000
+          OBJECT_STORAGE_BUCKET: courtlink-ci
+          OBJECT_STORAGE_ACCESS_KEY: courtlink
+          OBJECT_STORAGE_SECRET_KEY: courtlink-dev-secret
+        run: |
+          pnpm --filter @courtlink/api build
+          pnpm --filter @courtlink/api start &
+          ready=0
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3001/api/v1/health/live; then
+              ready=1
+              break
+            fi
+            sleep 1
+          done
+          test "$ready" -eq 1
       - run: pnpm check
       - run: pnpm test:integration
-      - run: pnpm --filter @courtlink/web test:e2e
+      - name: Run e2e
+        env:
+          API_PROXY_TARGET: http://localhost:3001
+        run: pnpm --filter @courtlink/web test:e2e
       - name: Validate development Compose config
         run: docker compose -f compose.yaml config --quiet
       - name: Validate production Compose config
