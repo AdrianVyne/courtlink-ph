@@ -28,8 +28,11 @@ Last updated: 2026-07-03 (Asia/Manila)
   status check, resolved conversations, linear history, and no force-push/delete for non-bypass
   users. Squash merge is the only enabled merge method. Secret scanning and push protection are on;
   private vulnerability reporting and Dependabot security updates are enabled.
-- Active effort: **test coverage expansion** - plan/spec audit completed 2026-07-03; no
-  implementation tasks started.
+- Active effort: **test coverage expansion** - plan/spec audit completed 2026-07-03; Task 1
+  done. CI's `verify` job now boots MinIO, seeds the database, and starts a built `@courtlink/api`
+  before `pnpm --filter @courtlink/web test:e2e` runs, so the API-gated specs (venue/coach detail
+  axe, player dashboard axe, venue-photos) execute instead of silently skipping — confirmed green
+  in Actions run `28637797085`.
 - Prior effort: **web experience redesign** - spec and 10-phase plan committed 2026-07-02.
 - Phase status: Phases 1-6 complete. Phase 1: tokens, display font, `components/ui/`
   primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
