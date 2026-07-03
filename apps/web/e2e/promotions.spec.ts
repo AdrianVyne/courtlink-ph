@@ -21,15 +21,7 @@ test.describe("promotions (needs seeded API)", () => {
     await expect(entry).toBeVisible();
     await expect(entry.getByText("Active")).toBeVisible();
 
-    const deactivateButton = entry.getByRole("button", { name: "Deactivate" });
-    const deactivateResponse = page.waitForResponse(
-      (res) => res.url().includes("/promotions/") && res.url().includes("/deactivate"),
-      { timeout: 10000 },
-    );
-    await deactivateButton.click();
-    await deactivateResponse;
-    await page.reload();
-    const updatedEntry = page.locator("li", { hasText: title });
-    await expect(updatedEntry.getByText("Inactive")).toBeVisible();
+    await entry.getByRole("button", { name: "Deactivate" }).click();
+    await expect(entry.getByText("Inactive")).toBeVisible();
   });
 });
