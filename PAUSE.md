@@ -4,15 +4,31 @@ Last updated: 2026-07-03 (Asia/Manila)
 
 ## Resume prompt
 
-> Resume CourtLink PH from `PAUSE.md`. **Active effort: test coverage expansion.** Spec is
+> Resume CourtLink PH from `PAUSE.md`. **Active effort: test coverage expansion, mid-execution
+> via subagent-driven development** (`superpowers:subagent-driven-development`). Spec is
 > `docs/superpowers/specs/2026-07-03-test-coverage-expansion-design.md`, plan is
-> `docs/superpowers/plans/2026-07-03-test-coverage-expansion.md` (17 tasks, none started;
-> plan/spec audit revisions applied after the original draft).
-> The owner wants this executed via **subagent-driven development**
-> (`superpowers:subagent-driven-development` — fresh subagent per task, review between tasks)
-> once they say go; do not start Task 1 until explicitly told to. House rules: work on `main`;
-> gate with `pnpm check` + `pnpm --filter @courtlink/web test:e2e` before each commit; plain
-> commit messages without co-author trailers; update `PAUSE.md` before stopping.
+> `docs/superpowers/plans/2026-07-03-test-coverage-expansion.md` (17 tasks).
+> **Tasks 1-6 complete, reviewed, and pushed** (progress ledger: `.superpowers/sdd/progress.md`,
+> task briefs/reports in the same directory). **Task 7 (promotions.spec.ts) is mid-flight and
+> unpushed** — see "Task 7 state" below before doing anything. Resume at Task 7, then Tasks 8-17.
+> House rules: work on `main`; gate with `pnpm check` + functional e2e (API up) before each
+> commit — visual.spec.ts fails with the API up (documented two-state gate; only re-run the
+> visual leg, API stopped, when a diff touches app rendering code); plain commit messages
+> without co-author trailers; update `PAUSE.md` before stopping.
+>
+> **Task 7 state (unpushed local commits `b4c5e90` + `c33d98a`):** the create→Active flow is
+> fine and reviewed. The brief's in-place deactivation assert
+> (`expect(entry.getByText("Inactive")).toBeVisible()`) passes in isolation (3/3 once) but
+> failed twice in the 6-worker local gate AND once in isolation with "element(s) not found" at
+> a 15s timeout — NOT purely contention. The 15s-timeout variant was tried and reverted (raw
+> failures in `.superpowers/sdd/task-7-report.md` addenda). Open diagnosis lead: each run
+> accumulates an `E2E Promo <ts>` row, all with identical `startsAt` (2026-01-01), and the
+> venue promotion listing orders by `startsAt desc`
+> (`apps/api/src/promotions/prisma-promotion.repository.ts:54-56`) — ties make order
+> nondeterministic across `router.refresh()` refetches. Check whether `/manage` rendering
+> drops/reorders the entry; consider clearing stale E2E promos from the local DB and/or varying
+> the spec's Starts date per run before touching the assertion again. Do NOT push Task 7's
+> commits until the spec passes the full gate twice.
 >
 > Prior effort (complete, for context only): the 10-phase web experience redesign — all phases
 > checked off in `docs/superpowers/plans/2026-07-02-web-experience-redesign.md`, final audit at
@@ -21,8 +37,23 @@ Last updated: 2026-07-03 (Asia/Manila)
 ## Current checkpoint
 
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
-- Branch: `main`, currently ahead of `origin/main` with local modified/untracked files. Do not
-  assume a clean checkout before execution.
+- Branch: `main`, ahead of `origin/main` by Task 7's two unpushed commits (plus this PAUSE.md
+  commit). Unrelated modified/untracked files from the local-full-docker effort remain in the
+  tree (`.env.example`, `AGENTS.md`, `README.md`, `docs/deployment.md`, `compose.full.yaml`,
+  `config.yaml`, `static/`, `docs/superpowers/plans/2026-07-03-local-full-docker.md`) — leave
+  them alone.
+- Test coverage expansion execution state (2026-07-03): Tasks 1-6 done/reviewed/pushed —
+  CI now boots MinIO + seeds DB + starts the API in `verify` (Task 1, run 28637797085 green;
+  previously-skipping API-gated e2e specs now execute), seed has an idempotent COMPLETED
+  unreviewed booking fixture (Task 2), e2e helpers extended (Task 3), favorites/registration/
+  amenities specs landed (Tasks 4-6; favorites needed two `waitForLoadState("networkidle")`
+  hydration waits — plain clicks proved flaky, click-retry wrappers were rejected as a
+  double-toggle race). Task 7 mid-flight per the resume prompt above. Local env: dev compose up
+  (postgres 5433/redis 6379/minio 9000), API running detached on 3001 (restart command in
+  `.superpowers/sdd/task-2-brief`-era dispatches or Local Commands below + the extra
+  SESSION_SECRET/ENCRYPTION_KEY/OBJECT_STORAGE_* vars), DB seeded. The full-docker stack from
+  the other effort was stopped to free ports (`docker compose -f compose.full.yaml up -d` to
+  restore it).
 - Recent repository maintenance: contributor guardrails added in `e6bba3c` and Dependabot security
   alerts remediated in `98010f8`. `main` now requires PR review, CODEOWNER review, the `verify`
   status check, resolved conversations, linear history, and no force-push/delete for non-bypass
