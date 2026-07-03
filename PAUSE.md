@@ -4,13 +4,18 @@ Last updated: 2026-07-03 (Asia/Manila)
 
 ## Resume prompt
 
-> Resume CourtLink PH from `PAUSE.md`. **The web experience redesign is complete** — all 10
-> phases of `docs/superpowers/plans/2026-07-02-web-experience-redesign.md` are checked off and
-> the final audit lives at `docs/verification/2026-07-03-web-redesign-audit.md`. There is no
-> active effort; pick up the next task from the owner or the known operational items below.
-> House rules: work on `main`; gate with `pnpm check` + `pnpm --filter @courtlink/web test:e2e`
-> before each commit; plain commit messages without co-author trailers; update `PAUSE.md`
-> before stopping.
+> Resume CourtLink PH from `PAUSE.md`. **Active effort: test coverage expansion.** Spec is
+> `docs/superpowers/specs/2026-07-03-test-coverage-expansion-design.md`, plan is
+> `docs/superpowers/plans/2026-07-03-test-coverage-expansion.md` (17 tasks, none started).
+> The owner wants this executed via **subagent-driven development**
+> (`superpowers:subagent-driven-development` — fresh subagent per task, review between tasks)
+> once they say go; do not start Task 1 until explicitly told to. House rules: work on `main`;
+> gate with `pnpm check` + `pnpm --filter @courtlink/web test:e2e` before each commit; plain
+> commit messages without co-author trailers; update `PAUSE.md` before stopping.
+>
+> Prior effort (complete, for context only): the 10-phase web experience redesign — all phases
+> checked off in `docs/superpowers/plans/2026-07-02-web-experience-redesign.md`, final audit at
+> `docs/verification/2026-07-03-web-redesign-audit.md`.
 
 ## Current checkpoint
 
