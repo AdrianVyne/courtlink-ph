@@ -19,7 +19,16 @@ test.describe("venue amenities (needs seeded API)", () => {
 
     await page.goto("/manage");
     await page.waitForLoadState("networkidle");
-    const amenitiesSection = page.locator("section", { has: page.getByText("Amenities") });
+    // The owner may have multiple venues (e.g. venue-approval.spec.ts creates
+    // one during the same suite run), and /manage renders one workspace per
+    // owned venue, so scope everything to the seeded demo venue's own block.
+    const venueWorkspace = page
+      .locator("div")
+      .filter({ has: page.getByRole("heading", { name: "Riverside Pickleball", exact: true }) })
+      .last();
+    const amenitiesSection = venueWorkspace.locator("section", {
+      has: page.getByText("Amenities"),
+    });
     const unchecked = amenitiesSection.locator('input[name="amenities"]:not(:checked)').first();
     await expect(unchecked).toBeAttached();
     const label = unchecked.locator("xpath=ancestor::label[1]");
@@ -31,7 +40,11 @@ test.describe("venue amenities (needs seeded API)", () => {
       await expect(amenitiesSection.getByText("Saved")).toBeVisible();
 
       await page.reload();
-      const afterReload = page
+      const reloadedWorkspace = page
+        .locator("div")
+        .filter({ has: page.getByRole("heading", { name: "Riverside Pickleball", exact: true }) })
+        .last();
+      const afterReload = reloadedWorkspace
         .locator("section", { has: page.getByText("Amenities") })
         .locator("label", { hasText: labelText ?? "" })
         .locator('input[name="amenities"]');
