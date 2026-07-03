@@ -5,6 +5,10 @@ import { type FormEvent, useState } from "react";
 import { ApiError, type Promotion, apiFetch } from "../lib/api";
 import { Button, Field, Input, Select } from "./ui";
 
+function byStartsAtDesc(a: Promotion, b: Promotion): number {
+  return new Date(b.startsAt).getTime() - new Date(a.startsAt).getTime();
+}
+
 function formatWhen(iso: string): string {
   return new Date(iso).toLocaleString("en-PH", {
     dateStyle: "medium",
@@ -23,12 +27,14 @@ export function PromotionManager({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [items, setItems] = useState(() => [...promotions].sort(byStartsAtDesc));
 
-  async function call(action: () => Promise<unknown>) {
+  async function call<T>(action: () => Promise<T>, onSuccess?: (result: T) => void) {
     setPending(true);
     setError(null);
     try {
-      await action();
+      const result = await action();
+      onSuccess?.(result);
       router.refresh();
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Action failed.");
@@ -40,18 +46,20 @@ export function PromotionManager({
   async function create(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    await call(() =>
-      apiFetch(`/promotions/venues/${venueId}`, {
-        method: "POST",
-        body: {
-          title: String(form.get("title") ?? ""),
-          description: String(form.get("description") ?? "") || null,
-          startsAt: new Date(String(form.get("startsAt") ?? "")).toISOString(),
-          endsAt: new Date(String(form.get("endsAt") ?? "")).toISOString(),
-          discountType: String(form.get("discountType") ?? "PERCENT"),
-          discountValue: Number(form.get("discountValue") ?? 0),
-        },
-      }),
+    await call(
+      () =>
+        apiFetch<Promotion>(`/promotions/venues/${venueId}`, {
+          method: "POST",
+          body: {
+            title: String(form.get("title") ?? ""),
+            description: String(form.get("description") ?? "") || null,
+            startsAt: new Date(String(form.get("startsAt") ?? "")).toISOString(),
+            endsAt: new Date(String(form.get("endsAt") ?? "")).toISOString(),
+            discountType: String(form.get("discountType") ?? "PERCENT"),
+            discountValue: Number(form.get("discountValue") ?? 0),
+          },
+        }),
+      (created) => setItems((current) => [created, ...current].sort(byStartsAtDesc)),
     );
   }
 
@@ -90,11 +98,11 @@ export function PromotionManager({
         </Button>
       </form>
 
-      {promotions.length === 0 ? (
+      {items.length === 0 ? (
         <p className="py-8 text-ink-500">No promotions yet.</p>
       ) : (
         <ul className="m-0 mt-4 flex list-none flex-col gap-[0.6rem] p-0">
-          {promotions.map((promotion) => (
+          {items.map((promotion) => (
             <li
               className="flex flex-wrap items-center justify-between gap-3 rounded-[10px] border border-sand-200 bg-white px-4 py-[0.85rem]"
               key={promotion.id}
@@ -127,8 +135,15 @@ export function PromotionManager({
                     type="button"
                     disabled={pending}
                     onClick={() =>
-                      call(() =>
-                        apiFetch(`/promotions/${promotion.id}/deactivate`, { method: "POST" }),
+                      call(
+                        () =>
+                          apiFetch<Promotion>(`/promotions/${promotion.id}/deactivate`, {
+                            method: "POST",
+                          }),
+                        (updated) =>
+                          setItems((current) =>
+                            current.map((item) => (item.id === updated.id ? updated : item)),
+                          ),
                       )
                     }
                   >
