@@ -6,7 +6,8 @@ Last updated: 2026-07-03 (Asia/Manila)
 
 > Resume CourtLink PH from `PAUSE.md`. **Active effort: test coverage expansion.** Spec is
 > `docs/superpowers/specs/2026-07-03-test-coverage-expansion-design.md`, plan is
-> `docs/superpowers/plans/2026-07-03-test-coverage-expansion.md` (17 tasks, none started).
+> `docs/superpowers/plans/2026-07-03-test-coverage-expansion.md` (17 tasks, none started;
+> plan/spec audit revisions applied after the original draft).
 > The owner wants this executed via **subagent-driven development**
 > (`superpowers:subagent-driven-development` — fresh subagent per task, review between tasks)
 > once they say go; do not start Task 1 until explicitly told to. House rules: work on `main`;
@@ -20,13 +21,16 @@ Last updated: 2026-07-03 (Asia/Manila)
 ## Current checkpoint
 
 - Public repository: `https://github.com/AdrianVyne/courtlink-ph`
-- Branch: `main`, clean and pushed at this pause.
+- Branch: `main`, currently ahead of `origin/main` with local modified/untracked files. Do not
+  assume a clean checkout before execution.
 - Recent repository maintenance: contributor guardrails added in `e6bba3c` and Dependabot security
   alerts remediated in `98010f8`. `main` now requires PR review, CODEOWNER review, the `verify`
   status check, resolved conversations, linear history, and no force-push/delete for non-bypass
   users. Squash merge is the only enabled merge method. Secret scanning and push protection are on;
   private vulnerability reporting and Dependabot security updates are enabled.
-- Active effort: **web experience redesign** - spec and 10-phase plan committed 2026-07-02.
+- Active effort: **test coverage expansion** - plan/spec audit completed 2026-07-03; no
+  implementation tasks started.
+- Prior effort: **web experience redesign** - spec and 10-phase plan committed 2026-07-02.
 - Phase status: Phases 1-6 complete. Phase 1: tokens, display font, `components/ui/`
   primitives (24 unit tests). Phase 2: responsive header + mobile drawer, footer, 404/error/
   loading pages, visual snapshot harness (`apps/web/e2e/__screenshots__/`). Phase 3: landing

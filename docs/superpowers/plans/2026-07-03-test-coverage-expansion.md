@@ -4,7 +4,7 @@
 
 **Goal:** Close two regression-coverage gaps identified in the design spec — CI silently skips several e2e tests because it never boots the API, and 20 interactive web components have zero test coverage above the API layer.
 
-**Architecture:** Fix the CI foundation first (boot + seed a real API in the `verify` job) so every "needs seeded API" test — existing and new — actually executes instead of skipping. Then add seven new Playwright e2e specs for the highest-blast-radius untested flows (Tier 1), reusing the existing `loginAs`/fixture-cleanup conventions in `apps/web/e2e/helpers.ts`. Then split the e2e CI step into a 3-leg matrix to keep wall-clock time flat. Finally add five RTL unit tests for the remaining logic-bearing untested components (Tier 2).
+**Architecture:** Fix the CI foundation first (boot + seed a real API for browser tests) so every "needs seeded API" test — existing and new — actually executes instead of skipping. Add seven new Playwright e2e specs for the highest-blast-radius untested flows (Tier 1), reusing the existing `loginAs`/fixture-cleanup conventions in `apps/web/e2e/helpers.ts`, and land the final CI shape as a 3-leg e2e matrix instead of leaving e2e inside `verify`. Finally add six RTL unit tests for the remaining logic-bearing untested components (Tier 2).
 
 **Tech Stack:** Playwright + `@axe-core/playwright` (e2e), Vitest + `@testing-library/react` (unit), GitHub Actions (CI), Prisma seed script.
 
@@ -15,6 +15,10 @@
 - e2e specs that need a live API must guard with `test.skip(!response || !response.ok(), "API is not running")`, matching the existing convention in `apps/web/e2e/public-pages.spec.ts` and `venue-photos.spec.ts`.
 - Every new e2e spec must pass `pnpm exec biome check` (existing lint/format config) and be added to the CI matrix in Task 11.
 - Test-created venues use an `e2e-<flow>-<8hex>` slug prefix (matches existing `mod-`, `promo-`, `vtest-` conventions in `apps/api/integration/*.test.ts`) so they're identifiable; they are not deleted (no delete-venue endpoint exists) but are wiped automatically in CI because Postgres is a fresh ephemeral service container per run. Locally they accumulate across repeated runs — acceptable, same trade-off the API integration tests don't have (those use direct Prisma access to clean up; e2e specs only have HTTP access).
+- Unit test snippets must match the current web Vitest setup: do not use `@testing-library/jest-dom` matchers unless this plan is also changed to add that dependency and a setup file. Use native assertions (`toBeTruthy()`, `toBeNull()`, `.disabled`, `getAttribute(...)`) like the existing component tests.
+- Before every commit in this plan, run the session gate from `PAUSE.md`: `pnpm check` and `pnpm --filter @courtlink/web test:e2e` with the local API running and seeded. Focused tests in each task are still required, but they are not sufficient as commit gates.
+- Prefer PowerShell-safe commands for local execution in this Windows checkout. If a snippet uses POSIX environment prefixes, convert it to `$env:NAME='value'` before running.
+- CI execution note: Tasks 1 and 11 both modify `.github/workflows/ci.yml`. Task 1 proves the existing skip bug can be fixed; Task 11 is the desired final workflow shape. When executing this plan, avoid leaving both intermediate edits in separate long-lived states: either implement Task 1 and immediately follow with Task 11, or fold Task 1's API bootstrap into Task 11's matrix job once Tasks 4-10 exist.
 - `window.prompt`-based confirmation dialogs (`report-button.tsx`, `moderation-queue.tsx`, `venue-queue.tsx`) require registering `page.once("dialog", ...)` **before** the triggering click, or Playwright auto-dismisses the dialog and the action silently no-ops.
 
 ---
@@ -40,10 +44,15 @@ This task makes the currently-skipping specs (`venue detail renders and passes a
             -e MINIO_ROOT_USER=courtlink \
             -e MINIO_ROOT_PASSWORD=courtlink-dev-secret \
             minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+          ready=0
           for i in $(seq 1 20); do
-            curl -sf http://localhost:9000/minio/health/live && break
+            if curl -sf http://localhost:9000/minio/health/live; then
+              ready=1
+              break
+            fi
             sleep 1
           done
+          test "$ready" -eq 1
   ```
 
 - [ ] **Step 2: Seed the database after migration.** Find this existing line:
@@ -74,10 +83,15 @@ This task makes the currently-skipping specs (`venue detail renders and passes a
           run: |
             pnpm --filter @courtlink/api build
             pnpm --filter @courtlink/api start &
+            ready=0
             for i in $(seq 1 30); do
-              curl -sf http://localhost:3001/api/v1/health/live && break
+              if curl -sf http://localhost:3001/api/v1/health/live; then
+                ready=1
+                break
+              fi
               sleep 1
             done
+            test "$ready" -eq 1
   ```
 
   (`ENCRYPTION_KEY` above is a 32-byte value base64-encoded — matches the format `packages/database`'s encryption helpers expect, same shape used locally this session.)
@@ -134,67 +148,90 @@ The demo seed currently has no bookings at all. A `COMPLETED` booking can only b
 - [ ] **Step 1: Add the booking to `main()` in `packages/database/prisma/seed.ts`.** Insert this block right before the `process.stdout.write(...)` call at the end of `main()` (after the `coachProfile.upsert` call):
 
   ```typescript
-    const reviewableBooking = await prisma.courtBooking.findFirst({
-      where: { courtId: court.id, status: "COMPLETED", playerId: (await prisma.user.findUniqueOrThrow({ where: { email: "player@demo.courtlink.ph" } })).id },
+    const demoPlayer = await prisma.user.findUniqueOrThrow({
+      where: { email: "player@demo.courtlink.ph" },
+    });
+    const reviewFixtureWindow = {
+      startsAt: new Date("2026-06-01T02:00:00.000Z"),
+      endsAt: new Date("2026-06-01T03:00:00.000Z"),
+    };
+    let reviewableBooking = await prisma.courtBooking.findFirst({
+      where: {
+        courtId: court.id,
+        playerId: demoPlayer.id,
+        startsAt: reviewFixtureWindow.startsAt,
+        endsAt: reviewFixtureWindow.endsAt,
+      },
     });
     if (!reviewableBooking) {
-      const demoPlayer = await prisma.user.findUniqueOrThrow({
-        where: { email: "player@demo.courtlink.ph" },
-      });
-      await prisma.courtBooking.create({
+      reviewableBooking = await prisma.courtBooking.create({
         data: {
           courtId: court.id,
           playerId: demoPlayer.id,
           status: "COMPLETED",
-          startsAt: new Date("2026-06-01T02:00:00.000Z"),
-          endsAt: new Date("2026-06-01T03:00:00.000Z"),
+          startsAt: reviewFixtureWindow.startsAt,
+          endsAt: reviewFixtureWindow.endsAt,
           quotedAmount: "250.00",
           proofDeadline: new Date("2026-06-01T00:00:00.000Z"),
         },
       });
+    } else if (reviewableBooking.status !== "COMPLETED") {
+      reviewableBooking = await prisma.courtBooking.update({
+        where: { id: reviewableBooking.id },
+        data: { status: "COMPLETED" },
+      });
     }
+    await prisma.review.deleteMany({ where: { courtBookingId: reviewableBooking.id } });
   ```
 
-  This mirrors the exact shape used in `apps/api/integration/review-flow.test.ts`'s `completedBooking()` helper (lines 62-73), which is the proven way to construct a reviewable `COMPLETED` booking directly.
+  This mirrors the exact shape used in `apps/api/integration/review-flow.test.ts`'s `completedBooking()` helper (lines 62-73), which is the proven way to construct a reviewable `COMPLETED` booking directly. The final `review.deleteMany` is intentional: reseeding must restore the fixture to "unreviewed" so `reviews.spec.ts` is locally repeatable.
 
 - [ ] **Step 2: Run the seed locally and verify the booking exists.**
 
   ```bash
-  cd packages/database
-  DATABASE_URL=postgresql://courtlink:courtlink@localhost:5433/courtlink pnpm db:seed
+  $env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'
+  pnpm --dir packages/database db:seed
   ```
 
   Then verify with a one-off query:
-  ```bash
-  DATABASE_URL=postgresql://courtlink:courtlink@localhost:5433/courtlink node -e "
-  const { PrismaClient } = require('@courtlink/database');
-  const p = new PrismaClient();
-  p.courtBooking.findMany({ where: { status: 'COMPLETED' } }).then((rows) => {
-    console.log(rows.length, 'completed booking(s)');
-    process.exit(rows.length > 0 ? 0 : 1);
+  ```powershell
+  @'
+  import { PrismaPg } from "@prisma/adapter-pg";
+  import { PrismaClient } from "./generated/client/client.js";
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
   });
-  "
+  const rows = await prisma.courtBooking.findMany({ where: { status: "COMPLETED" } });
+  console.log(rows.length, "completed booking(s)");
+  await prisma.$disconnect();
+  process.exit(rows.length > 0 ? 0 : 1);
+  '@ | pnpm --dir packages/database exec tsx -
   ```
   Expected: `1 completed booking(s)`.
 
 - [ ] **Step 3: Re-run the seed a second time and confirm it stays idempotent (no duplicate booking created).**
 
   ```bash
-  DATABASE_URL=postgresql://courtlink:courtlink@localhost:5433/courtlink pnpm db:seed
-  DATABASE_URL=postgresql://courtlink:courtlink@localhost:5433/courtlink node -e "
-  const { PrismaClient } = require('@courtlink/database');
-  const p = new PrismaClient();
-  p.courtBooking.count({ where: { status: 'COMPLETED' } }).then((n) => {
-    console.log(n, 'completed booking(s) after second seed run');
-    process.exit(n === 1 ? 0 : 1);
+  pnpm --dir packages/database db:seed
+  @'
+  import { PrismaPg } from "@prisma/adapter-pg";
+  import { PrismaClient } from "./generated/client/client.js";
+  const prisma = new PrismaClient({
+    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
   });
-  "
+  const n = await prisma.courtBooking.count({ where: { status: "COMPLETED" } });
+  console.log(n, "completed booking(s) after second seed run");
+  await prisma.$disconnect();
+  process.exit(n === 1 ? 0 : 1);
+  '@ | pnpm --dir packages/database exec tsx -
   ```
-  Expected: `1 completed booking(s) after second seed run` (the `findFirst` guard in Step 1 prevents a duplicate).
+  Expected: `1 completed booking(s) after second seed run` (the deterministic fixture window in Step 1 prevents a duplicate).
 
 - [ ] **Step 4: Commit.**
   ```bash
-  cd /path/to/repo/root
+  Set-Location C:\Users\Admin\Documents\Github\pickelball-website
+  pnpm check
+  pnpm --filter @courtlink/web test:e2e
   git add packages/database/prisma/seed.ts
   git commit -m "feat(seed): add a completed unreviewed booking for the demo player"
   ```
@@ -269,10 +306,9 @@ The demo seed currently has no bookings at all. A `COMPLETED` booking can only b
   }
   ```
 
-- [ ] **Step 2: Run the existing e2e suite to confirm the file still compiles and nothing broke.**
+- [ ] **Step 2: Run the web typecheck to confirm the helper file still compiles.**
   ```bash
-  cd apps/web
-  pnpm exec tsc --noEmit -p e2e/tsconfig.json 2>/dev/null || pnpm typecheck
+  pnpm --dir apps/web typecheck
   ```
   Expected: no new type errors from `helpers.ts`. (If there's no dedicated e2e tsconfig, `pnpm typecheck` at the `apps/web` level covers it since `e2e/` is included in the project.)
 
@@ -330,8 +366,7 @@ The demo seed currently has no bookings at all. A `COMPLETED` booking can only b
 
 - [ ] **Step 2: Run it against the local API (must be up and seeded — see `apps/web/e2e/README.md`).**
   ```bash
-  cd apps/web
-  pnpm exec playwright test e2e/favorites.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/favorites.spec.ts
   ```
   Expected: `1 passed`.
 
@@ -384,7 +419,7 @@ This closes an existing gap: `public-pages.spec.ts` only asserts "register page 
 
 - [ ] **Step 2: Run it.**
   ```bash
-  pnpm exec playwright test e2e/registration.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/registration.spec.ts
   ```
   Expected: `1 passed`.
 
@@ -417,6 +452,15 @@ This closes an existing gap: `public-pages.spec.ts` only asserts "register page 
       const loggedIn = await loginAs(page, "owner@demo.courtlink.ph");
       test.skip(!loggedIn, "API not running or demo owner seed missing");
 
+      const mineResponse = await page.context().request.get("/api/v1/venues/mine");
+      expect(mineResponse.ok(), await mineResponse.text()).toBe(true);
+      const mine = (await mineResponse.json()) as Array<{ venue: { id: string } }>;
+      const venueId = mine[0]?.venue.id;
+      test.skip(!venueId, "demo owner has no venue");
+      const originalResponse = await page.context().request.get(`/api/v1/venues/${venueId}/amenities`);
+      expect(originalResponse.ok(), await originalResponse.text()).toBe(true);
+      const original = (await originalResponse.json()) as { amenities: string[] };
+
       await page.goto("/manage");
       const amenitiesSection = page.locator("section", { has: page.getByText("Amenities") });
       const unchecked = amenitiesSection.locator('input[name="amenities"]:not(:checked)').first();
@@ -424,25 +468,33 @@ This closes an existing gap: `public-pages.spec.ts` only asserts "register page 
       const label = unchecked.locator("xpath=ancestor::label[1]");
       const labelText = (await label.textContent())?.trim();
 
-      await unchecked.check();
-      await amenitiesSection.getByRole("button", { name: "Save amenities" }).click();
-      await expect(amenitiesSection.getByText("Saved")).toBeVisible();
+      try {
+        await unchecked.check();
+        await amenitiesSection.getByRole("button", { name: "Save amenities" }).click();
+        await expect(amenitiesSection.getByText("Saved")).toBeVisible();
 
-      await page.reload();
-      const afterReload = page
-        .locator("section", { has: page.getByText("Amenities") })
-        .locator("label", { hasText: labelText ?? "" })
-        .locator('input[name="amenities"]');
-      await expect(afterReload).toBeChecked();
+        await page.reload();
+        const afterReload = page
+          .locator("section", { has: page.getByText("Amenities") })
+          .locator("label", { hasText: labelText ?? "" })
+          .locator('input[name="amenities"]');
+        await expect(afterReload).toBeChecked();
+      } finally {
+        await page
+          .context()
+          .request.put(`/api/v1/venues/${venueId}/amenities`, {
+            data: { amenities: original.amenities },
+          });
+      }
     });
   });
   ```
 
 - [ ] **Step 2: Run it.**
   ```bash
-  pnpm exec playwright test e2e/amenities.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/amenities.spec.ts
   ```
-  Expected: `1 passed`. If it fails with "no unchecked amenity found," the demo venue already has every catalog amenity selected — uncheck one in the seed data or adjust the test to toggle a checked one off instead; note which in the commit if this happens.
+  Expected: `1 passed`. If it fails with "no unchecked amenity found," update the seed so the demo venue leaves at least one venue-scoped amenity unchecked before committing this task.
 
 - [ ] **Step 3: Run `pnpm exec biome check e2e/amenities.spec.ts` and fix any issues.**
 
@@ -495,7 +547,7 @@ This closes an existing gap: `public-pages.spec.ts` only asserts "register page 
 
 - [ ] **Step 2: Run it.**
   ```bash
-  pnpm exec playwright test e2e/promotions.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/promotions.spec.ts
   ```
   Expected: `1 passed`.
 
@@ -517,7 +569,7 @@ This closes an existing gap: `public-pages.spec.ts` only asserts "register page 
 **Interfaces:**
 - Consumes: `loginAs` from `./helpers`; the seeded `COMPLETED` booking from Task 2.
 
-Because the seeded booking can only be reviewed once (the API rejects a second review for the same booking with `REVIEW_ALREADY_EXISTS`, and the `ReviewForm` stops rendering once `reviewed` is true), this spec is **not repeatable against the same persistent database** — it works once per fresh seed. This matches how CI runs (fresh DB every job) but means re-running it locally requires re-seeding first. The spec documents this in a comment.
+Because a completed booking can only be reviewed once, this spec depends on Task 2's deterministic seed reset. Re-running the spec locally requires re-running the seed first, which deletes the review tied to the fixture booking and restores the dashboard form.
 
 - [ ] **Step 1: Write the spec.**
 
@@ -526,11 +578,10 @@ Because the seeded booking can only be reviewed once (the API rejects a second r
   import { loginAs } from "./helpers";
 
   /**
-   * Consumes the single seeded COMPLETED booking (packages/database/prisma/seed.ts).
-   * Not repeatable against the same database without re-seeding: once submitted,
-   * the booking is marked reviewed and the form no longer renders for it.
+   * Consumes the seeded COMPLETED booking fixture from packages/database/prisma/seed.ts.
+   * Re-run pnpm --dir packages/database db:seed before this spec on persistent local DBs.
    */
-  test.describe("reviews (needs seeded API, single-use fixture)", () => {
+  test.describe("reviews (needs seeded API, resettable fixture)", () => {
     test("player reviews a completed booking and the venue rating updates", async ({
       page,
       request,
@@ -569,17 +620,18 @@ Because the seeded booking can only be reviewed once (the API rejects a second r
 
 - [ ] **Step 2: Ensure the seed has run (Task 2) so the fixture booking exists, then run the spec.**
   ```bash
-  DATABASE_URL=postgresql://courtlink:courtlink@localhost:5433/courtlink pnpm --filter @courtlink/database db:seed
-  cd apps/web
-  pnpm exec playwright test e2e/reviews.spec.ts
+  $env:DATABASE_URL='postgresql://courtlink:courtlink@localhost:5433/courtlink'
+  pnpm --dir packages/database db:seed
+  pnpm --dir apps/web exec playwright test e2e/reviews.spec.ts
   ```
   Expected: `1 passed`.
 
-- [ ] **Step 3: Re-run it a second time without reseeding and confirm it skips cleanly rather than failing.**
+- [ ] **Step 3: Reseed and re-run it a second time to prove the fixture is repeatable.**
   ```bash
-  pnpm exec playwright test e2e/reviews.spec.ts
+  pnpm --dir packages/database db:seed
+  pnpm --dir apps/web exec playwright test e2e/reviews.spec.ts
   ```
-  Expected: `1 skipped` with reason `no unreviewed completed booking...`.
+  Expected: `1 passed` again. A skip here is a failure of the seed reset from Task 2.
 
 - [ ] **Step 4: Run `pnpm exec biome check e2e/reviews.spec.ts` and fix any issues.**
 
@@ -649,8 +701,7 @@ Uses two separate browser contexts (owner, admin) since the flow spans two sessi
 
 - [ ] **Step 2: Run it.**
   ```bash
-  cd apps/web
-  pnpm exec playwright test e2e/venue-approval.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/venue-approval.spec.ts
   ```
   Expected: `1 passed`.
 
@@ -737,8 +788,7 @@ Uses two separate browser contexts (owner, admin) since the flow spans two sessi
 
 - [ ] **Step 2: Run it.**
   ```bash
-  cd apps/web
-  pnpm exec playwright test e2e/moderation.spec.ts
+  pnpm --dir apps/web exec playwright test e2e/moderation.spec.ts
   ```
   Expected: `1 passed`.
 
@@ -890,10 +940,15 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
               -e MINIO_ROOT_USER=courtlink \
               -e MINIO_ROOT_PASSWORD=courtlink-dev-secret \
               minio/minio:RELEASE.2025-04-22T22-12-26Z server /data
+            ready=0
             for i in $(seq 1 20); do
-              curl -sf http://localhost:9000/minio/health/live && break
+              if curl -sf http://localhost:9000/minio/health/live; then
+                ready=1
+                break
+              fi
               sleep 1
             done
+            test "$ready" -eq 1
         - name: Start API
           env:
             SESSION_SECRET: ci-session-secret-32-characters-min
@@ -905,10 +960,15 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
           run: |
             pnpm --filter @courtlink/api build
             pnpm --filter @courtlink/api start &
+            ready=0
             for i in $(seq 1 30); do
-              curl -sf http://localhost:3001/api/v1/health/live && break
+              if curl -sf http://localhost:3001/api/v1/health/live; then
+                ready=1
+                break
+              fi
               sleep 1
             done
+            test "$ready" -eq 1
         - name: Run e2e (${{ matrix.suite.name }})
           env:
             API_PROXY_TARGET: http://localhost:3001
@@ -1006,25 +1066,24 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 
       const button = screen.getByRole("button", { name: "Log out" });
       fireEvent.click(button);
-      expect(button).toBeDisabled();
+      expect(button.disabled).toBe(true);
 
       resolveFetch(new Response(null, { status: 204 }));
-      await vi.waitFor(() => expect(button).not.toBeDisabled());
+      await vi.waitFor(() => expect(button.disabled).toBe(false));
     });
   });
   ```
 
 - [ ] **Step 2: Run to verify it fails (or passes, if `LogoutButton` behaves as expected already — this is a new-coverage test, not a bugfix, so either outcome is informative).**
   ```bash
-  cd apps/web
-  pnpm exec vitest run components/logout-button.test.tsx
+  pnpm --dir apps/web exec vitest run components/logout-button.test.tsx
   ```
 
 - [ ] **Step 3: If it fails, fix the test (not the component) to match actual behavior** — `logout-button.tsx` is existing, working, unmodified code; a failure here means the test's assumptions about `apiFetch`'s underlying `fetch` call shape are wrong, not that the component is broken. Check `apps/web/lib/api.ts`'s `apiFetch` implementation for the exact URL/init shape it passes to `fetch` if the assertion on `fetchMock` fails.
 
 - [ ] **Step 4: Run again to confirm both tests pass.**
   ```bash
-  pnpm exec vitest run components/logout-button.test.tsx
+  pnpm --dir apps/web exec vitest run components/logout-button.test.tsx
   ```
   Expected: `2 passed`.
 
@@ -1076,29 +1135,28 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
       render(<NotificationBell />);
 
       await vi.waitFor(() => expect(fetchMock).toHaveBeenCalled());
-      expect(screen.queryByText("0")).not.toBeInTheDocument();
+      expect(screen.queryByText("0")).toBeNull();
     });
 
     it("shows the unread count as a badge", async () => {
       fetchMock.mockResolvedValue(jsonResponse({ count: 3 }));
       render(<NotificationBell />);
 
-      expect(await screen.findByText("3")).toBeInTheDocument();
+      expect(await screen.findByText("3")).toBeTruthy();
     });
 
     it("caps the badge at 99+", async () => {
       fetchMock.mockResolvedValue(jsonResponse({ count: 140 }));
       render(<NotificationBell />);
 
-      expect(await screen.findByText("99+")).toBeInTheDocument();
+      expect(await screen.findByText("99+")).toBeTruthy();
     });
 
     it("links to the notifications page", () => {
       fetchMock.mockResolvedValue(jsonResponse({ count: 0 }));
       render(<NotificationBell />);
 
-      expect(screen.getByRole("link", { name: "Notifications" })).toHaveAttribute(
-        "href",
+      expect(screen.getByRole("link", { name: "Notifications" }).getAttribute("href")).toBe(
         "/notifications",
       );
     });
@@ -1107,15 +1165,14 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 
 - [ ] **Step 2: Run to verify it fails first (file doesn't exist yet as a test target — expect module resolution to succeed since the component exists, but run before Step 1 was written mentally; practically this project runs immediately).**
   ```bash
-  cd apps/web
-  pnpm exec vitest run components/notification-bell.test.tsx
+  pnpm --dir apps/web exec vitest run components/notification-bell.test.tsx
   ```
 
-- [ ] **Step 3: If any assertion fails, adjust the test (not the component)** to match `NotificationBell`'s actual rendered text — re-read `apps/web/components/notification-bell.tsx` if the badge text format differs from what's asserted.
+- [ ] **Step 3: If any assertion fails, stop and re-check `apps/web/components/notification-bell.tsx` for code drift before changing either the test or component.**
 
 - [ ] **Step 4: Run again to confirm all four tests pass.**
   ```bash
-  pnpm exec vitest run components/notification-bell.test.tsx
+  pnpm --dir apps/web exec vitest run components/notification-bell.test.tsx
   ```
   Expected: `4 passed`.
 
@@ -1151,6 +1208,7 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
       type: "COURT_BOOKING_CONFIRMED",
       title: "Your booking is confirmed",
       body: "The venue approved your payment.",
+      data: null,
       createdAt: "2026-06-01T02:00:00.000Z",
       readAt: null,
     },
@@ -1159,6 +1217,7 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
       type: "COURT_PROOF_REJECTED",
       title: "Payment proof rejected",
       body: "Please resubmit.",
+      data: null,
       createdAt: "2026-06-02T02:00:00.000Z",
       readAt: "2026-06-02T03:00:00.000Z",
     },
@@ -1187,7 +1246,7 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 
     it("shows an empty state when there are no notifications", () => {
       render(<NotificationList initial={[]} />);
-      expect(screen.getByText("No notifications yet")).toBeInTheDocument();
+      expect(screen.getByText("No notifications yet")).toBeTruthy();
     });
 
     it("marks a single notification as read on click", async () => {
@@ -1223,15 +1282,14 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 
 - [ ] **Step 2: Run it.**
   ```bash
-  cd apps/web
-  pnpm exec vitest run components/notification-list.test.tsx
+  pnpm --dir apps/web exec vitest run components/notification-list.test.tsx
   ```
 
-- [ ] **Step 3: If any assertion fails, adjust the test to match `NotificationList`'s actual behavior** (re-check `apps/web/components/notification-list.tsx` for the exact fetch call shape if needed).
+- [ ] **Step 3: If any assertion fails, stop and re-check `apps/web/components/notification-list.tsx` for code drift before changing either the test or component.**
 
 - [ ] **Step 4: Run again to confirm all three tests pass.**
   ```bash
-  pnpm exec vitest run components/notification-list.test.tsx
+  pnpm --dir apps/web exec vitest run components/notification-list.test.tsx
   ```
   Expected: `3 passed`.
 
@@ -1251,11 +1309,12 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 **Interfaces:**
 - Consumes: `VenueQueue` from `./venue-queue`.
 
-- [ ] **Step 1: Write the test.** Covers the proof-approve action (no prompt) and the cancel-with-reason action (prompt-gated, using `vi.spyOn(window, "prompt")`).
+- [ ] **Step 1: Write the test.** Covers proof approve/reject, refund approve/reject, and cancel-with-reason actions using typed `BookingListItem` fixtures.
 
   ```typescript
   import { cleanup, fireEvent, render, screen } from "@testing-library/react";
   import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+  import type { BookingListItem } from "../lib/api";
   import { ToastProvider } from "./ui";
   import { VenueQueue } from "./venue-queue";
 
@@ -1266,11 +1325,38 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
     id: "booking-1",
     status: "PROOF_SUBMITTED",
     startsAt: "2026-06-01T02:00:00.000Z",
+    endsAt: "2026-06-01T03:00:00.000Z",
     quotedAmount: 250,
-    court: { name: "Court 1" },
-    venue: { name: "Riverside Pickleball" },
-    submission: { id: "sub-1", channel: "GCASH", transactionRef: "REF123" },
-  };
+    currency: "PHP",
+    proofDeadline: "2026-06-01T01:00:00.000Z",
+    reviewDueAt: null,
+    court: { id: "court-1", name: "Court 1" },
+    venue: { id: "venue-1", name: "Riverside Pickleball", slug: "riverside-pickleball-demo" },
+    submission: {
+      id: "sub-1",
+      status: "PENDING",
+      channel: "GCASH",
+      transactionRef: "REF123",
+      proofObjectKey: "proofs/e2e.png",
+    },
+    refund: null,
+    reviewed: false,
+  } satisfies BookingListItem;
+
+  const refundBooking = {
+    ...proofBooking,
+    id: "booking-2",
+    status: "REFUND_REQUESTED",
+    submission: null,
+    refund: { id: "refund-1", status: "REQUESTED", amount: 250 },
+  } satisfies BookingListItem;
+
+  const confirmedBooking = {
+    ...proofBooking,
+    id: "booking-3",
+    status: "CONFIRMED",
+    submission: null,
+  } satisfies BookingListItem;
 
   function jsonResponse(body: unknown) {
     return new Response(JSON.stringify(body), {
@@ -1299,14 +1385,14 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
           <VenueQueue bookings={[]} />
         </ToastProvider>,
       );
-      expect(screen.getByText("Nothing to review right now")).toBeInTheDocument();
+      expect(screen.getByText("Nothing to review right now")).toBeTruthy();
     });
 
     it("approves a proof submission", async () => {
       fetchMock.mockResolvedValue(jsonResponse({}));
       render(
         <ToastProvider>
-          <VenueQueue bookings={[proofBooking as never]} />
+          <VenueQueue bookings={[proofBooking]} />
         </ToastProvider>,
       );
 
@@ -1326,7 +1412,7 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
       vi.spyOn(window, "prompt").mockReturnValue("Blurry receipt");
       render(
         <ToastProvider>
-          <VenueQueue bookings={[proofBooking as never]} />
+          <VenueQueue bookings={[proofBooking]} />
         </ToastProvider>,
       );
 
@@ -1344,34 +1430,86 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
       vi.spyOn(window, "prompt").mockReturnValue(null);
       render(
         <ToastProvider>
-          <VenueQueue bookings={[proofBooking as never]} />
+          <VenueQueue bookings={[proofBooking]} />
         </ToastProvider>,
       );
 
       fireEvent.click(screen.getByRole("button", { name: /Reject/ }));
       expect(fetchMock).not.toHaveBeenCalled();
     });
+
+    it("approves and rejects refund requests", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      render(
+        <ToastProvider>
+          <VenueQueue bookings={[refundBooking]} />
+        </ToastProvider>,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Approve refund" }));
+      await vi.waitFor(() => {
+        const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+        expect(JSON.parse(String(init.body))).toEqual({
+          refundId: "refund-1",
+          bookingId: "booking-2",
+          decision: "APPROVED",
+        });
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Reject refund" }));
+      await vi.waitFor(() => {
+        const [, init] = fetchMock.mock.calls[1] as [string, RequestInit];
+        expect(JSON.parse(String(init.body))).toEqual({
+          refundId: "refund-1",
+          bookingId: "booking-2",
+          decision: "REJECTED",
+        });
+      });
+    });
+
+    it("cancels a booking with a prompted reason", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      vi.spyOn(window, "prompt").mockReturnValue("Venue maintenance");
+      render(
+        <ToastProvider>
+          <VenueQueue bookings={[confirmedBooking]} />
+        </ToastProvider>,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: /Cancel and refund/ }));
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/v1/courts/bookings/cancel-by-venue"),
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(JSON.parse(String(init.body))).toEqual({
+        bookingId: "booking-3",
+        reason: "Venue maintenance",
+      });
+    });
   });
   ```
 
 - [ ] **Step 2: Run it.**
   ```bash
-  cd apps/web
-  pnpm exec vitest run components/venue-queue.test.tsx
+  pnpm --dir apps/web exec vitest run components/venue-queue.test.tsx
   ```
 
-- [ ] **Step 3: If any assertion fails, adjust the test to match `VenueQueue`'s actual `BookingListItem` shape** — re-check `apps/web/lib/api.ts`'s `BookingListItem` type if the component throws on the fixture shape used above.
+- [ ] **Step 3: If any assertion fails, stop and re-check `apps/web/lib/api.ts`'s `BookingListItem` type and `apps/web/components/venue-queue.tsx` for code drift before changing either the test or component.**
 
-- [ ] **Step 4: Run again to confirm all four tests pass.**
+- [ ] **Step 4: Run again to confirm all six tests pass.**
   ```bash
-  pnpm exec vitest run components/venue-queue.test.tsx
+  pnpm --dir apps/web exec vitest run components/venue-queue.test.tsx
   ```
-  Expected: `4 passed`.
+  Expected: `6 passed`.
 
 - [ ] **Step 5: Commit.**
   ```bash
   git add apps/web/components/venue-queue.test.tsx
-  git commit -m "test(web): unit coverage for VenueQueue proof approve/reject"
+  git commit -m "test(web): unit coverage for VenueQueue booking decisions"
   ```
 
 ---
@@ -1384,13 +1522,14 @@ This is the CI change that keeps wall-clock time flat as the spec count grows. E
 **Interfaces:**
 - Consumes: `CoachWorkspace` from `./coach-workspace`.
 
-Scoped to the "directed requests" approve/decline actions — the clearest, most isolated interactive block in this component (verified by reading `apps/web/components/coach-workspace.tsx` in full during planning).
+Scoped to the directed-request approve/decline actions and one open-job offer submission, which covers both "request" and "offer" wiring from the design spec without expanding into every profile/availability field.
 
 - [ ] **Step 1: Write the test.**
 
   ```typescript
   import { cleanup, fireEvent, render, screen } from "@testing-library/react";
   import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+  import type { CoachMe, DirectedRequest, OpenCoachJob } from "../lib/api";
   import { ToastProvider } from "./ui";
   import { CoachWorkspace } from "./coach-workspace";
 
@@ -1398,18 +1537,42 @@ Scoped to the "directed requests" approve/decline actions — the clearest, most
   vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
 
   const me = {
-    profile: { hourlyRate: 800, bio: "Bio", experience: "Experience" },
+    profile: {
+      id: "coach-1",
+      userId: "coach-user-1",
+      displayName: "Demo Coach",
+      bio: "Bio",
+      experience: "Experience",
+      hourlyRate: 800,
+      verificationStatus: "VERIFIED",
+      availability: [],
+    },
     availability: [],
-  };
+  } satisfies CoachMe;
 
   const directedRequest = {
     id: "req-1",
+    status: "PENDING_COACH",
     player: { displayName: "Demo Player" },
     groupSize: 2,
     startsAt: "2026-06-01T02:00:00.000Z",
+    endsAt: "2026-06-01T03:00:00.000Z",
     location: "Riverside Pickleball",
+    skillLevel: "beginner",
     goals: "Improve serve consistency",
-  };
+    notes: null,
+  } satisfies DirectedRequest;
+
+  const openJob = {
+    id: "job-1",
+    startsAt: "2026-06-02T02:00:00.000Z",
+    endsAt: "2026-06-02T03:00:00.000Z",
+    location: "BGC Court",
+    groupSize: 3,
+    skillLevel: "intermediate",
+    goals: "Tournament prep",
+    notes: null,
+  } satisfies OpenCoachJob;
 
   function jsonResponse(body: unknown) {
     return new Response(JSON.stringify(body), {
@@ -1435,12 +1598,10 @@ Scoped to the "directed requests" approve/decline actions — the clearest, most
     it("shows an empty state when there are no directed requests", () => {
       render(
         <ToastProvider>
-          <CoachWorkspace me={me as never} jobs={[]} bookings={[]} directed={[]} />
+          <CoachWorkspace me={me} jobs={[]} bookings={[]} directed={[]} />
         </ToastProvider>,
       );
-      expect(
-        screen.getByText("No directed requests awaiting your approval"),
-      ).toBeInTheDocument();
+      expect(screen.getByText("No directed requests awaiting your approval")).toBeTruthy();
     });
 
     it("approves a directed request", async () => {
@@ -1448,10 +1609,10 @@ Scoped to the "directed requests" approve/decline actions — the clearest, most
       render(
         <ToastProvider>
           <CoachWorkspace
-            me={me as never}
+            me={me}
             jobs={[]}
             bookings={[]}
-            directed={[directedRequest as never]}
+            directed={[directedRequest]}
           />
         </ToastProvider>,
       );
@@ -1472,10 +1633,10 @@ Scoped to the "directed requests" approve/decline actions — the clearest, most
       render(
         <ToastProvider>
           <CoachWorkspace
-            me={me as never}
+            me={me}
             jobs={[]}
             bookings={[]}
-            directed={[directedRequest as never]}
+            directed={[directedRequest]}
           />
         </ToastProvider>,
       );
@@ -1489,39 +1650,280 @@ Scoped to the "directed requests" approve/decline actions — the clearest, most
         );
       });
     });
+
+    it("sends an offer for an open coaching job", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      render(
+        <ToastProvider>
+          <CoachWorkspace me={me} jobs={[openJob]} bookings={[]} directed={[]} />
+        </ToastProvider>,
+      );
+
+      fireEvent.change(screen.getByLabelText("Your price (PHP)"), { target: { value: "900" } });
+      fireEvent.change(screen.getByLabelText("Offer expires"), {
+        target: { value: "2026-06-01T18:00" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Send offer" }));
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/v1/coaches/offers"),
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(String(init.body)) as { requestId: string; amount: number };
+      expect(body.requestId).toBe("job-1");
+      expect(body.amount).toBe(900);
+    });
   });
   ```
 
 - [ ] **Step 2: Run it.**
   ```bash
-  cd apps/web
-  pnpm exec vitest run components/coach-workspace.test.tsx
+  pnpm --dir apps/web exec vitest run components/coach-workspace.test.tsx
   ```
 
-- [ ] **Step 3: If any assertion fails, adjust the test to match `CoachWorkspace`'s actual `CoachMe`/`DirectedRequest` type shapes** — re-check `apps/web/lib/api.ts` for those types if the component throws on the fixture shape used above.
+- [ ] **Step 3: If any assertion fails, stop and re-check `apps/web/lib/api.ts`'s `CoachMe`/`DirectedRequest`/`OpenCoachJob` types and `apps/web/components/coach-workspace.tsx` for code drift before changing either the test or component.**
 
-- [ ] **Step 4: Run again to confirm all three tests pass.**
+- [ ] **Step 4: Run again to confirm all four tests pass.**
   ```bash
-  pnpm exec vitest run components/coach-workspace.test.tsx
+  pnpm --dir apps/web exec vitest run components/coach-workspace.test.tsx
   ```
-  Expected: `3 passed`.
+  Expected: `4 passed`.
 
 - [ ] **Step 5: Commit.**
   ```bash
   git add apps/web/components/coach-workspace.test.tsx
-  git commit -m "test(web): unit coverage for CoachWorkspace directed-request actions"
+  git commit -m "test(web): unit coverage for CoachWorkspace request and offer actions"
   ```
 
 ---
 
+### Task 17: `player-coaching.test.tsx`
+
+**Files:**
+- Create: `apps/web/components/player-coaching.test.tsx`
+
+**Interfaces:**
+- Consumes: `PlayerCoaching` from `./player-coaching`.
+- Covers the player-side request, offer, proof-upload, and refund-request actions promised by the design spec.
+
+- [ ] **Step 1: Write the test.**
+
+  ```typescript
+  import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+  import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+  import type { PlayerCoachRequest } from "../lib/api";
+  import { PlayerCoaching } from "./player-coaching";
+  import { ToastProvider } from "./ui";
+
+  const refresh = vi.fn();
+  vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
+
+  const openRequest = {
+    id: "request-1",
+    status: "OPEN",
+    startsAt: "2026-06-01T02:00:00.000Z",
+    endsAt: "2026-06-01T03:00:00.000Z",
+    location: "Riverside Pickleball",
+    groupSize: 2,
+    skillLevel: "beginner",
+    offers: [
+      {
+        id: "offer-1",
+        coachId: "coach-1",
+        amount: 900,
+        status: "ACTIVE",
+        expiresAt: "2026-06-01T04:00:00.000Z",
+        message: "Let's work on serves.",
+      },
+    ],
+    booking: null,
+  } satisfies PlayerCoachRequest;
+
+  const heldRequest = {
+    ...openRequest,
+    id: "request-2",
+    status: "ACCEPTED",
+    offers: [],
+    booking: { id: "coach-booking-1", status: "HELD" },
+  } satisfies PlayerCoachRequest;
+
+  const confirmedRequest = {
+    ...openRequest,
+    id: "request-3",
+    status: "BOOKED",
+    offers: [],
+    booking: { id: "coach-booking-2", status: "CONFIRMED" },
+  } satisfies PlayerCoachRequest;
+
+  function jsonResponse(body: unknown) {
+    return new Response(JSON.stringify(body), {
+      headers: { "Content-Type": "application/json" },
+      status: 200,
+    });
+  }
+
+  function renderPlayerCoaching(requests: PlayerCoachRequest[]) {
+    return render(
+      <ToastProvider>
+        <PlayerCoaching requests={requests} />
+      </ToastProvider>,
+    );
+  }
+
+  describe("PlayerCoaching", () => {
+    const fetchMock = vi.fn();
+
+    beforeEach(() => {
+      refresh.mockReset();
+      fetchMock.mockReset();
+      vi.stubGlobal("fetch", fetchMock);
+      vi.stubGlobal("crypto", { randomUUID: vi.fn(() => "test-idempotency-key") });
+    });
+
+    afterEach(() => {
+      cleanup();
+      vi.unstubAllGlobals();
+    });
+
+    it("shows an empty state when no coaching requests exist", () => {
+      renderPlayerCoaching([]);
+      expect(screen.getByText("You have not posted any coaching requests")).toBeTruthy();
+    });
+
+    it("posts a new coaching request", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({ id: "request-new" }));
+      renderPlayerCoaching([]);
+
+      fireEvent.change(screen.getByLabelText("Start"), { target: { value: "2026-07-04T09:00" } });
+      fireEvent.change(screen.getByLabelText("End"), { target: { value: "2026-07-04T10:00" } });
+      fireEvent.change(screen.getByLabelText("Location"), {
+        target: { value: "BGC Pickleball Club" },
+      });
+      fireEvent.change(screen.getByLabelText("Players"), { target: { value: "4" } });
+      fireEvent.change(screen.getByLabelText("Skill level"), { target: { value: "intermediate" } });
+      fireEvent.click(screen.getByRole("button", { name: "Post request" }));
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/v1/coaches/requests"),
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      const body = JSON.parse(String(init.body)) as Record<string, unknown>;
+      expect(body.location).toBe("BGC Pickleball Club");
+      expect(body.groupSize).toBe(4);
+      expect(body.skillLevel).toBe("intermediate");
+      expect(refresh).toHaveBeenCalled();
+    });
+
+    it("accepts an active coach offer", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      renderPlayerCoaching([openRequest]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Accept" }));
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/v1/coaches/offers/accept"),
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(JSON.parse(String(init.body))).toEqual({ offerId: "offer-1" });
+    });
+
+    it("requires a payment screenshot before proof upload", () => {
+      renderPlayerCoaching([heldRequest]);
+
+      fireEvent.change(screen.getByLabelText("Reference number"), { target: { value: "REF123" } });
+      fireEvent.click(screen.getByRole("button", { name: "Submit proof" }));
+
+      expect(screen.getByRole("alert").textContent).toContain("Attach a screenshot");
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("uploads coach payment proof as multipart form data", async () => {
+      fetchMock.mockResolvedValue(new Response(null, { status: 204 }));
+      renderPlayerCoaching([heldRequest]);
+
+      const file = new File(["proof"], "proof.png", { type: "image/png" });
+      fireEvent.change(screen.getByLabelText("Reference number"), { target: { value: "REF123" } });
+      fireEvent.change(screen.getByLabelText("Payment screenshot"), {
+        target: { files: [file] },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Submit proof" }));
+
+      await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
+      const [path, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(path).toBe("/api/v1/coaches/bookings/coach-booking-1/proof-upload");
+      expect(init.method).toBe("POST");
+      expect(init.credentials).toBe("include");
+      expect(init.body).toBeInstanceOf(FormData);
+      expect((init.body as FormData).get("transactionRef")).toBe("REF123");
+      expect((init.body as FormData).get("file")).toBe(file);
+    });
+
+    it("does not request a refund when the prompt is cancelled", () => {
+      vi.spyOn(window, "prompt").mockReturnValue(null);
+      renderPlayerCoaching([confirmedRequest]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Request refund" }));
+
+      expect(fetchMock).not.toHaveBeenCalled();
+    });
+
+    it("requests a refund with the prompted reason", async () => {
+      fetchMock.mockResolvedValue(jsonResponse({}));
+      vi.spyOn(window, "prompt").mockReturnValue("Coach did not arrive");
+      renderPlayerCoaching([confirmedRequest]);
+
+      fireEvent.click(screen.getByRole("button", { name: "Request refund" }));
+
+      await vi.waitFor(() => {
+        expect(fetchMock).toHaveBeenCalledWith(
+          expect.stringContaining("/api/v1/coaches/bookings/refund/request"),
+          expect.objectContaining({ method: "POST" }),
+        );
+      });
+      const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+      expect(JSON.parse(String(init.body))).toEqual({
+        bookingId: "coach-booking-2",
+        reason: "Coach did not arrive",
+      });
+    });
+  });
+  ```
+
+- [ ] **Step 2: Run it.**
+  ```bash
+  pnpm --dir apps/web exec vitest run components/player-coaching.test.tsx
+  ```
+
+- [ ] **Step 3: Run again to confirm all seven tests pass.**
+  ```bash
+  pnpm --dir apps/web exec vitest run components/player-coaching.test.tsx
+  ```
+  Expected: `7 passed`.
+
+- [ ] **Step 4: Run the commit gate and commit.**
+  ```powershell
+  pnpm check
+  pnpm --filter @courtlink/web test:e2e
+  git add apps/web/components/player-coaching.test.tsx
+  git commit -m "test(web): unit coverage for PlayerCoaching actions"
+  ```
+
 ## Deferred (not in this plan's scope)
 
-- **`player-coaching.test.tsx`** — `player-coaching.tsx` (249 lines) was not read in full during planning, and writing accurate test code for it without doing so would risk fabricated assertions against a component this plan's author hasn't verified. Read it and repeat Task 12's pattern (write test, run, adjust to actual behavior, commit) as a follow-up task using this same plan document as a template.
 - **CI visual regression parity (Linux baselines)** — explicitly out of scope per the design spec's non-goals section.
 
 ## Self-Review
 
-**Spec coverage:** the design spec's three foundation items (CI API bootstrap, seed data, matrix split) map to Tasks 1, 2, 11. All seven Tier 1 e2e flows (moderation, venue-approval, promotions, amenities, reviews, registration, favorites) map to Tasks 4-10. Five of six Tier 2 unit tests map to Tasks 12-16; `player-coaching` is explicitly deferred above rather than silently dropped.
+**Spec coverage:** the design spec's three foundation items (CI API bootstrap, seed data, matrix split) map to Tasks 1, 2, 11. All seven Tier 1 e2e flows (moderation, venue-approval, promotions, amenities, reviews, registration, favorites) map to Tasks 4-10. All six Tier 2 unit tests map to Tasks 12-17.
 
 **Placeholder scan:** no TBD/TODO markers; every step has complete, runnable code derived from files read during planning (component source, controller routes, seed script, existing e2e/unit test conventions).
 

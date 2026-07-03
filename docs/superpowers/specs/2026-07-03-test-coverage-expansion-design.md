@@ -111,8 +111,8 @@ RTL tests with mocked `fetch`, following the existing pattern (`site-header.test
   `booking-flow.test.ts` and `refund-flow.test.ts`; this test's job is catching UI wiring breakage.)
 - `coach-workspace.test.tsx` — offer/request actions.
 - `player-coaching.test.tsx` — coach request/offer actions from the player side.
-- `notification-bell.test.tsx` — dropdown open/close, mark-as-read.
-- `notification-list.test.tsx` — mark-as-read, list rendering by status.
+- `notification-bell.test.tsx` — unread-count polling, badge capping, and link target.
+- `notification-list.test.tsx` — mark-as-read, mark-all-read, list rendering by status.
 - `logout-button.test.tsx` — click → API call → redirect.
 
 These are Tier 2 (unit, not e2e) because their blast radius is lower than Tier 1, or their critical
