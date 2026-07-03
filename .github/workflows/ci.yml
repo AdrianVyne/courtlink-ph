@@ -81,7 +81,7 @@ jobs:
           OBJECT_STORAGE_ACCESS_KEY: courtlink
           OBJECT_STORAGE_SECRET_KEY: courtlink-dev-secret
         run: |
-          pnpm --filter @courtlink/api build
+          pnpm exec turbo run build --filter=@courtlink/api
           pnpm --filter @courtlink/api start &
           ready=0
           for i in $(seq 1 30); do
