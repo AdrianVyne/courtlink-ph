@@ -172,6 +172,41 @@ async function main() {
     },
   });
 
+  const demoPlayer = await prisma.user.findUniqueOrThrow({
+    where: { email: "player@demo.courtlink.ph" },
+  });
+  const reviewFixtureWindow = {
+    startsAt: new Date("2026-06-01T02:00:00.000Z"),
+    endsAt: new Date("2026-06-01T03:00:00.000Z"),
+  };
+  let reviewableBooking = await prisma.courtBooking.findFirst({
+    where: {
+      courtId: court.id,
+      playerId: demoPlayer.id,
+      startsAt: reviewFixtureWindow.startsAt,
+      endsAt: reviewFixtureWindow.endsAt,
+    },
+  });
+  if (!reviewableBooking) {
+    reviewableBooking = await prisma.courtBooking.create({
+      data: {
+        courtId: court.id,
+        playerId: demoPlayer.id,
+        status: "COMPLETED",
+        startsAt: reviewFixtureWindow.startsAt,
+        endsAt: reviewFixtureWindow.endsAt,
+        quotedAmount: "250.00",
+        proofDeadline: new Date("2026-06-01T00:00:00.000Z"),
+      },
+    });
+  } else if (reviewableBooking.status !== "COMPLETED") {
+    reviewableBooking = await prisma.courtBooking.update({
+      where: { id: reviewableBooking.id },
+      data: { status: "COMPLETED" },
+    });
+  }
+  await prisma.review.deleteMany({ where: { courtBookingId: reviewableBooking.id } });
+
   process.stdout.write(
     `Seed complete. Demo login password for all demo accounts: ${DEMO_PASSWORD}\n`,
   );
