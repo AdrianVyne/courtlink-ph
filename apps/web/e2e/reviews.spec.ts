@@ -33,8 +33,14 @@ test.describe("reviews (needs seeded API, resettable fixture)", () => {
     );
 
     await reviewForm.getByLabel("Comment (optional)").fill("E2E automated review");
+    const reviewSubmitResponse = page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/v1/reviews") && response.request().method() === "POST",
+    );
     await reviewForm.getByRole("button", { name: "Submit review" }).click();
-    await expect(page.getByText("Thanks for your review.")).toBeVisible();
+    const submitResponse = await reviewSubmitResponse;
+    expect(submitResponse.ok()).toBe(true);
+    await expect(reviewForm).toHaveCount(0);
 
     const after = await request.get(`/api/v1/reviews/venues/${venue?.id}`);
     const afterJson = await after.json();
