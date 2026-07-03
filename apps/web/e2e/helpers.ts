@@ -88,3 +88,55 @@ export async function uploadE2EVenueCoverPhoto(
   expect(promote.ok(), await promote.text()).toBe(true);
   return (await promote.json()) as VenuePhotoResponse;
 }
+
+/**
+ * Registers a one-time auto-accept for the next `window.prompt` the page
+ * triggers. Must be called BEFORE the click that opens the prompt —
+ * Playwright auto-dismisses dialogs with no listener, which makes
+ * prompt-gated actions (report, moderation resolve/dismiss, venue-queue
+ * reject) silently no-op.
+ */
+export function acceptNextPrompt(page: Page, response: string): void {
+  page.once("dialog", (dialog) => {
+    void dialog.accept(response);
+  });
+}
+
+interface BusinessMembership {
+  businessId: string;
+}
+
+export async function getOwnerBusinessId(page: Page): Promise<string> {
+  const response = await page.context().request.get("/api/v1/businesses/mine");
+  const memberships = (await response.json()) as BusinessMembership[];
+  const membership = memberships[0];
+  if (!membership) throw new Error("Session has no business membership");
+  return membership.businessId;
+}
+
+interface CreatedVenue {
+  id: string;
+  slug: string;
+  name: string;
+}
+
+export async function createDraftVenue(
+  page: Page,
+  overrides: Partial<{ name: string; slug: string }> = {},
+): Promise<CreatedVenue> {
+  const businessId = await getOwnerBusinessId(page);
+  const slug = overrides.slug ?? `e2e-venue-${randomUUID().slice(0, 8)}`;
+  const name = overrides.name ?? `E2E Test Venue ${slug.slice(-8)}`;
+  const response = await page.context().request.post("/api/v1/venues", {
+    data: {
+      businessId,
+      name,
+      slug,
+      regionCode: "NCR",
+      cityMunicipality: "Manila",
+      streetAddress: "1 E2E Test St",
+    },
+  });
+  expect(response.ok(), await response.text()).toBe(true);
+  return (await response.json()) as CreatedVenue;
+}
