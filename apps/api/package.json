@@ -19,7 +19,7 @@
     "@courtlink/database": "workspace:*",
     "@courtlink/domain": "workspace:*",
     "@fastify/multipart": "10.0.0",
-    "@fastify/static": "9.1.3",
+    "@fastify/static": "10.1.2",
     "@nestjs/common": "11.1.27",
     "@nestjs/core": "11.1.27",
     "@nestjs/platform-fastify": "11.1.27",
